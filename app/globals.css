@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Your custom styles below */
+:root {
+    --brand-purple: #852BAF;
+    --brand-pink: #FC3F78;
+    --brand-light-pink: #FF7CA3;
+    --brand-light-purple: #D887FD;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}

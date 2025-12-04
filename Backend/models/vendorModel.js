@@ -1,0 +1,184 @@
+const db = require('../config/database');
+
+class VendorModel {
+
+  /* ============================================================
+      CREATE VENDOR
+  ============================================================ */
+  async createVendor(data, userId) {
+    const [result] = await db.execute(
+      `INSERT INTO vendors 
+        (user_id, company_name, full_name, vendor_type, gstin, pan_number,
+         udyam_number, listed_products, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())`,
+      [
+        userId,
+        data.companyName || '',
+        data.fullName || '',
+        data.vendorType || '',
+        data.gstin || '',
+        data.panNumber || '',
+        data.udyamNumber || '',
+        Number(data.noOfListedProducts) || 0
+      ]
+    );
+    return result.insertId;
+  }
+
+  /* ============================================================
+      INSERT ADDRESS (business/billing/shipping)
+  ============================================================ */
+  async insertAddress(vendorId, type, d) {
+    const address = {
+      line1: d[`${type}AddressLine1`] || d.addressLine1 || '',
+      line2: d[`${type}AddressLine2`] || d.addressLine2 || '',
+      line3: d[`${type}AddressLine3`] || d.addressLine3 || '',
+      city: d[`${type}City`] || d.city || '',
+      state: d[`${type}State`] || d.state || '',
+      pincode: d[`${type}Pincode`] || d.pincode || ''
+    };
+
+    await db.execute(
+      `INSERT INTO vendor_addresses 
+        (vendor_id, type, line1, line2, line3, city, state, pincode)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        vendorId,
+        type,
+        address.line1,
+        address.line2,
+        address.line3,
+        address.city,
+        address.state,
+        address.pincode
+      ]
+    );
+  }
+
+  /* ============================================================
+      INSERT BANK DETAILS
+  ============================================================ */
+  async insertBankDetails(vendorId, d) {
+    await db.execute(
+      `INSERT INTO vendor_bank_details 
+        (vendor_id, bank_name, account_number, branch, ifsc_code)
+       VALUES (?, ?, ?, ?, ?)`,
+      [
+        vendorId,
+        d.bankName || '',
+        d.accountNumber || '',
+        d.branch || '',
+        d.ifscCode || ''
+      ]
+    );
+  }
+
+  /* ============================================================
+      INSERT CONTACT DETAILS
+  ============================================================ */
+  async insertContacts(vendorId, d) {
+    await db.execute(
+      `INSERT INTO vendor_contacts
+        (vendor_id, primary_contact, alternate_contact, email, payment_terms, comments)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        vendorId,
+        d.primaryContactNumber || '',
+        d.alternateContactNumber || null,
+        d.email || '',
+        d.paymentTerms || '',
+        d.comments || ''
+      ]
+    );
+  }
+
+  /* ============================================================
+      INSERT DOCUMENTS (DYNAMIC)
+      Works with ANY file key from frontend
+  ============================================================ */
+  async insertCommonDocuments(vendorId, files) {
+    for (const key of Object.keys(files)) {
+      const file = files[key][0];
+
+      await db.execute(
+        `INSERT INTO vendor_documents 
+           (vendor_id, document_key, file_path, mime_type, uploaded_at)
+         VALUES (?, ?, ?, ?, NOW())`,
+        [
+          vendorId,
+          key,              // e.g. "gstinFile", "panFile", etc
+          file.path,
+          file.mimetype
+        ]
+      );
+    }
+  }
+
+  /* ============================================================
+      GET VENDOR DETAILS
+  ============================================================ */
+  async getVendorById(vendorId) {
+    const [[vendor]] = await db.execute(
+      `SELECT v.*, u.email, u.phone
+       FROM vendors v 
+       JOIN users u ON v.user_id = u.user_id
+       WHERE vendor_id = ?`,
+      [vendorId]
+    );
+
+    if (!vendor) return null;
+
+    const [addresses] = await db.execute(
+      'SELECT * FROM vendor_addresses WHERE vendor_id = ?', [vendorId]
+    );
+
+    const [[bank]] = await db.execute(
+      'SELECT * FROM vendor_bank_details WHERE vendor_id = ?', [vendorId]
+    );
+
+    const [[contacts]] = await db.execute(
+      'SELECT * FROM vendor_contacts WHERE vendor_id = ?', [vendorId]
+    );
+
+    const [documents] = await db.execute(
+      'SELECT * FROM vendor_documents WHERE vendor_id = ?', [vendorId]
+    );
+
+    return { vendor, addresses, bank, contacts, documents };
+  }
+
+  /* ============================================================
+      GET ALL VENDORS
+  ============================================================ */
+  async getAllVendors(status = null) {
+    let sql = `
+      SELECT v.*, u.email
+      FROM vendors v
+      JOIN users u ON v.user_id = u.user_id
+    `;
+    const params = [];
+
+    if (status) {
+      sql += ` WHERE v.status = ?`;
+      params.push(status);
+    }
+
+    const [rows] = await db.execute(sql, params);
+    return rows;
+  }
+
+  /* ============================================================
+      UPDATE VENDOR STATUS
+  ============================================================ */
+  async updateVendorStatus(vendorId, status, reason = null) {
+    const [result] = await db.execute(
+      `UPDATE vendors 
+         SET status=?, rejection_reason=?, created_at=NOW()
+       WHERE vendor_id=?`,
+      [status, reason, vendorId]
+    );
+    return result.affectedRows > 0;
+  }
+}
+
+module.exports = new VendorModel();
