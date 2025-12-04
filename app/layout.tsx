@@ -10,9 +10,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <AuthClientWrappe>
+        <AuthClientWrapper>
           {children}
-        </AuthClientWrappe>
+        </AuthClientWrapper>
       </body>
     </html>
   );
