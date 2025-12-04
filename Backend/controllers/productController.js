@@ -7,7 +7,7 @@ class ProductController {
       const vendorId = req.user.vendor_id;
       const body = req.body;
 
-      // Category mandatory
+      // Category mandatory and custom category
       if (!body.category_id) {
         return res.status(400).json({
           success: false,
