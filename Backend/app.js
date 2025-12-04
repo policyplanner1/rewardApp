@@ -7,6 +7,9 @@ require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
 const vendorRoutes = require('./routes/vendorRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
+const subCategoryRoutes = require('./routes/subCategoryRoutes');
+const subSubCategoryRoutes = require('./routes/subSubCategoryRoutes');
 
 const app = express();
 
@@ -40,6 +43,9 @@ app.get('/', (req, res) => {
 // -----------------------------
 app.use('/api/auth', authRoutes);
 app.use('/api/vendor', vendorRoutes);
+app.use('/api/category', categoryRoutes);
+app.use('/api/subcategory', subCategoryRoutes);
+app.use('/api/subsubcategory', subSubCategoryRoutes);
 
 // -----------------------------
 // Health check route
