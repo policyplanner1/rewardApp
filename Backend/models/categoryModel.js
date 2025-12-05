@@ -18,7 +18,7 @@ class CategoryModel {
   }
 
   // GET ALL CATEGORIES
-  async wgetAllCategories() {
+  async getAllCategories() {
     try {
       const [rows] = await db.execute(`SELECT * FROM categories`);
       return rows;
@@ -31,7 +31,7 @@ class CategoryModel {
   // GET CATEGORY BY ID
   async getCategoryById(id) {
     try {
-      const [rows] = await db.execute(`SELECT * FROM categories WHERE id = ?`, [
+      const [rows] = await db.execute(`SELECT * FROM categories WHERE category_id = ?`, [
         id,
       ]);
       return rows[0];
@@ -47,7 +47,7 @@ class CategoryModel {
       const categoryName = data.name;
 
       const [result] = await db.execute(
-        `UPDATE categories SET category_name = ? WHERE id = ?`,
+        `UPDATE categories SET category_name = ? WHERE category_id = ?`,
         [categoryName, id]
       );
 
@@ -56,7 +56,7 @@ class CategoryModel {
       }
 
       // fetch the updated category
-      const [rows] = await db.execute(`SELECT * FROM categories WHERE id = ?`, [
+      const [rows] = await db.execute(`SELECT * FROM categories WHERE category_id = ?`, [
         id,
       ]);
 
@@ -70,7 +70,7 @@ class CategoryModel {
   // DELETE CATEGORY
   async deleteCategory(id) {
     try {
-      const [result] = await db.execute(`DELETE FROM categories WHERE id = ?`, [
+      const [result] = await db.execute(`DELETE FROM categories WHERE category_id = ?`, [
         id,
       ]);
 

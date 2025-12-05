@@ -153,7 +153,7 @@ class VendorController {
   // update category by vendor manager
   async updateCategory(req, res) {
     try {
-      const categoryID = req.params.categoryID;
+      const categoryID = req.params.id;
       const data = req.body;
 
       const updatedCategory = await categoryModel.updateCategory(
@@ -206,9 +206,16 @@ class VendorController {
   // get category by ID
   async getCategoryById(req, res) {
     try {
-      const categoryID = req.params.categoryID;
+      const categoryID = req.params.id;
 
       const data = await categoryModel.getCategoryById(categoryID);
+
+      if (!data) {
+        return res.status(404).json({
+          success: false,
+          message: "Category not found",
+        });
+      }
 
       res.status(200).json({
         success: true,
@@ -219,7 +226,7 @@ class VendorController {
       console.error("fetching category by ID error:", error);
       res.status(500).json({
         success: false,
-        message: "error fetching category by ID",
+        message: "Error fetching category by ID",
         error: error.message,
       });
     }
@@ -228,7 +235,7 @@ class VendorController {
   // delete a category
   async deleteCategory(req, res) {
     try {
-      const categoryID = req.params.categoryID;
+      const categoryID = req.params.id;
 
       const data = await categoryModel.deleteCategory(categoryID);
 
