@@ -21,7 +21,7 @@ class SubCategoryController {
   async getSubCategoryByCategoryId(req, res) {
     try {
       const { categoryId } = req.params;
-
+      console.log("Category ID:", categoryId);
       const [data] = await db.execute(
         `Select * from sub_categories where category_id= ? `,
         [categoryId]
