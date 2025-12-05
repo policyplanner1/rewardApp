@@ -1,9 +1,19 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { FiEdit, FiTrash2, FiEye, FiCheckCircle, FiXCircle, FiPlus } from 'react-icons/fi'; 
+import React, { useMemo, useState } from 'react';
+import {
+  FiEdit,
+  FiTrash2,
+  FiEye,
+  FiPlus,
+  FiCalendar,
+  FiTag,
+  FiX,
+  FiSave,
+} from 'react-icons/fi';
 
-// --- Types and Dummy Data ---
+type Status = 'active' | 'inactive';
+
 interface Category {
   id: number;
   category_name: string;
@@ -11,11 +21,15 @@ interface Category {
 
 interface Subcategory {
   id: number;
-  category_id: number; // Foreign key linking to Category
+  category_id: number;
   subcategory_name: string;
-  status: 'active' | 'inactive';
+  status: Status;
   created_at: string;
 }
+
+const BRAND = {
+  purple: '#852BAF',
+};
 
 const DUMMY_CATEGORIES: Category[] = [
   { id: 1, category_name: 'Electronics' },
@@ -24,211 +38,477 @@ const DUMMY_CATEGORIES: Category[] = [
 ];
 
 const DUMMY_SUBCATEGORIES: Subcategory[] = [
-  { id: 101, category_id: 1, subcategory_name: 'Smartphones', status: 'active', created_at: '2023-10-01' },
-  { id: 102, category_id: 1, subcategory_name: 'Laptops', status: 'active', created_at: '2023-10-15' },
-  { id: 201, category_id: 2, subcategory_name: 'Menswear', status: 'inactive', created_at: '2023-09-01' },
-  { id: 301, category_id: 3, subcategory_name: 'Kitchenware', status: 'active', created_at: '2023-11-20' },
+  {
+    id: 101,
+    category_id: 1,
+    subcategory_name: 'Smartphones',
+    status: 'active',
+    created_at: '2023-10-01',
+  },
+  {
+    id: 102,
+    category_id: 1,
+    subcategory_name: 'Laptops',
+    status: 'active',
+    created_at: '2023-10-15',
+  },
+  {
+    id: 201,
+    category_id: 2,
+    subcategory_name: 'Menswear',
+    status: 'inactive',
+    created_at: '2023-09-01',
+  },
+  {
+    id: 301,
+    category_id: 3,
+    subcategory_name: 'Kitchenware',
+    status: 'active',
+    created_at: '2023-11-20',
+  },
 ];
-// ----------------------------
 
-// Utility to render status badge and icon
-const StatusBadge: React.FC<{ status: 'active' | 'inactive' }> = ({ status }) => {
+// STATUS BADGE
+const StatusBadge: React.FC<{ status: Status }> = ({ status }) => {
   const isActive = status === 'active';
-  const colorClass = isActive
-    ? 'bg-green-100 text-green-800'
-    : 'bg-red-100 text-red-800';
-  const Icon = isActive ? FiCheckCircle : FiXCircle;
-
   return (
-    <span className={`inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium ${colorClass}`}>
-      <Icon className="w-4 h-4 mr-1" />
+    <span
+      className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${
+        isActive ? 'bg-green-100 text-green-700' : 'bg-rose-100 text-rose-700'
+      }`}
+    >
+      <span
+        className={`h-2 w-2 rounded-full mr-2 ${
+          isActive ? 'bg-green-500' : 'bg-rose-500'
+        }`}
+      ></span>
       {isActive ? 'Active' : 'Inactive'}
     </span>
   );
 };
 
-export default function SubcategoriesPage() {
-  const [subcategories, setSubcategories] = useState(DUMMY_SUBCATEGORIES);
-  const [newSubcategoryName, setNewSubcategoryName] = useState('');
-  // State to hold the ID of the currently selected parent category
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number | ''>(''); 
+// ICON PLACEHOLDER
+const IconPlaceholder: React.FC<{ name: string; size?: 'sm' | 'lg' }> = ({
+  name,
+  size = 'sm',
+}) => {
+  const classes = size === 'lg' ? 'w-14 h-14 text-2xl' : 'w-10 h-10 text-lg';
+  return (
+    <div
+      className={`${classes} rounded-2xl bg-purple-50 border flex items-center justify-center font-bold`}
+      style={{ color: BRAND.purple }}
+    >
+      {name.charAt(0).toUpperCase()}
+    </div>
+  );
+};
 
-  // --- Filtering Logic ---
+export default function SubcategoryManagement() {
+  const [subcategories, setSubcategories] =
+    useState<Subcategory[]>(DUMMY_SUBCATEGORIES);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | ''>('');
+  const [newSubcategoryName, setNewSubcategoryName] = useState('');
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selected, setSelected] = useState<Subcategory | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
+
   const filteredSubcategories = useMemo(() => {
-    if (selectedCategoryId === '') {
-      return []; // Show no subcategories if no category is selected
-    }
-    return subcategories.filter(sub => sub.category_id === selectedCategoryId);
+    if (selectedCategoryId === '') return subcategories;
+    return subcategories.filter((s) => s.category_id === selectedCategoryId);
   }, [subcategories, selectedCategoryId]);
 
-  // --- CRUD Handlers ---
+  const getCategoryName = (category_id: number) =>
+    DUMMY_CATEGORIES.find((c) => c.id === category_id)?.category_name ||
+    'Unknown';
 
-  const handleAddSubcategory = (e: React.FormEvent) => {
-    e.preventDefault();
+  // ADD SUBCATEGORY
+  const handleAdd = (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!newSubcategoryName.trim() || selectedCategoryId === '') return;
 
-    const newSubcategory: Subcategory = {
-      id: subcategories.length > 0 ? Math.max(...subcategories.map(c => c.id)) + 1 : 1,
-      category_id: selectedCategoryId as number, // Cast is safe due to check above
+    setIsAdding(true);
+
+    const id = subcategories.length
+      ? Math.max(...subcategories.map((c) => c.id)) + 1
+      : 1;
+
+    const newSub: Subcategory = {
+      id,
+      category_id: selectedCategoryId as number,
       subcategory_name: newSubcategoryName.trim(),
-      status: 'active', 
+      status: 'active',
       created_at: new Date().toISOString().split('T')[0],
     };
-    setSubcategories(prev => [newSubcategory, ...prev]);
-    setNewSubcategoryName('');
+
+    setTimeout(() => {
+      setSubcategories((prev) => [newSub, ...prev]);
+      setNewSubcategoryName('');
+      setIsAdding(false);
+    }, 300);
   };
-  
-  const handleEdit = (id: number) => alert(`Editing subcategory ${subcategories.find(c => c.id === id)?.subcategory_name}`);
-  const handleDelete = (id: number) => {
-    if (confirm("Are you sure you want to delete this subcategory?")) {
-      setSubcategories(prev => prev.filter(sub => sub.id !== id));
-    }
+
+  // VIEW
+  const handleView = (sub: Subcategory) => {
+    setSelected(sub);
+    setEditName(sub.subcategory_name);
+    setIsEditing(false);
+    setDrawerOpen(true);
   };
-  const handleView = (id: number) => alert(`Viewing details for subcategory ${id}`);
-  
-  const handleToggleStatus = (id: number) => {
-    setSubcategories(prev =>
-      prev.map(sub => 
-        sub.id === id 
-          ? { ...sub, status: sub.status === 'active' ? 'inactive' : 'active' } 
-          : sub
+
+  const closeDrawer = () => {
+    setDrawerOpen(false);
+    setTimeout(() => {
+      setSelected(null);
+      setIsEditing(false);
+    }, 300);
+  };
+
+  // TOGGLE STATUS
+  const toggleStatus = (id: number) => {
+    setSubcategories((prev) =>
+      prev.map((s) =>
+        s.id === id
+          ? { ...s, status: s.status === 'active' ? 'inactive' : 'active' }
+          : s
       )
     );
+
+    if (selected?.id === id) {
+      setSelected((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: prev.status === 'active' ? 'inactive' : 'active',
+            }
+          : prev
+      );
+    }
   };
-  
-  // -----------------------
+
+  // DELETE
+  const handleDelete = (id: number) => {
+    if (!confirm('Delete subcategory?')) return;
+    setSubcategories((prev) => prev.filter((s) => s.id !== id));
+    if (selected?.id === id) closeDrawer();
+  };
+
+  // SAVE EDIT
+  const handleSaveEdit = () => {
+    if (!selected) return;
+    if (!editName.trim()) {
+      alert('Subcategory name required');
+      return;
+    }
+
+    setSubcategories((prev) =>
+      prev.map((s) =>
+        s.id === selected.id
+          ? {
+              ...s,
+              subcategory_name: editName.trim(),
+              status: selected.status,
+            }
+          : s
+      )
+    );
+
+    setSelected((prev) =>
+      prev
+        ? {
+            ...prev,
+            subcategory_name: editName.trim(),
+          }
+        : prev
+    );
+    setIsEditing(false);
+  };
 
   const isCategorySelected = selectedCategoryId !== '';
-  const selectedCategoryName = DUMMY_CATEGORIES.find(c => c.id === selectedCategoryId)?.category_name;
+  const selectedCategoryName =
+    DUMMY_CATEGORIES.find((c) => c.id === selectedCategoryId)?.category_name ||
+    'All Categories';
 
   return (
-    <div className="min-h-screen p-8 bg-gray-50">
-      <h1 className="text-3xl font-bold mb-6 text-[#FC3F78]">🏷️ Subcategory Management</h1>
+    <div className="min-h-screen p-6 bg-gray-50">
+      {/* HEADER */}
+      <h1 className="flex items-center gap-2 mb-6 text-3xl font-bold text-purple-700">
+        <FiTag /> Subcategory Management
+      </h1>
 
-      <div className="overflow-hidden bg-white rounded-lg shadow-xl">
-        
-        {/* --- ⚙️ Input Area (Upper Part) --- */}
-        <div className="p-6 border-b border-gray-200" style={{ backgroundColor: '#FFEDF2' }}> 
-          <h2 className="text-xl font-semibold text-[#FC3F78] mb-4">Add New Subcategory</h2>
-          
-          <div className="flex flex-col mb-4 space-y-4 md:flex-row md:space-y-0 md:space-x-4">
-            
-            {/* 1. Category Dropdown (Conditional Requirement) */}
-            <div className="flex-1">
-              <label className="block mb-1 text-sm font-medium text-gray-700">
-                Select Parent Category: <span className="text-red-500">*</span>
-              </label>
-              <select
-                value={selectedCategoryId}
-                onChange={(e) => setSelectedCategoryId(e.target.value === '' ? '' : Number(e.target.value))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-[#852BAF] focus:border-[#852BAF] transition-all"
-              >
-                <option value="">-- Select a Category --</option>
-                {DUMMY_CATEGORIES.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.category_name}
-                  </option>
-                ))}
-              </select>
-            </div>
+      {/* ADD BLOCK */}
+      <form onSubmit={handleAdd} className="flex flex-col gap-3 mb-6 md:flex-row">
+        {/* Category Select */}
+        <select
+          value={selectedCategoryId}
+          onChange={(e) =>
+            setSelectedCategoryId(
+              e.target.value === '' ? '' : Number(e.target.value)
+            )
+          }
+          className="w-full px-4 py-3 border rounded-xl md:w-1/3"
+        >
+          <option value="">Select Category...</option>
+          {DUMMY_CATEGORIES.map((cat) => (
+            <option key={cat.id} value={cat.id}>
+              {cat.category_name}
+            </option>
+          ))}
+        </select>
 
-            {/* 2. Subcategory Name Input (Conditional on selection) */}
-            <div className="flex-1">
-              <label className="block mb-1 text-sm font-medium text-gray-700">
-                Subcategory Name:
-              </label>
-              <input
-                type="text"
-                value={newSubcategoryName}
-                onChange={(e) => setNewSubcategoryName(e.target.value)}
-                placeholder={isCategorySelected ? "Enter new subcategory name..." : "Select a category first..."}
-                required
-                disabled={!isCategorySelected}
-                className="w-full px-4 py-2 border border-gray-300 rounded-md transition-all 
-                  disabled:bg-gray-100 disabled:text-gray-400 
-                  focus:ring-2 focus:ring-[#FC3F78] focus:border-[#FC3F78]"
-              />
-            </div>
-          </div>
-          
-          {/* 3. Add Button (Conditional on selection) */}
-          <button
-            type="submit"
-            onClick={handleAddSubcategory}
-            disabled={!isCategorySelected || !newSubcategoryName.trim()}
-            className={`w-full flex items-center justify-center px-6 py-2 border border-transparent text-sm font-medium rounded-md text-white shadow-md transition-all duration-300 
-              ${isCategorySelected ? 'bg-[#FC3F78] hover:bg-[#FF7CA3]' : 'bg-gray-400 cursor-not-allowed'}`}
-          >
-            <FiPlus className="w-5 h-5 mr-2" />
-            Add Subcategory
-          </button>
+        {/* Subcategory Name */}
+        <input
+          value={newSubcategoryName}
+          onChange={(e) => setNewSubcategoryName(e.target.value)}
+          className="flex-1 px-4 py-3 border rounded-xl"
+          placeholder={
+            isCategorySelected
+              ? 'Enter subcategory name...'
+              : 'Select a category first...'
+          }
+          disabled={!isCategorySelected}
+        />
 
-          {!isCategorySelected && (
-              <p className="mt-2 text-sm text-red-500">
-                  Please select a parent category to enable adding subcategories.
-              </p>
-          )}
+        <button
+          type="submit"
+          disabled={!isCategorySelected || !newSubcategoryName.trim() || isAdding}
+          className="flex items-center justify-center gap-2 px-6 py-3 text-white bg-purple-600 rounded-xl disabled:opacity-60"
+        >
+          <FiPlus /> {isAdding ? 'Adding...' : 'Add'}
+        </button>
+      </form>
 
-        </div>
+      {/* FILTER INFO */}
+      <div className="flex items-center justify-between mb-3 text-sm text-gray-600">
+        <span>
+          Showing subcategories for:{' '}
+          <span className="font-semibold text-purple-700">
+            {selectedCategoryName}
+          </span>
+        </span>
+        <span>Total: {filteredSubcategories.length}</span>
+      </div>
 
-        {/* --- 📋 Subcategories Table (Underneath, Filtered) --- */}
-        <div className="overflow-x-auto">
-          <h3 className="p-4 text-lg font-semibold text-[#852BAF] bg-gray-50 border-t border-gray-200">
-            Subcategories for: **{selectedCategoryName || 'No Category Selected'}**
-          </h3>
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead style={{ backgroundColor: '#D887FD' }}>
-              <tr>
-                <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-white uppercase">
-                  Subcategory Name
-                </th>
-                <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-white uppercase">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-white uppercase">
-                  Created At
-                </th>
-                <th className="px-6 py-3 text-xs font-medium tracking-wider text-right text-white uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredSubcategories.map((sub) => (
-                <tr key={sub.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900 whitespace-nowrap">
-                    {sub.subcategory_name}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusBadge status={sub.status} />
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">
-                    {sub.created_at}
-                  </td>
-                  <td className="px-6 py-4 text-sm font-medium text-right whitespace-nowrap">
-                    <div className="flex justify-end space-x-2">
-                      {/* Action Buttons using react-icons */}
-                      <button onClick={() => handleView(sub.id)} className="p-2 text-gray-500 rounded-full hover:text-gray-700 hover:bg-gray-200" title="View"><FiEye className="w-5 h-5" /></button>
-                      <button onClick={() => handleEdit(sub.id)} className="text-[#852BAF] hover:text-[#D887FD] p-2 rounded-full hover:bg-purple-50" title="Edit"><FiEdit className="w-5 h-5" /></button>
-                      <button onClick={() => handleToggleStatus(sub.id)} className={`p-2 rounded-full ${sub.status === 'active' ? 'text-green-600 hover:bg-green-50' : 'text-[#FC3F78] hover:bg-pink-50'}`} title={sub.status === 'active' ? 'Deactivate' : 'Activate'}>
-                        {sub.status === 'active' ? (<FiXCircle className="w-5 h-5" />) : (<FiCheckCircle className="w-5 h-5" />)}
-                      </button>
-                      <button onClick={() => handleDelete(sub.id)} className="text-[#FC3F78] hover:text-red-700 p-2 rounded-full hover:bg-pink-50" title="Delete"><FiTrash2 className="w-5 h-5" /></button>
+      {/* TABLE */}
+      <div className="bg-white shadow rounded-2xl">
+        <table className="min-w-full">
+          <thead className="text-white bg-purple-600">
+            <tr>
+              <th className="px-6 py-4 text-left">Subcategory</th>
+              <th className="px-6 py-4 text-left">Category</th>
+              <th className="px-6 py-4 text-left">Status</th>
+              <th className="px-6 py-4 text-left">Created</th>
+              <th className="px-6 py-4 text-right">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {filteredSubcategories.map((sub) => (
+              <tr key={sub.id} className="border-b hover:bg-purple-50">
+                <td className="flex items-center gap-4 px-6 py-4">
+                  <IconPlaceholder name={sub.subcategory_name} />
+                  <div>
+                    <div className="font-semibold">
+                      {sub.subcategory_name}
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </td>
 
-          {isCategorySelected && filteredSubcategories.length === 0 && (
-            <p className="py-10 text-center text-gray-500">No subcategories found for **{selectedCategoryName}**.</p>
-          )}
+                <td className="px-6 py-4">
+                  {getCategoryName(sub.category_id)}
+                </td>
 
-          {!isCategorySelected && (
-            <p className="py-10 text-center text-gray-500">Please select a category from the dropdown above to view its subcategories.</p>
-          )}
+                <td className="px-6 py-4">
+                  <button onClick={() => toggleStatus(sub.id)}>
+                    <StatusBadge status={sub.status} />
+                  </button>
+                </td>
 
+                <td className="px-6 py-4">{sub.created_at}</td>
+
+                <td className="flex justify-end gap-2 px-6 py-4 text-right">
+                  <button className="p-2" onClick={() => handleView(sub)}>
+                    <FiEye />
+                  </button>
+                  <button
+                    className="p-2 text-purple-600"
+                    onClick={() => {
+                      handleView(sub);
+                      setIsEditing(true);
+                    }}
+                  >
+                    <FiEdit />
+                  </button>
+                  <button
+                    className="p-2 text-rose-600"
+                    onClick={() => handleDelete(sub.id)}
+                  >
+                    <FiTrash2 />
+                  </button>
+                </td>
+              </tr>
+            ))}
+
+            {filteredSubcategories.length === 0 && (
+              <tr>
+                <td
+                  colSpan={5}
+                  className="py-10 text-sm text-center text-gray-500"
+                >
+                  No subcategories found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* DRAWER */}
+      <div
+        className={`fixed inset-0 z-50 transition ${
+          drawerOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        {/* Overlay */}
+        <div
+          className="absolute inset-0 bg-black/40"
+          onClick={closeDrawer}
+        ></div>
+
+        {/* Drawer */}
+        <div
+          className={`absolute right-0 top-0 h-full w-[420px] bg-white shadow-xl transition-transform ${
+            drawerOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        >
+          {/* HEADER */}
+          <div className="flex justify-between p-6 border-b">
+            <div className="flex items-center gap-3">
+              {selected && (
+                <IconPlaceholder name={selected.subcategory_name} size="lg" />
+              )}
+              <div>
+                <h2 className="text-xl font-bold">
+                  {selected?.subcategory_name || 'Details'}
+                </h2>
+                {selected && (
+                  <p className="flex items-center gap-2 text-sm text-gray-500">
+                    <FiCalendar /> {selected.created_at}
+                  </p>
+                )}
+                {selected && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    Category:{' '}
+                    <span className="font-semibold">
+                      {getCategoryName(selected.category_id)}
+                    </span>
+                  </p>
+                )}
+              </div>
+            </div>
+            <button onClick={closeDrawer}>
+              <FiX />
+            </button>
+          </div>
+
+          {/* BODY */}
+          <div className="p-6">
+            {!selected ? (
+              <p className="text-gray-500">Select a subcategory to view.</p>
+            ) : !isEditing ? (
+              <>
+                {/* VIEW MODE */}
+                <div className="mb-6">
+                  <h4 className="mb-1 font-semibold">Status</h4>
+                  <StatusBadge status={selected.status} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 mb-6 text-sm">
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500">
+                      Subcategory ID
+                    </p>
+                    <p className="px-3 py-2 mt-1 bg-gray-100 rounded-lg">
+                      #{selected.id}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500">
+                      Category
+                    </p>
+                    <p className="px-3 py-2 mt-1 bg-gray-100 rounded-lg">
+                      {getCategoryName(selected.category_id)}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  className="flex items-center justify-center w-full gap-2 py-3 mb-3 text-white bg-purple-600 rounded-xl"
+                  onClick={() => setIsEditing(true)}
+                >
+                  <FiEdit /> Edit Subcategory
+                </button>
+
+                <button
+                  onClick={() => handleDelete(selected.id)}
+                  className="w-full py-3 text-red-600 border border-red-200 rounded-xl hover:bg-red-50"
+                >
+                  Delete
+                </button>
+              </>
+            ) : (
+              <>
+                {/* EDIT MODE */}
+                <div className="mb-6">
+                  <label className="text-sm font-medium">Subcategory Name</label>
+                  <input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full px-4 py-3 mt-1 border rounded-xl"
+                  />
+                </div>
+
+                <div className="mb-6">
+                  <label className="text-sm font-medium">Status</label>
+                  <div className="flex gap-3 mt-2">
+                    {(['active', 'inactive'] as Status[]).map((status) => (
+                      <button
+                        key={status}
+                        onClick={() =>
+                          setSelected((prev) =>
+                            prev ? { ...prev, status } : prev
+                          )
+                        }
+                        className={`flex-1 px-4 py-3 rounded-xl border ${
+                          selected?.status === status
+                            ? 'bg-purple-100 border-purple-600 text-purple-700'
+                            : 'border-gray-300'
+                        }`}
+                      >
+                        {status === 'active' ? 'Active' : 'Inactive'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* BUTTONS */}
+                <button
+                  onClick={handleSaveEdit}
+                  className="flex items-center justify-center w-full gap-2 py-3 mb-3 text-white bg-purple-700 rounded-xl"
+                >
+                  <FiSave /> Save Changes
+                </button>
+
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="w-full py-3 border rounded-xl"
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
