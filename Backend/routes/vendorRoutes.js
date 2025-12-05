@@ -60,12 +60,16 @@ router.put(
   // 1)create Category
   router.post('/create-category',authorizeRoles("vendor_manager"),VendorController.createCategory)
 
-  router.get('/all-categories',authorizeRoles("vendor_manager"),VendorController.allCategory)
+  // 2)All categories
+  router.get('/all-categories',authorizeRoles("vendor_manager"),VendorController.getAllCategories)
 
-  router.get('/category/:id',authorizeRoles("vendor_manager"),VendorController.categoryById)
+  // 3)get category by ID
+  router.get('/category/:id',authorizeRoles("vendor_manager"),VendorController.getCategoryById)
 
+  // 4)update category
   router.put('/update-category/:id',authorizeRoles("vendor_manager"),VendorController.updateCategory)
 
+  // 5)delete a category
   router.delete('/delete-category/"id',authorizeRoles("vendor_manager"),VendorController.deleteCategory)
 
 
