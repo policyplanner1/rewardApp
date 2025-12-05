@@ -1,7 +1,6 @@
 const db = require("../config/database");
 
 class ProductModel {
-
   async createProduct(vendorId, data) {
     const safe = (v) => (v === undefined || v === "" ? null : v);
 
@@ -29,7 +28,7 @@ class ProductModel {
         safe(data.aa),
         safe(data.salesPrice),
         safe(data.taxCode),
-        safe(data.expiryDate)
+        safe(data.expiryDate),
       ]
     );
 
@@ -47,7 +46,6 @@ class ProductModel {
   }
 
   async insertProductDocuments(productId, files, categoryId) {
-
     const [docTypes] = await db.execute(
       `SELECT document_type_id, document_key 
        FROM document_types
@@ -147,6 +145,24 @@ class ProductModel {
     );
 
     return result.affectedRows > 0;
+  }
+
+  // Get required documents by category_id
+  async getRequiredDocumentsByCategory(categoryId) {
+    try {
+      const [rows] = await db.execute(
+        `SELECT d.document_id, d.document_name, d.status
+       FROM documents d
+       INNER JOIN category_document cd ON d.document_id = cd.document_id
+       WHERE cd.category_id = ? AND d.status = 1`,
+        [categoryId]
+      );
+
+      return rows; 
+    } catch (error) {
+      console.error("Error fetching required documents:", error);
+      throw error;
+    }
   }
 }
 
