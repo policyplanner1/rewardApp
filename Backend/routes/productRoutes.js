@@ -55,6 +55,14 @@ router.get(
   ProductController.getAllProducts
 );
 
+// get product Documents
+router.get(
+  "/category/required_docs/:id",
+  authenticateToken,
+  authorizeRoles("vendor", "admin", "vendor_manager"),
+  ProductController.getRequiredDocuments
+);
+
 // Get single product
 router.get(
   "/:productId",

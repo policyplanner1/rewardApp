@@ -1,7 +1,7 @@
-const VendorModel = require('../models/vendorModel');
+const VendorModel = require("../models/vendorModel");
+const categoryModel = require("../models/categoryModel");
 
 class VendorController {
-    
   /* ============================================================
         ONBOARD VENDOR (Common Documents Only)
   ============================================================ */
@@ -27,9 +27,8 @@ class VendorController {
       return res.status(201).json({
         success: true,
         message: "Vendor onboarded successfully",
-        vendorId
+        vendorId,
       });
-
     } catch (err) {
       console.error("ONBOARD ERROR:", err);
       res.status(500).json({
@@ -52,12 +51,11 @@ class VendorController {
       if (!data) {
         return res.status(404).json({
           success: false,
-          message: "Vendor not found"
+          message: "Vendor not found",
         });
       }
 
       return res.json({ success: true, data });
-
     } catch (err) {
       console.error("GET VENDOR ERROR:", err);
       res.status(500).json({ success: false, message: err.message });
@@ -73,7 +71,6 @@ class VendorController {
       const vendors = await VendorModel.getAllVendors(status);
 
       return res.json({ success: true, data: vendors });
-
     } catch (err) {
       console.error("GET ALL VENDORS ERROR:", err);
       res.status(500).json({ success: false, message: err.message });
@@ -91,7 +88,7 @@ class VendorController {
       if (!status) {
         return res.status(400).json({
           success: false,
-          message: "Status field is required"
+          message: "Status field is required",
         });
       }
 
@@ -101,7 +98,7 @@ class VendorController {
       if (!allowed.includes(status)) {
         return res.status(400).json({
           success: false,
-          message: "Invalid status value"
+          message: "Invalid status value",
         });
       }
 
@@ -114,21 +111,145 @@ class VendorController {
       if (!updated) {
         return res.status(404).json({
           success: false,
-          message: "Vendor not found"
+          message: "Vendor not found",
         });
       }
 
       return res.json({
         success: true,
-        message: `Vendor status updated to ${status}`
+        message: `Vendor status updated to ${status}`,
       });
-
     } catch (err) {
       console.error("STATUS UPDATE ERROR:", err);
       res.status(500).json({
         success: false,
         message: "Internal server error",
-        error: err.message
+        error: err.message,
+      });
+    }
+  }
+
+  // vendor manager creates category
+  async createCategory(req, res) {
+    try {
+      const data = req.body;
+
+      await categoryModel.createCategory(data);
+
+      res.status(201).json({
+        success: true,
+        message: "Category created successfully",
+      });
+    } catch (error) {
+      console.error("category creation error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Category creation error",
+        error: error.message,
+      });
+    }
+  }
+
+  // update category by vendor manager
+  async updateCategory(req, res) {
+    try {
+      const categoryID = req.params.id;
+      const data = req.body;
+
+      const updatedCategory = await categoryModel.updateCategory(
+        categoryID,
+        data
+      );
+
+      if (!updatedCategory) {
+        return res.status(404).json({
+          success: false,
+          message: "Category not found or no changes made",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: updatedCategory,
+        message: "Category updated successfully",
+      });
+    } catch (error) {
+      console.error("category updating error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Category updating error",
+        error: error.message,
+      });
+    }
+  }
+
+  // vendor manager fetch all categories
+  async getAllCategories(req, res) {
+    try {
+      const data = await categoryModel.getAllCategories();
+
+      res.status(200).json({
+        success: true,
+        data,
+        message: data.length ? "Fetched all categories" : "No categories found",
+      });
+    } catch (error) {
+      console.error("fetching category error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error fetching categories",
+        error: error.message,
+      });
+    }
+  }
+
+  // get category by ID
+  async getCategoryById(req, res) {
+    try {
+      const categoryID = req.params.id;
+
+      const data = await categoryModel.getCategoryById(categoryID);
+
+      if (!data) {
+        return res.status(404).json({
+          success: false,
+          message: "Category not found",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data,
+        message: "Category fetched by ID",
+      });
+    } catch (error) {
+      console.error("fetching category by ID error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error fetching category by ID",
+        error: error.message,
+      });
+    }
+  }
+
+  // delete a category
+  async deleteCategory(req, res) {
+    try {
+      const categoryID = req.params.id;
+
+      const data = await categoryModel.deleteCategory(categoryID);
+
+      res.status(200).json({
+        success: true,
+        data,
+        message: "Category deleted successfully",
+      });
+    } catch (error) {
+      console.error("delete category error:", error);
+      res.status(500).json({
+        success: false,
+        message: "error deleting category",
+        error: error.message,
       });
     }
   }
