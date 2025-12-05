@@ -1,3 +1,4 @@
+// app/src/vendor/products/add/page.tsx
 "use client";
 
 import React, { useState, ChangeEvent, FormEvent, useEffect } from "react";
@@ -11,40 +12,48 @@ import {
   FaTrash,
   FaTimes,
   FaCheck,
+  FaSpinner
 } from "react-icons/fa";
 
-// --- Interfaces ---
+const API_BASE = "http://localhost:5000";
+
+// --- Interfaces matching your backend ---
 interface Category {
-  id: number;
-  name: string;
-  is_custom: boolean;
-  variant_type: string;
+  category_id: number;
+  category_name: string;
+  variant_type?: string;
+  is_custom?: boolean;
 }
 
 interface SubCategory {
-  id: number;
+  subcategory_id: number;
   category_id: number;
   name: string;
-  is_custom: boolean;
-  attributes: any;
 }
 
 interface SubSubCategory {
-  id: number;
+  sub_subcategory_id: number;
   subcategory_id: number;
   name: string;
-  attributes: any;
+  attributes?: any;
+}
+
+interface DocumentType {
+  document_type_id: number;
+  document_name: string;
+  document_key: string;
+  accepted_formats: string;
+  is_required: number | boolean;
 }
 
 interface Variant {
-  id?: number;
   size: string;
   color: string;
   dimension: string;
   customAttributes: Record<string, any>;
-  MRP: number;
-  salesPrice: number;
-  stock: number;
+  MRP: string | number;
+  salesPrice: string | number;
+  stock: string | number;
   sku: string;
   images: File[];
 }
@@ -57,45 +66,15 @@ interface ProductData {
   productName: string;
   description: string;
   shortDescription: string;
-  status: string;
   categoryId: number | null;
   subCategoryId: number | null;
   subSubCategoryId: number | null;
+  model?: string;
+  taxCode?: string;
+  expiryDate?: string;
   variants: Variant[];
+  productImages: File[];
 }
-
-// --- Category -> Business & Legal Documents mapping ---
-export const categoryLegalDocs: Record<number, string[]> = {
-  1: [
-    "FSSAI License (Central/State)",
-    "Shop & Establishment Certificate",
-    "Trademark Certificate / Application",
-    "Distributor Authorization Letter (if distributor)",
-    "Udyam / MSME Certificate (optional)",
-  ],
-  2: [
-    "BIS / CRS Certification",
-    "WPC Approval (if Bluetooth/WiFi enabled)",
-    "Importer License (if imported)",
-    "Authorized Dealership Certificate",
-    "MSME Certificate (optional)",
-  ],
-  3: ["Trademark Certificate (recommended)", "MSME Certificate (optional)"],
-  4: ["MSME Certificate", "Factory License (if manufacturer)"],
-  5: ["MSME Certificate"],
-  6: [
-    "Importer License (for imported equipment)",
-    "Authorized Dealership Certificate",
-  ],
-  7: [
-    "FSSAI License (for food serving)",
-    "Liquor License",
-    "Shop & Establishment Certificate",
-    "Fire NOC",
-    "Municipal Trade License",
-  ],
-  8: ["Trademark Certificate", "Business License"],
-};
 
 const initialProductData: ProductData = {
   brandName: "",
@@ -105,43 +84,47 @@ const initialProductData: ProductData = {
   productName: "",
   description: "",
   shortDescription: "",
-  status: "draft",
   categoryId: null,
   subCategoryId: null,
   subSubCategoryId: null,
+  model: "",
+  taxCode: "",
+  expiryDate: "",
   variants: [
     {
       size: "",
       color: "",
       dimension: "",
       customAttributes: {},
-      MRP: 0,
-      salesPrice: 0,
-      stock: 0,
+      MRP: "",
+      salesPrice: "",
+      stock: "",
       sku: "",
       images: [],
     },
   ],
+  productImages: [],
 };
 
-const FormInput = ({
-  id,
-  label,
-  type = "text",
-  value,
-  onChange,
-  required = false,
-  placeholder = "",
-  className = "",
+// --- UI Components ---
+const FormInput = ({ 
+  id, 
+  label, 
+  type = "text", 
+  value, 
+  onChange, 
+  required = false, 
+  placeholder = "", 
+  className = "" 
 }: any) => (
   <div className="flex flex-col space-y-1">
     <label htmlFor={id} className="text-sm font-medium text-gray-700">
       {label} {required && <span className="text-red-500">*</span>}
     </label>
-    {id === "description" || id === "shortDescription" ? (
+    {type === "textarea" ? (
       <textarea
         id={id}
-        rows={id === "description" ? 4 : 2}
+        rows={4}
         name={id}
         value={value}
         placeholder={placeholder}
@@ -172,492 +155,381 @@ const SectionHeader = ({ icon: Icon, title, description }: any) => (
   </div>
 );
 
-export default function ProductListingWithDocs() {
+export default function ProductListingDynamic() {
   const [product, setProduct] = useState<ProductData>(initialProductData);
-  const [isSubmitting, setSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  const [subSubCategories, setSubSubCategories] = useState<SubSubCategory[]>([]);
+  const [categoryDocs, setCategoryDocs] = useState<DocumentType[]>([]);
   const [docFiles, setDocFiles] = useState<Record<string, File | null>>({});
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Category data states
-  const [categories, setCategories] = useState<Category[]>([
-    { id: 1, name: "FOOD – PACKAGED PRODUCTS", is_custom: false, variant_type: "" },
-    { id: 2, name: "ELECTRONIC PRODUCTS", is_custom: false, variant_type: "" },
-    { id: 3, name: "CLOTHING & APPAREL", is_custom: false, variant_type: "size_color" },
-    { id: 4, name: "UTENSILS", is_custom: false, variant_type: "" },
-    { id: 5, name: "KITCHENWARE (Non-food Tools & Accessories)", is_custom: false, variant_type: "" },
-    { id: 6, name: "GYM EQUIPMENT", is_custom: false, variant_type: "" },
-    { id: 7, name: "PUB / RESTO-BAR VENDORS", is_custom: false, variant_type: "" },
-    { id: 8, name: "Fashion", is_custom: false, variant_type: "size_color" },
-  ]);
-  
-  const [subCategories, setSubCategories] = useState<SubCategory[]>([
-    { id: 21, category_id: 8, name: "Men", is_custom: false, attributes: null },
-    { id: 22, category_id: 8, name: "Women", is_custom: false, attributes: null },
-    { id: 23, category_id: 8, name: "Kids", is_custom: false, attributes: null },
-    // Additional dummy subcategories for other categories
-    { id: 24, category_id: 1, name: "Snacks", is_custom: false, attributes: null },
-    { id: 25, category_id: 1, name: "Beverages", is_custom: false, attributes: null },
-    { id: 26, category_id: 2, name: "Mobile Phones", is_custom: false, attributes: null },
-    { id: 27, category_id: 2, name: "Laptops", is_custom: false, attributes: null },
-    { id: 28, category_id: 2, name: "Home Appliances", is_custom: false, attributes: null },
-  ]);
-  
-  const [subSubCategories, setSubSubCategories] = useState<SubSubCategory[]>([
-    { 
-      id: 1, 
-      subcategory_id: 21, 
-      name: "T-Shirts", 
-      attributes: {
-        variation_types: ["size", "color"],
-        attributes: {
-          fabric: ["Cotton", "Polyester", "Dry-Fit"],
-          fit: ["Slim", "Regular", "Oversized"],
-          pattern: ["Solid", "Printed", "Striped"]
-        },
-        sizes: ["S", "M", "L", "XL", "XXL"],
-        colors: ["Black", "Blue", "White", "Red", "Green", "Yellow"]
-      }
-    },
-    { 
-      id: 2, 
-      subcategory_id: 21, 
-      name: "Jeans", 
-      attributes: {
-        variation_types: ["size"],
-        attributes: {
-          fit: ["Slim", "Regular", "Relaxed"],
-          wash: ["Light", "Dark", "Stone"]
-        },
-        sizes: ["28", "30", "32", "34", "36", "38"]
-      }
-    },
-    { 
-      id: 3, 
-      subcategory_id: 21, 
-      name: "Shirts", 
-      attributes: {
-        variation_types: ["size", "color"],
-        attributes: {
-          fabric: ["Cotton", "Linen", "Polyester"],
-          collar: ["Regular", "Spread", "Button-down"],
-          sleeve: ["Full", "Half"]
-        },
-        sizes: ["S", "M", "L", "XL", "XXL"],
-        colors: ["White", "Blue", "Black", "Grey", "Pink"]
-      }
-    },
-    { 
-      id: 4, 
-      subcategory_id: 22, 
-      name: "Dresses", 
-      attributes: {
-        variation_types: ["size", "color"],
-        attributes: {
-          style: ["A-line", "Bodycon", "Maxi"],
-          neckline: ["Round", "V-neck", "Off-shoulder"],
-          sleeve_length: ["Sleeveless", "Short", "Long"]
-        },
-        sizes: ["XS", "S", "M", "L", "XL"],
-        colors: ["Red", "Black", "White", "Blue", "Pink", "Purple"]
-      }
-    },
-    // Additional dummy sub-subcategories
-    { 
-      id: 5, 
-      subcategory_id: 24, 
-      name: "Chips", 
-      attributes: {
-        variation_types: ["size"],
-        attributes: {
-          flavor: ["Classic Salted", "Cheese", "Sour Cream"],
-          type: ["Potato", "Corn", "Tortilla"]
-        },
-        sizes: ["50g", "100g", "200g", "500g"]
-      }
-    },
-    { 
-      id: 6, 
-      subcategory_id: 26, 
-      name: "Smartphones", 
-      attributes: {
-        variation_types: ["color", "storage"],
-        attributes: {
-          ram: ["4GB", "6GB", "8GB", "12GB"],
-          processor: ["Snapdragon", "MediaTek", "Exynos"]
-        },
-        sizes: [],
-        colors: ["Black", "White", "Blue", "Red"]
-      }
-    },
-  ]);
+  // --- Fetch data from API ---
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
-  // States for "Other" input management
-  const [showOtherCategory, setShowOtherCategory] = useState(false);
-  const [showOtherSubCategory, setShowOtherSubCategory] = useState(false);
-  const [showOtherSubSubCategory, setShowOtherSubSubCategory] = useState(false);
-  
-  const [otherCategoryName, setOtherCategoryName] = useState("");
-  const [otherSubCategoryName, setOtherSubCategoryName] = useState("");
-  const [otherSubSubCategoryName, setOtherSubSubCategoryName] = useState("");
-
-  // Handle form field changes
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    
-    if (name === "categoryId") {
-      if (value === "other") {
-        setShowOtherCategory(true);
-        setProduct({
-          ...product,
-          categoryId: null,
-          subCategoryId: null,
-          subSubCategoryId: null,
-        });
-      } else {
-        setShowOtherCategory(false);
-        setProduct({
-          ...product,
-          categoryId: value ? parseInt(value) : null,
-          subCategoryId: null,
-          subSubCategoryId: null,
-        });
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_BASE}/api/category`);
+      const json = await res.json();
+      if (json.success) {
+        setCategories(json.data);
       }
-    } else if (name === "subCategoryId") {
-      if (value === "other") {
-        setShowOtherSubCategory(true);
-        setProduct({
-          ...product,
-          subCategoryId: null,
-          subSubCategoryId: null,
-        });
-      } else {
-        setShowOtherSubCategory(false);
-        setProduct({
-          ...product,
-          subCategoryId: value ? parseInt(value) : null,
-          subSubCategoryId: null,
-        });
-      }
-    } else if (name === "subSubCategoryId") {
-      if (value === "other") {
-        setShowOtherSubSubCategory(true);
-        setProduct({
-          ...product,
-          subSubCategoryId: null,
-        });
-      } else {
-        setShowOtherSubSubCategory(false);
-        setProduct({
-          ...product,
-          subSubCategoryId: value ? parseInt(value) : null,
-        });
-      }
-    } else {
-      setProduct({
-        ...product,
-        [name]: value,
-      });
+    } catch (err) {
+      console.error("Error fetching categories:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handle variant changes
-  const handleVariantChange = (index: number, field: string, value: any) => {
-    const updatedVariants = [...product.variants];
-    updatedVariants[index] = {
-      ...updatedVariants[index],
-      [field]: value,
-    };
-    setProduct({ ...product, variants: updatedVariants });
+  // Fetch subcategories when category changes
+  useEffect(() => {
+    if (product.categoryId) {
+      fetchSubCategories(product.categoryId);
+      fetchCategoryDocuments(product.categoryId);
+    } else {
+      setSubCategories([]);
+      setSubSubCategories([]);
+      setCategoryDocs([]);
+    }
+  }, [product.categoryId]);
+
+  // Fetch sub-subcategories when subcategory changes
+  useEffect(() => {
+    if (product.subCategoryId) {
+      fetchSubSubCategories(product.subCategoryId);
+    } else {
+      setSubSubCategories([]);
+    }
+  }, [product.subCategoryId]);
+   
+  const fetchSubCategories = async (categoryId: number) => {
+    try {
+      console.log("Fetching subcategories for category ID:", categoryId);
+      const res = await fetch(`${API_BASE}/api/subcategory/${categoryId}`);
+      console.log("Subcategories:", res);
+      const json = await res.json();
+      if (json.success) {
+        setSubCategories(json.data);
+      }
+    } catch (err) {
+      console.error("Error fetching subcategories:", err);
+    }
   };
 
-  // Handle attribute changes for variants
-  const handleAttributeChange = (variantIndex: number, attributeName: string, value: string) => {
+  const fetchSubSubCategories = async (subcategoryId: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/subsubcategories/${subcategoryId}`);
+      const json = await res.json();
+      if (json.success) {
+        setSubSubCategories(json.data);
+      }
+    } catch (err) {
+      console.error("Error fetching sub-subcategories:", err);
+    }
+  };
+
+  const fetchCategoryDocuments = async (categoryId: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/api/category/${categoryId}/documents`);
+      // /:categoryId/documents
+      const json = await res.json();
+      if (json.success) {
+        setCategoryDocs(json.data);
+        // Clear any previously selected doc files that don't exist in new set
+        setDocFiles((prev) => {
+          const allowedKeys = new Set(json.data.map((d: DocumentType) => d.document_key));
+          const copy: Record<string, File | null> = {};
+          Object.entries(prev).forEach(([k, v]) => {
+            if (allowedKeys.has(k)) copy[k] = v;
+          });
+          return copy;
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching category documents:", err);
+    }
+  };
+
+  // --- Form Handlers ---
+  const handleFieldChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    
+    if (name === "category_id") {
+      setProduct(prev => ({
+        ...prev,
+        categoryId: value ? Number(value) : null,
+        subCategoryId: null,
+        subSubCategoryId: null
+      }));
+    } else if (name === "subcategory_id") {
+      setProduct(prev => ({
+        ...prev,
+        subCategoryId: value ? Number(value) : null,
+        subSubCategoryId: null
+      }));
+    } else if (name === "sub_subcategory_id") {
+      setProduct(prev => ({
+        ...prev,
+        subSubCategoryId: value ? Number(value) : null
+      }));
+    } else {
+      setProduct(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleMainImages = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setProduct(prev => ({ ...prev, productImages: Array.from(e.target.files) }));
+    }
+  };
+
+  const handleVariantChange = (index: number, field: string, value: any) => {
+    const updatedVariants = [...product.variants];
+    updatedVariants[index] = { ...updatedVariants[index], [field]: value };
+    setProduct(prev => ({ ...prev, variants: updatedVariants }));
+  };
+
+  const handleVariantAttributeChange = (variantIndex: number, attrName: string, value: any) => {
     const updatedVariants = [...product.variants];
     updatedVariants[variantIndex].customAttributes = {
       ...updatedVariants[variantIndex].customAttributes,
-      [attributeName]: value,
+      [attrName]: value,
     };
-    setProduct({ ...product, variants: updatedVariants });
+    setProduct(prev => ({ ...prev, variants: updatedVariants }));
   };
 
-  // Add new variant
+  const handleVariantImages = (variantIndex: number, e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const files = Array.from(e.target.files);
+    const updatedVariants = [...product.variants];
+    updatedVariants[variantIndex].images = files;
+    setProduct(prev => ({ ...prev, variants: updatedVariants }));
+  };
+
   const addVariant = () => {
-    setProduct({
-      ...product,
+    setProduct(prev => ({
+      ...prev,
       variants: [
-        ...product.variants,
+        ...prev.variants,
         {
           size: "",
           color: "",
           dimension: "",
           customAttributes: {},
-          MRP: 0,
-          salesPrice: 0,
-          stock: 0,
+          MRP: "",
+          salesPrice: "",
+          stock: "",
           sku: "",
           images: [],
         },
       ],
-    });
+    }));
   };
 
-  // Remove variant
   const removeVariant = (index: number) => {
-    const updatedVariants = product.variants.filter((_, i) => i !== index);
-    setProduct({ ...product, variants: updatedVariants });
+    setProduct(prev => ({
+      ...prev,
+      variants: prev.variants.filter((_, i) => i !== index)
+    }));
   };
 
-  // Handle variant image upload
-  const handleVariantImageUpload = (variantIndex: number, e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const files = Array.from(e.target.files);
-      const updatedVariants = [...product.variants];
-      updatedVariants[variantIndex].images = files;
-      setProduct({ ...product, variants: updatedVariants });
-    }
+  const onDocInputChange = (e: ChangeEvent<HTMLInputElement>, docKey: string) => {
+    const file = e.target.files?.[0] ?? null;
+    setDocFiles(prev => ({ ...prev, [docKey]: file }));
   };
 
-  // Slugify function for document keys
-  const slugify = (s: string) =>
-    s
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)+/g, "");
-
-  // Handle document file upload
-  const handleDocFile = (docName: string, file?: File | null) => {
-    const key = slugify(docName);
-    setDocFiles((p) => ({ ...p, [key]: file ?? null }));
-  };
-
-  const onDocInputChange = (e: ChangeEvent<HTMLInputElement>, docName: string) => {
-    if (e.target.files && e.target.files[0]) {
-      handleDocFile(docName, e.target.files[0]);
-    } else {
-      handleDocFile(docName, null);
-    }
-  };
-
-  // Add custom category from "Other" input
-  const addCustomCategory = () => {
-    if (otherCategoryName.trim()) {
-      const newCategory = {
-        id: categories.length + 1,
-        name: otherCategoryName,
-        is_custom: true,
-        variant_type: "size_color",
-      };
-      setCategories([...categories, newCategory]);
-      setProduct({ ...product, categoryId: newCategory.id });
-      setOtherCategoryName("");
-      setShowOtherCategory(false);
-    }
-  };
-
-  // Cancel custom category
-  const cancelCustomCategory = () => {
-    setShowOtherCategory(false);
-    setOtherCategoryName("");
-    setProduct({ ...product, categoryId: null });
-  };
-
-  // Add custom subcategory from "Other" input
-  const addCustomSubCategory = () => {
-    if (otherSubCategoryName.trim() && product.categoryId) {
-      const newSubCategory = {
-        id: subCategories.length + 1,
-        category_id: product.categoryId,
-        name: otherSubCategoryName,
-        is_custom: true,
-        attributes: null,
-      };
-      setSubCategories([...subCategories, newSubCategory]);
-      setProduct({ ...product, subCategoryId: newSubCategory.id });
-      setOtherSubCategoryName("");
-      setShowOtherSubCategory(false);
-    }
-  };
-
-  // Cancel custom subcategory
-  const cancelCustomSubCategory = () => {
-    setShowOtherSubCategory(false);
-    setOtherSubCategoryName("");
-    setProduct({ ...product, subCategoryId: null });
-  };
-
-  // Add custom sub-subcategory from "Other" input
-  const addCustomSubSubCategory = () => {
-    if (otherSubSubCategoryName.trim() && product.subCategoryId) {
-      const newSubSubCategory = {
-        id: subSubCategories.length + 1,
-        subcategory_id: product.subCategoryId,
-        name: otherSubSubCategoryName,
-        attributes: {
-          variation_types: ["size", "color"],
-          attributes: {},
-          sizes: [],
-          colors: []
-        },
-      };
-      setSubSubCategories([...subSubCategories, newSubSubCategory]);
-      setProduct({ ...product, subSubCategoryId: newSubSubCategory.id });
-      setOtherSubSubCategoryName("");
-      setShowOtherSubSubCategory(false);
-    }
-  };
-
-  // Cancel custom sub-subcategory
-  const cancelCustomSubSubCategory = () => {
-    setShowOtherSubSubCategory(false);
-    setOtherSubSubCategoryName("");
-    setProduct({ ...product, subSubCategoryId: null });
-  };
-
-  // Get current sub-subcategory attributes
-  const getCurrentAttributes = () => {
+  // Get attributes for selected sub-subcategory
+  const getSelectedAttributes = () => {
     if (!product.subSubCategoryId) return null;
-    const subSub = subSubCategories.find(ss => ss.id === product.subSubCategoryId);
-    return subSub?.attributes || null;
+    const found = subSubCategories.find(s => s.sub_subcategory_id === product.subSubCategoryId);
+    return found?.attributes || null;
   };
 
-  // Generate SKU for variant
-  const generateSKU = (variantIndex: number) => {
-    const variant = product.variants[variantIndex];
-    const brandPrefix = product.brandName.substring(0, 3).toUpperCase();
-    const sizeCode = variant.size || "NA";
-    const colorCode = variant.color.substring(0, 3).toUpperCase() || "CLR";
-    return `${brandPrefix}-${sizeCode}-${colorCode}-${variantIndex + 1}`;
-  };
-
-  // Form submission
+  // --- Form Submission ---
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setSubmitting(true);
-
-    const token = localStorage.getItem("token");
-    if (!token) {
-      alert("Authentication required.");
-      setSubmitting(false);
-      return;
-    }
+    setIsSubmitting(true);
+    setError(null);
 
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Authentication required. Please login.");
+      }
+
+      // Validate required fields
+      if (!product.categoryId) {
+        throw new Error("Please select a category");
+      }
+
+      if (!product.productName || !product.brandName || !product.manufacturer) {
+        throw new Error("Please fill in all required product information");
+      }
+
+      // Validate required documents
+      for (const doc of categoryDocs) {
+        if (doc.is_required && !docFiles[doc.document_key]) {
+          throw new Error(`Please upload required document: ${doc.document_name}`);
+        }
+      }
+
+      // Validate at least one main image
+      if (product.productImages.length === 0) {
+        throw new Error("Please upload at least one product image");
+      }
+
       const formData = new FormData();
 
-      // Append product data
+      // Basic product info (matching your backend model)
+      formData.append("category_id", product.categoryId.toString());
       formData.append("brandName", product.brandName);
       formData.append("manufacturer", product.manufacturer);
-      formData.append("itemType", product.itemType);
-      formData.append("barCode", product.barCode);
+      formData.append("itemType", product.itemType || "");
+      formData.append("barCode", product.barCode || "");
       formData.append("productName", product.productName);
       formData.append("description", product.description);
       formData.append("shortDescription", product.shortDescription);
-      formData.append("status", product.status);
-      formData.append("categoryId", String(product.categoryId || ""));
-      formData.append("subCategoryId", String(product.subCategoryId || ""));
-      formData.append("subSubCategoryId", String(product.subSubCategoryId || ""));
+      
+      if (product.subCategoryId) {
+        formData.append("subcategory_id", product.subCategoryId.toString());
+      }
+      
+      if (product.subSubCategoryId) {
+        formData.append("sub_subcategory_id", product.subSubCategoryId.toString());
+      }
+      
+      if (product.model) formData.append("model", product.model);
+      if (product.taxCode) formData.append("taxCode", product.taxCode);
+      if (product.expiryDate) formData.append("expiryDate", product.expiryDate);
 
-      // Append variants
-      product.variants.forEach((variant, index) => {
-        formData.append(`variants[${index}][size]`, variant.size);
-        formData.append(`variants[${index}][color]`, variant.color);
-        formData.append(`variants[${index}][dimension]`, variant.dimension);
-        formData.append(`variants[${index}][MRP]`, String(variant.MRP));
-        formData.append(`variants[${index}][salesPrice]`, String(variant.salesPrice));
-        formData.append(`variants[${index}][stock]`, String(variant.stock));
-        formData.append(`variants[${index}][sku]`, variant.sku || generateSKU(index));
-        formData.append(`variants[${index}][customAttributes]`, JSON.stringify(variant.customAttributes));
-        
-        // Append variant images
+      // Add first variant data as main product data (for backward compatibility)
+      if (product.variants.length > 0) {
+        const firstVariant = product.variants[0];
+        formData.append("size", firstVariant.size || "");
+        formData.append("color", firstVariant.color || "");
+        formData.append("dimension", firstVariant.dimension || "");
+        formData.append("stock", firstVariant.stock?.toString() || "0");
+        formData.append("salesPrice", firstVariant.salesPrice?.toString() || "0");
+        formData.append("MRP", firstVariant.MRP?.toString() || "0");
+      }
+
+      // Add main product images
+      product.productImages.forEach((file, index) => {
+        formData.append("images", file);
+      });
+
+      // Add document files
+      categoryDocs.forEach(doc => {
+        const file = docFiles[doc.document_key];
+        if (file) {
+          formData.append(doc.document_key, file);
+        }
+      });
+
+      // Add variants as JSON
+      const variantsPayload = product.variants.map((variant, index) => ({
+        sku: variant.sku || generateSKU(index),
+        size: variant.size,
+        color: variant.color,
+        dimension: variant.dimension,
+        mrp: variant.MRP,
+        salesPrice: variant.salesPrice,
+        stock: variant.stock,
+        customAttributes: variant.customAttributes,
+      }));
+      
+      formData.append("variants", JSON.stringify(variantsPayload));
+
+      // Add variant images
+      product.variants.forEach((variant, variantIndex) => {
         variant.images.forEach((file, fileIndex) => {
-          formData.append(`variants[${index}][images][${fileIndex}]`, file);
+          formData.append(`variants[${variantIndex}][images][${fileIndex}]`, file);
         });
       });
 
-      // Append legal documents
-      Object.entries(docFiles).forEach(([key, file]) => {
-        if (file) formData.append(`legalDocs[${key}]`, file);
-      });
-
-      // Submit to API
-      const res = await fetch("/api/products/create", {
+      // Submit to backend
+      const response = await fetch(`${API_BASE}/api/products/create`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
+          "Authorization": `Bearer ${token}`,
         },
         body: formData,
       });
 
-      const json = await res.json();
-      if (!json.success) throw new Error(json.message || "Upload failed");
+      const data = await response.json();
 
-      alert(`Product submitted successfully! Product ID: ${json.productId}`);
+      if (!data.success) {
+        throw new Error(data.message || "Failed to create product");
+      }
+
+      alert(`Product created successfully! Product ID: ${data.productId}`);
+      
+      // Reset form
       setProduct(initialProductData);
       setDocFiles({});
-      setShowOtherCategory(false);
-      setShowOtherSubCategory(false);
-      setShowOtherSubSubCategory(false);
-    } catch (err: any) {
-      alert("Error: " + (err.message || "Unknown"));
-    }
+      setCategoryDocs([]);
 
-    setSubmitting(false);
+    } catch (err: any) {
+      console.error("Submit error:", err);
+      setError(err.message);
+      alert(`Error: ${err.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  // Render document uploads based on category
+  const generateSKU = (index: number) => {
+    const brand = product.brandName.substring(0, 3).toUpperCase() || "PRD";
+    const size = product.variants[index].size?.substring(0, 2).toUpperCase() || "NA";
+    const color = product.variants[index].color?.substring(0, 3).toUpperCase() || "DEF";
+    return `${brand}-${size}-${color}-${index + 1}`;
+  };
+
+  // --- Render Components ---
   const renderDocUploads = () => {
-    if (!product.categoryId) return null;
-    const docs = categoryLegalDocs[product.categoryId] ?? [];
-    if (!docs.length) return null;
+    if (categoryDocs.length === 0) return null;
 
     return (
       <section>
         <SectionHeader
           icon={FaFileUpload}
-          title="Required Business & Legal Documents"
-          description="Upload the mandatory legal documents for the selected category"
+          title="Required Documents"
+          description="Upload documents required by category"
         />
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {docs.map((doc) => {
-            const key = slugify(doc);
-            const selectedFile = docFiles[key] ?? null;
-
-            return (
-              <div key={key} className="p-4 border rounded-lg bg-white shadow-sm">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {doc}
-                </label>
-
-                <div className="flex items-center space-x-3">
-                  <input
-                    id={`doc-${key}`}
-                    type="file"
-                    accept=".pdf, image/*, .doc,.docx"
-                    onChange={(e) => onDocInputChange(e, doc)}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#852BAF] file:text-white"
-                  />
-
-                  {selectedFile ? (
-                    <div className="text-xs text-gray-600">{selectedFile.name}</div>
-                  ) : (
-                    <div className="text-xs text-gray-400">No file chosen</div>
-                  )}
-                </div>
-
-                <p className="mt-2 text-xs text-gray-400">Accepted: PDF, JPG, PNG, DOCX</p>
+          {categoryDocs.map((doc) => (
+            <div key={doc.document_key} className="p-4 border rounded-lg bg-white shadow-sm">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {doc.document_name} {doc.is_required && <span className="text-red-500">*</span>}
+              </label>
+              <input
+                type="file"
+                accept={doc.accepted_formats || ".pdf,image/*,.doc,.docx"}
+                onChange={(e) => onDocInputChange(e, doc.document_key)}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#852BAF] file:text-white"
+              />
+              <div className="text-xs text-gray-500 mt-2">
+                Accepted: {doc.accepted_formats || "PDF, images, DOC"}
               </div>
-            );
-          })}
+              {docFiles[doc.document_key] && (
+                <div className="text-xs text-green-600 mt-1">
+                  ✓ {docFiles[doc.document_key]?.name}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </section>
     );
   };
 
-  // Render variant builder
   const renderVariantBuilder = () => {
-    const attributes = getCurrentAttributes();
+    const attributes = getSelectedAttributes();
     if (!attributes) return null;
 
     return (
@@ -665,13 +537,13 @@ export default function ProductListingWithDocs() {
         <SectionHeader
           icon={FaBox}
           title="Product Variants"
-          description="Configure different variants of your product"
+          description="Configure different product variants"
         />
 
         <div className="mb-6 p-4 bg-blue-50 rounded-lg">
-          <h3 className="font-semibold text-blue-900 mb-2">Available Variation Types:</h3>
+          <h4 className="font-semibold text-blue-900 mb-2">Available Variation Types:</h4>
           <div className="flex flex-wrap gap-2">
-            {attributes.variation_types?.map((type: string) => (
+            {(attributes.variation_types || []).map((type: string) => (
               <span key={type} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
                 {type}
               </span>
@@ -711,13 +583,16 @@ export default function ProductListingWithDocs() {
                   </select>
                 </div>
               ) : attributes.variation_types?.includes("size") ? (
-                <FormInput
-                  label="Size"
-                  value={variant.size}
-                  onChange={(e) => handleVariantChange(index, "size", e.target.value)}
-                  placeholder="Enter size"
-                  className="w-full"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Size</label>
+                  <input
+                    type="text"
+                    value={variant.size}
+                    onChange={(e) => handleVariantChange(index, "size", e.target.value)}
+                    placeholder="Enter size"
+                    className="w-full p-2 border rounded-lg"
+                  />
+                </div>
               ) : null}
 
               {/* Color */}
@@ -736,53 +611,65 @@ export default function ProductListingWithDocs() {
                   </select>
                 </div>
               ) : attributes.variation_types?.includes("color") ? (
-                <FormInput
-                  label="Color"
-                  value={variant.color}
-                  onChange={(e) => handleVariantChange(index, "color", e.target.value)}
-                  placeholder="Enter color"
-                  className="w-full"
-                />
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                  <input
+                    type="text"
+                    value={variant.color}
+                    onChange={(e) => handleVariantChange(index, "color", e.target.value)}
+                    placeholder="Enter color"
+                    className="w-full p-2 border rounded-lg"
+                  />
+                </div>
               ) : null}
 
               {/* Dimension */}
-              <FormInput
-                label="Dimension"
-                value={variant.dimension}
-                onChange={(e) => handleVariantChange(index, "dimension", e.target.value)}
-                placeholder="e.g., 12x10x5 cm"
-                className="w-full"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Dimension</label>
+                <input
+                  type="text"
+                  value={variant.dimension}
+                  onChange={(e) => handleVariantChange(index, "dimension", e.target.value)}
+                  placeholder="e.g., 12x10x5 cm"
+                  className="w-full p-2 border rounded-lg"
+                />
+              </div>
 
               {/* MRP */}
-              <FormInput
-                label="MRP"
-                type="number"
-                value={variant.MRP}
-                onChange={(e) => handleVariantChange(index, "MRP", e.target.value)}
-                placeholder="MRP"
-                className="w-full"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">MRP</label>
+                <input
+                  type="number"
+                  value={variant.MRP as any}
+                  onChange={(e) => handleVariantChange(index, "MRP", e.target.value)}
+                  placeholder="MRP"
+                  className="w-full p-2 border rounded-lg"
+                />
+              </div>
 
               {/* Sales Price */}
-              <FormInput
-                label="Sales Price"
-                type="number"
-                value={variant.salesPrice}
-                onChange={(e) => handleVariantChange(index, "salesPrice", e.target.value)}
-                placeholder="Sales Price"
-                className="w-full"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Sales Price</label>
+                <input
+                  type="number"
+                  value={variant.salesPrice as any}
+                  onChange={(e) => handleVariantChange(index, "salesPrice", e.target.value)}
+                  placeholder="Sales Price"
+                  className="w-full p-2 border rounded-lg"
+                />
+              </div>
 
               {/* Stock */}
-              <FormInput
-                label="Stock"
-                type="number"
-                value={variant.stock}
-                onChange={(e) => handleVariantChange(index, "stock", e.target.value)}
-                placeholder="Stock"
-                className="w-full"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+                <input
+                  type="number"
+                  value={variant.stock as any}
+                  onChange={(e) => handleVariantChange(index, "stock", e.target.value)}
+                  placeholder="Stock"
+                  className="w-full p-2 border rounded-lg"
+                />
+              </div>
             </div>
 
             {/* Custom Attributes */}
@@ -797,7 +684,7 @@ export default function ProductListingWithDocs() {
                       </label>
                       <select
                         value={variant.customAttributes[key] || ""}
-                        onChange={(e) => handleAttributeChange(index, key, e.target.value)}
+                        onChange={(e) => handleVariantAttributeChange(index, key, e.target.value)}
                         className="w-full p-2 border rounded-lg"
                       >
                         <option value="">Select {key}</option>
@@ -829,7 +716,7 @@ export default function ProductListingWithDocs() {
                     multiple
                     className="hidden"
                     accept="image/*"
-                    onChange={(e) => handleVariantImageUpload(index, e)}
+                    onChange={(e) => handleVariantImages(index, e)}
                   />
                 </label>
               </div>
@@ -849,72 +736,71 @@ export default function ProductListingWithDocs() {
     );
   };
 
+  // Get selected category name
+  const getSelectedCategoryName = () => {
+    const category = categories.find(c => c.category_id === product.categoryId);
+    return category?.category_name || "Not selected";
+  };
+
+  // Get selected subcategory name
+  const getSelectedSubCategoryName = () => {
+    const subcategory = subCategories.find(s => s.subcategory_id === product.subCategoryId);
+    return subcategory?.name || "Not selected";
+  };
+
+  // Get selected sub-subcategory name
+  const getSelectedSubSubCategoryName = () => {
+    const subsubcategory = subSubCategories.find(ss => ss.sub_subcategory_id === product.subSubCategoryId);
+    return subsubcategory?.name || "Not selected";
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <FaSpinner className="animate-spin text-4xl text-[#852BAF]" />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6" style={{ backgroundColor: "#FFFAFB" }}>
       <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-6">New Product Listing</h1>
 
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700">{error}</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-8">
-          {/* Category Selection Section */}
+          {/* Category Selection */}
           <section>
             <SectionHeader
               icon={FaTag}
               title="Category Selection"
-              description="Select or add categories for your product"
+              description="Choose category, sub-category and type"
             />
-
+            
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Category */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Category <span className="text-red-500">*</span>
                 </label>
-                {!showOtherCategory ? (
-                  <select
-                    name="categoryId"
-                    value={product.categoryId || ""}
-                    onChange={handleChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-[#852BAF]"
-                  >
-                    <option value="">Select Category</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name} {cat.is_custom && "(Custom)"}
-                      </option>
-                    ))}
-                    <option value="other">Other Category</option>
-                  </select>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={otherCategoryName}
-                        onChange={(e) => setOtherCategoryName(e.target.value)}
-                        placeholder="Enter new category name"
-                        className="flex-1 p-3 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-[#852BAF]"
-                      />
-                      <button
-                        type="button"
-                        onClick={addCustomCategory}
-                        disabled={!otherCategoryName.trim()}
-                        className="px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Add Category"
-                      >
-                        <FaCheck />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={cancelCustomCategory}
-                        className="px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                        title="Cancel"
-                      >
-                        <FaTimes />
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-500">Press Enter or click ✓ to add</p>
-                  </div>
-                )}
+                <select
+                  name="category_id"
+                  value={product.categoryId || ""}
+                  onChange={handleFieldChange}
+                  className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-[#852BAF] focus:border-transparent"
+                >
+                  <option value="">Select Category</option>
+                  {categories.map((category) => (
+                    <option key={category.category_id} value={category.category_id}>
+                      {category.category_name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Sub Category */}
@@ -922,65 +808,20 @@ export default function ProductListingWithDocs() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Sub Category
                 </label>
-                {product.categoryId && !showOtherSubCategory ? (
-                  <select
-                    name="subCategoryId"
-                    value={product.subCategoryId || ""}
-                    onChange={handleChange}
-                    disabled={!product.categoryId}
-                    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-[#852BAF] disabled:opacity-50"
-                  >
-                    <option value="">Select Sub Category</option>
-                    {subCategories
-                      .filter((sub) => sub.category_id === product.categoryId)
-                      .map((sub) => (
-                        <option key={sub.id} value={sub.id}>
-                          {sub.name} {sub.is_custom && "(Custom)"}
-                        </option>
-                      ))}
-                    <option value="other">Other Sub Category</option>
-                  </select>
-                ) : showOtherSubCategory ? (
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={otherSubCategoryName}
-                        onChange={(e) => setOtherSubCategoryName(e.target.value)}
-                        placeholder="Enter new sub-category name"
-                        className="flex-1 p-3 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-[#852BAF]"
-                      />
-                      <button
-                        type="button"
-                        onClick={addCustomSubCategory}
-                        disabled={!otherSubCategoryName.trim()}
-                        className="px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Add Sub Category"
-                      >
-                        <FaCheck />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={cancelCustomSubCategory}
-                        className="px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                        title="Cancel"
-                      >
-                        <FaTimes />
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-500">Press Enter or click ✓ to add</p>
-                  </div>
-                ) : (
-                  <select
-                    name="subCategoryId"
-                    value=""
-                    onChange={handleChange}
-                    disabled
-                    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 opacity-50"
-                  >
-                    <option value="">Select Category First</option>
-                  </select>
-                )}
+                <select
+                  name="subcategory_id"
+                  value={product.subCategoryId || ""}
+                  onChange={handleFieldChange}
+                  disabled={!product.categoryId}
+                  className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-[#852BAF] focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">Select Sub Category</option>
+                  {subCategories.map((sub) => (
+                    <option key={sub.subcategory_id} value={sub.subcategory_id}>
+                      {sub.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Sub Sub Category */}
@@ -988,65 +829,20 @@ export default function ProductListingWithDocs() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Type / Sub-type
                 </label>
-                {product.subCategoryId && !showOtherSubSubCategory ? (
-                  <select
-                    name="subSubCategoryId"
-                    value={product.subSubCategoryId || ""}
-                    onChange={handleChange}
-                    disabled={!product.subCategoryId}
-                    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-[#852BAF] disabled:opacity-50"
-                  >
-                    <option value="">Select Type</option>
-                    {subSubCategories
-                      .filter((ss) => ss.subcategory_id === product.subCategoryId)
-                      .map((ss) => (
-                        <option key={ss.id} value={ss.id}>
-                          {ss.name}
-                        </option>
-                      ))}
-                    <option value="other">Other Type</option>
-                  </select>
-                ) : showOtherSubSubCategory ? (
-                  <div className="space-y-2">
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={otherSubSubCategoryName}
-                        onChange={(e) => setOtherSubSubCategoryName(e.target.value)}
-                        placeholder="Enter new type name"
-                        className="flex-1 p-3 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-[#852BAF]"
-                      />
-                      <button
-                        type="button"
-                        onClick={addCustomSubSubCategory}
-                        disabled={!otherSubSubCategoryName.trim()}
-                        className="px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Add Type"
-                      >
-                        <FaCheck />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={cancelCustomSubSubCategory}
-                        className="px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                        title="Cancel"
-                      >
-                        <FaTimes />
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-500">Press Enter or click ✓ to add</p>
-                  </div>
-                ) : (
-                  <select
-                    name="subSubCategoryId"
-                    value=""
-                    onChange={handleChange}
-                    disabled
-                    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 opacity-50"
-                  >
-                    <option value="">Select Sub Category First</option>
-                  </select>
-                )}
+                <select
+                  name="sub_subcategory_id"
+                  value={product.subSubCategoryId || ""}
+                  onChange={handleFieldChange}
+                  disabled={!product.subCategoryId}
+                  className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 focus:ring-2 focus:ring-[#852BAF] focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <option value="">Select Type</option>
+                  {subSubCategories.map((ss) => (
+                    <option key={ss.sub_subcategory_id} value={ss.sub_subcategory_id}>
+                      {ss.name}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -1055,23 +851,17 @@ export default function ProductListingWithDocs() {
               <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
                 <h4 className="font-medium text-gray-700 mb-2">Selected Categories:</h4>
                 <div className="flex items-center text-sm text-gray-600">
-                  <span className="font-medium">
-                    {categories.find(c => c.id === product.categoryId)?.name || "Not selected"}
-                  </span>
+                  <span className="font-medium">{getSelectedCategoryName()}</span>
                   {product.subCategoryId && (
                     <>
                       <span className="mx-2">›</span>
-                      <span>
-                        {subCategories.find(s => s.id === product.subCategoryId)?.name}
-                      </span>
+                      <span>{getSelectedSubCategoryName()}</span>
                     </>
                   )}
                   {product.subSubCategoryId && (
                     <>
                       <span className="mx-2">›</span>
-                      <span>
-                        {subSubCategories.find(ss => ss.id === product.subSubCategoryId)?.name}
-                      </span>
+                      <span>{getSelectedSubSubCategoryName()}</span>
                     </>
                   )}
                 </div>
@@ -1079,57 +869,70 @@ export default function ProductListingWithDocs() {
             )}
           </section>
 
-          {/* Product Basic Information */}
+          {/* Product Identification */}
           <section>
             <SectionHeader
               icon={FaTag}
               title="Product Identification"
-              description="Basic product information for store & search"
+              description="Basic product information"
             />
-
+            
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               <FormInput
                 id="brandName"
+                name="brandName"
                 label="Brand Name"
                 required
                 value={product.brandName}
+                onChange={handleFieldChange}
                 placeholder="Nike, Samsung, Puma"
-                onChange={handleChange}
               />
 
               <FormInput
                 id="manufacturer"
+                name="manufacturer"
                 label="Manufacturer"
                 required
                 value={product.manufacturer}
+                onChange={handleFieldChange}
                 placeholder="Manufacturer name"
-                onChange={handleChange}
               />
 
               <FormInput
                 id="itemType"
+                name="itemType"
                 label="Item Type"
                 value={product.itemType}
-                placeholder="Electronics, Grocery, Clothing"
-                onChange={handleChange}
+                onChange={handleFieldChange}
+                placeholder="Electronics, Clothing, Food"
               />
 
               <FormInput
                 id="barCode"
+                name="barCode"
                 label="Barcode"
-                required
                 value={product.barCode}
+                onChange={handleFieldChange}
                 placeholder="EAN / SKU / Code"
-                onChange={handleChange}
               />
 
               <FormInput
                 id="productName"
+                name="productName"
                 label="Product Name"
                 required
                 value={product.productName}
+                onChange={handleFieldChange}
                 placeholder="Full product name"
-                onChange={handleChange}
+              />
+
+              <FormInput
+                id="model"
+                name="model"
+                label="Model / SKU"
+                value={product.model}
+                onChange={handleFieldChange}
+                placeholder="Model number"
               />
             </div>
           </section>
@@ -1141,45 +944,116 @@ export default function ProductListingWithDocs() {
               title="Product Description"
               description="Tell customers more about your product"
             />
-
+            
             <FormInput
               id="description"
+              name="description"
               label="Detailed Description"
+              type="textarea"
               required
               value={product.description}
+              onChange={handleFieldChange}
               placeholder="Write detailed product info..."
-              onChange={handleChange}
             />
             
             <div className="mt-4">
               <FormInput
                 id="shortDescription"
+                name="shortDescription"
                 label="Short Description"
                 required
                 value={product.shortDescription}
+                onChange={handleFieldChange}
                 placeholder="Short one-line description"
-                onChange={handleChange}
               />
             </div>
           </section>
 
-          {/* Variant Builder (if category supports variants) */}
+          {/* Additional Fields */}
+          <section>
+            <SectionHeader
+              icon={FaDollarSign}
+              title="Additional Information"
+              description="Tax, expiry, and other details"
+            />
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              <FormInput
+                id="taxCode"
+                name="taxCode"
+                label="Tax Code"
+                value={product.taxCode}
+                onChange={handleFieldChange}
+                placeholder="GST18, HSNXXXX"
+              />
+
+              <FormInput
+                id="expiryDate"
+                name="expiryDate"
+                label="Expiry Date"
+                type="date"
+                value={product.expiryDate}
+                onChange={handleFieldChange}
+              />
+
+              <div></div> {/* Empty column for alignment */}
+            </div>
+          </section>
+
+          {/* Main Product Images */}
+          <section>
+            <SectionHeader
+              icon={FaImages}
+              title="Product Images"
+              description="Main images for product listing"
+            />
+            
+            <div className="flex items-center p-3 border border-dashed border-gray-400 rounded-lg bg-white">
+              <span className="flex-1 text-sm text-gray-600">
+                {product.productImages.length === 0
+                  ? "No images chosen"
+                  : `${product.productImages.length} image(s) selected`}
+              </span>
+              <label className="cursor-pointer bg-[#852BAF] text-white px-3 py-1 text-xs rounded-full hover:bg-[#7a1c94]">
+                Choose Files
+                <input
+                  type="file"
+                  multiple
+                  className="hidden"
+                  accept="image/*"
+                  onChange={handleMainImages}
+                />
+              </label>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">Upload high-quality product images (max 10)</p>
+          </section>
+
+          {/* Variants */}
           {product.subSubCategoryId && renderVariantBuilder()}
 
-          {/* Legal Documents */}
+          {/* Documents */}
           {renderDocUploads()}
 
           {/* Submit Button */}
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full px-6 py-3 text-lg font-bold text-white rounded-full shadow-md disabled:opacity-50"
-            style={{
-              background: "linear-gradient(to right, #852BAF, #FC3F78)",
-            }}
-          >
-            {isSubmitting ? "Submitting..." : "Submit Product"}
-          </button>
+          <div className="pt-6">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full px-6 py-3 text-lg font-bold text-white rounded-full shadow-md disabled:opacity-50 flex items-center justify-center"
+              style={{
+                background: "linear-gradient(to right, #852BAF, #FC3F78)",
+              }}
+            >
+              {isSubmitting ? (
+                <>
+                  <FaSpinner className="animate-spin mr-2" />
+                  Submitting...
+                </>
+              ) : (
+                "Submit Product"
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </div>
