@@ -56,4 +56,24 @@ router.put(
   DocumentController.updateDocumentStatus
 );
 
+// vendor Manager category Routes
+  // 1)create Category
+  router.post('/create-category',authorizeRoles("vendor_manager"),VendorController.createCategory)
+
+  router.get('/all-categories',authorizeRoles("vendor_manager"),VendorController.allCategory)
+
+  router.get('/category/:id',authorizeRoles("vendor_manager"),VendorController.categoryById)
+
+  router.put('/update-category/:id',authorizeRoles("vendor_manager"),VendorController.updateCategory)
+
+  router.delete('/delete-category/"id',authorizeRoles("vendor_manager"),VendorController.deleteCategory)
+
+
+// vendor Manager subCategory Routes
+
+
+
+// vendor Manager sub_sub_category Routes
+
+
 module.exports = router;

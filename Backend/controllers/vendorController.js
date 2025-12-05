@@ -1,7 +1,8 @@
 const VendorModel = require('../models/vendorModel');
+const categoryModel = require('../models/vendorModel');
 
 class VendorController {
-    
+
   /* ============================================================
         ONBOARD VENDOR (Common Documents Only)
   ============================================================ */
@@ -132,6 +133,31 @@ class VendorController {
       });
     }
   }
+
+  async createCategory(req, res) {
+
+    try {
+      const data = req.body;
+
+      await categoryModel.createCategory(data);
+
+      res.status(201).json({
+        success: true,
+        message: "Category created successfully"
+      })
+    } catch (error) {
+      console.error("category creation error:", err);
+      res.status(500).json({
+        success: false,
+        message: "Category creation error",
+        error: err.message,
+      });
+    }
+  }
 }
+
+
+
+
 
 module.exports = new VendorController();
