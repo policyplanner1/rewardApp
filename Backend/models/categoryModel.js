@@ -45,10 +45,11 @@ class CategoryModel {
   async updateCategory(id, data) {
     try {
       const categoryName = data.name;
+      const categoryStatus = data.status;
 
       const [result] = await db.execute(
-        `UPDATE categories SET category_name = ? WHERE category_id = ?`,
-        [categoryName, id]
+        `UPDATE categories SET category_name = ?,status = ? WHERE category_id = ?`,
+        [categoryName,categoryStatus, id]
       );
 
       if (result.affectedRows === 0) {

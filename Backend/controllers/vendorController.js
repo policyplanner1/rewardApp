@@ -191,13 +191,13 @@ class VendorController {
       res.status(200).json({
         success: true,
         data,
-        message: "Fetched all categories",
+        message: data.length ? "Fetched all categories" : "No categories found",
       });
     } catch (error) {
       console.error("fetching category error:", error);
       res.status(500).json({
         success: false,
-        message: "error fetching categories",
+        message: "Error fetching categories",
         error: error.message,
       });
     }
