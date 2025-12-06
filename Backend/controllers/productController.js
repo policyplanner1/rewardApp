@@ -48,7 +48,7 @@ class ProductController {
             variant
           );
 
-          // Match uploaded files for this variant (fieldname convention: variant_0_image, variant_1_image, etc.)
+          // uploaded files for this variant (fieldname convention: variant_0_image, variant_1_image, etc.)
           const variantFiles = req.files.filter((f) =>
             f.fieldname.startsWith(`variant_${i}_`)
           );
