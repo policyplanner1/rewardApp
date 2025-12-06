@@ -61,7 +61,7 @@ router.put(
   router.post('/create-category',authenticateToken,authorizeRoles("vendor_manager"),VendorController.createCategory);
 
   // 2)All categories
-  router.get('/category',authenticateToken,authorizeRoles("vendor_manager"),VendorController.getAllCategories);
+  // router.get('/category',authenticateToken,authorizeRoles("vendor_manager"),VendorController.getAllCategories);
 
   // 3)get category by ID
   router.get('/category/:id',authenticateToken,authorizeRoles("vendor_manager"),VendorController.getCategoryById);
@@ -74,10 +74,58 @@ router.put(
 
 
 // vendor Manager subCategory Routes
+  // 1)create subCategory
+  router.post('/create-subcategory',authenticateToken,authorizeRoles("vendor_manager"),VendorController.createSubCategory);
 
+  // 2)All sub subCategory
+  router.get('/subcategory',authenticateToken,authorizeRoles("vendor_manager"),VendorController.getAllSubCategories);
+
+  // 3)get subCategory by ID
+  router.get('/subcategory/:id',authenticateToken,authorizeRoles("vendor_manager"),VendorController.getSubCategoryById);
+
+  // 4)update subCategory
+  router.put('/update-subcategory/:id',authenticateToken,authorizeRoles("vendor_manager"),VendorController.updateSubCategory);
+
+  // 5)delete a subCategory
+  router.delete('/delete-subcategory/:id',authenticateToken,authorizeRoles("vendor_manager"),VendorController.deleteSubCategory);
 
 
 // vendor Manager sub_sub_category Routes
+// SUB SUB CATEGORY ROUTES
+router.post(
+  "/create-sub-subcategory",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  VendorController.createSubSubCategory
+);
+
+router.get(
+  "/sub-subcategory",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  VendorController.getAllSubSubCategories
+);
+
+router.get(
+  "/sub-subcategory/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  VendorController.getSubSubCategoryById
+);
+
+router.put(
+  "/update-sub-subcategory/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  VendorController.updateSubSubCategory
+);
+
+router.delete(
+  "/delete-sub-subcategory/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  VendorController.deleteSubSubCategory
+);
 
 
 module.exports = router;
