@@ -74,7 +74,20 @@ router.put(
 
 
 // vendor Manager subCategory Routes
+  // 1)create subCategory
+  router.post('/create-subcategory',authenticateToken,authorizeRoles("vendor_manager"),VendorController.createSubCategory);
 
+  // 2)All sub subCategory
+  router.get('/subcategory',authenticateToken,authorizeRoles("vendor_manager"),VendorController.getAllSubCategories);
+
+  // 3)get subCategory by ID
+  router.get('/subcategory/:id',authenticateToken,authorizeRoles("vendor_manager"),VendorController.getSubCategoryById);
+
+  // 4)update subCategory
+  router.put('/update-subcategory/:id',authenticateToken,authorizeRoles("vendor_manager"),VendorController.updateSubCategory);
+
+  // 5)delete a subCategory
+  router.delete('/delete-subcategory/:id',authenticateToken,authorizeRoles("vendor_manager"),VendorController.deleteSubCategory);
 
 
 // vendor Manager sub_sub_category Routes
