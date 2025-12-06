@@ -1,12 +1,11 @@
 const db = require("../config/database");
 
 class SubCategoryModel {
-
   // CREATE SUB CATEGORY
   async createSubCategory(data) {
     try {
       const subcategoryName = data.name || "";
-      const categoryId = data.categoryId; 
+      const categoryId = data.category_id;
 
       const [result] = await db.execute(
         `INSERT INTO sub_categories (category_id, subcategory_name, created_at)
@@ -57,13 +56,14 @@ class SubCategoryModel {
   async updateSubCategory(id, data) {
     try {
       const subcategoryName = data.name;
-      const categoryId = data.categoryId; 
+      const categoryId = data.category_id;
+      const status = data.status;
 
       const [result] = await db.execute(
         `UPDATE sub_categories 
-         SET subcategory_name = ?, category_id = ?
+         SET subcategory_name = ?, category_id = ?, status = ?
          WHERE subcategory_id = ?`,
-        [subcategoryName, categoryId, id]
+        [subcategoryName, categoryId, status, id]
       );
 
       if (result.affectedRows === 0) return null;
