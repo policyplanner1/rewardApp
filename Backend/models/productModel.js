@@ -123,75 +123,6 @@ class ProductModel {
     }
   }
 
-  async getProductsByUserId(userId, userRole) {
-    let query = `
-      SELECT 
-        p.*,
-        c.category_name,
-        (SELECT image_url FROM product_images WHERE product_id=p.product_id LIMIT 1) AS mainImage
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.category_id
-    `;
-
-    let params = [];
-
-    if (userRole === "vendor") {
-      const [[vendor]] = await db.execute(
-        `SELECT vendor_id FROM vendors WHERE user_id=?`,
-        [userId]
-      );
-
-      if (!vendor) return [];
-
-      query += ` WHERE p.vendor_id=?`;
-      params.push(vendor.vendor_id);
-    }
-
-    query += " ORDER BY p.created_at DESC";
-
-    const [rows] = await db.execute(query, params);
-    return rows;
-  }
-
-  async getProductById(productId) {
-    const [[product]] = await db.execute(
-      `SELECT p.*, v.company_name, c.category_name 
-       FROM products p
-       JOIN vendors v ON p.vendor_id = v.vendor_id
-       JOIN categories c ON p.category_id = c.category_id
-       WHERE p.product_id = ?`,
-      [productId]
-    );
-
-    if (!product) return null;
-
-    const [images] = await db.execute(
-      `SELECT * FROM product_images WHERE product_id = ?`,
-      [productId]
-    );
-
-    const [documents] = await db.execute(
-      `SELECT pd.*, dt.document_name 
-       FROM product_documents pd
-       JOIN document_types dt ON pd.document_type_id = dt.document_type_id
-       WHERE pd.product_id = ?`,
-      [productId]
-    );
-
-    return { product, images, documents };
-  }
-
-  async updateProductStatus(productId, status, reason) {
-    const [result] = await db.execute(
-      `UPDATE products 
-       SET status=?, rejection_reason=?
-       WHERE product_id=?`,
-      [status, reason, productId]
-    );
-
-    return result.affectedRows > 0;
-  }
-
   // Get required documents by category_id
   async getRequiredDocumentsByCategory(categoryId) {
     try {
@@ -415,6 +346,203 @@ class ProductModel {
     }
 
     return true;
+  }
+
+  // delete product
+  async deleteProduct(productId) {
+    try {
+      // Delete product variant images
+      const [variants] = await db.execute(
+        `SELECT variant_id FROM product_variants WHERE product_id = ?`,
+        [productId]
+      );
+      for (const variant of variants) {
+        await db.execute(
+          `DELETE FROM product_variant_images WHERE variant_id = ?`,
+          [variant.variant_id]
+        );
+      }
+
+      // Delete product variants
+      await db.execute(`DELETE FROM product_variants WHERE product_id = ?`, [
+        productId,
+      ]);
+
+      // Delete product images
+      await db.execute(`DELETE FROM product_images WHERE product_id = ?`, [
+        productId,
+      ]);
+
+      // Delete product documents
+      await db.execute(`DELETE FROM product_documents WHERE product_id = ?`, [
+        productId,
+      ]);
+
+      // Delete main product
+      await db.execute(`DELETE FROM products WHERE product_id = ?`, [
+        productId,
+      ]);
+
+      return true;
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      throw error;
+    }
+  }
+
+  // Get all products
+  async getAllProductDetails() {
+    try {
+      const [rows] = await db.execute(
+        `SELECT 
+         product_id,
+         vendor_id,
+         category_id,
+         subcategory_id,
+         sub_subcategory_id,
+         brand_name,
+         manufacturer,
+         item_type,
+         barcode,
+         product_name,
+         description,
+         short_description,
+         size,
+         color,
+         model,
+         dimension,
+         stock,
+         vendor_price,
+         sale_price,
+         tax_code,
+         expiry_date,
+         custom_category,
+         custom_subcategory,
+         custom_sub_subcategory,
+         status,
+         created_at,
+         updated_at
+       FROM products
+       ORDER BY product_id DESC`
+      );
+      return rows;
+    } catch (error) {
+      console.error("Error fetching all products:", error);
+      throw error;
+    }
+  }
+
+  // Get all products for a specific vendor
+  async getProductsByVendor(vendorId) {
+    try {
+      const [rows] = await db.execute(
+        `SELECT 
+         product_id,
+         vendor_id,
+         category_id,
+         subcategory_id,
+         sub_subcategory_id,
+         brand_name,
+         manufacturer,
+         item_type,
+         barcode,
+         product_name,
+         description,
+         short_description,
+         size,
+         color,
+         model,
+         dimension,
+         stock,
+         vendor_price,
+         sale_price,
+         tax_code,
+         expiry_date,
+         custom_category,
+         custom_subcategory,
+         custom_sub_subcategory,
+         status,
+         created_at,
+         updated_at
+       FROM products
+       WHERE vendor_id = ?
+       ORDER BY product_id DESC`,
+        [vendorId]
+      );
+      return rows;
+    } catch (error) {
+      console.error("Error fetching products by vendor:", error);
+      throw error;
+    }
+  }
+
+  async getProductsByUserId(userId, userRole) {
+    let query = `
+      SELECT 
+        p.*,
+        c.category_name,
+        (SELECT image_url FROM product_images WHERE product_id=p.product_id LIMIT 1) AS mainImage
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.category_id
+    `;
+
+    let params = [];
+
+    if (userRole === "vendor") {
+      const [[vendor]] = await db.execute(
+        `SELECT vendor_id FROM vendors WHERE user_id=?`,
+        [userId]
+      );
+
+      if (!vendor) return [];
+
+      query += ` WHERE p.vendor_id=?`;
+      params.push(vendor.vendor_id);
+    }
+
+    query += " ORDER BY p.created_at DESC";
+
+    const [rows] = await db.execute(query, params);
+    return rows;
+  }
+
+  async getProductById(productId) {
+    const [[product]] = await db.execute(
+      `SELECT p.*, v.company_name, c.category_name 
+       FROM products p
+       JOIN vendors v ON p.vendor_id = v.vendor_id
+       JOIN categories c ON p.category_id = c.category_id
+       WHERE p.product_id = ?`,
+      [productId]
+    );
+
+    if (!product) return null;
+
+    const [images] = await db.execute(
+      `SELECT * FROM product_images WHERE product_id = ?`,
+      [productId]
+    );
+
+    const [documents] = await db.execute(
+      `SELECT pd.*, dt.document_name 
+       FROM product_documents pd
+       JOIN document_types dt ON pd.document_type_id = dt.document_type_id
+       WHERE pd.product_id = ?`,
+      [productId]
+    );
+
+    return { product, images, documents };
+  }
+
+  async updateProductStatus(productId, status, reason) {
+    const [result] = await db.execute(
+      `UPDATE products 
+       SET status=?, rejection_reason=?
+       WHERE product_id=?`,
+      [status, reason, productId]
+    );
+
+    return result.affectedRows > 0;
   }
 }
 

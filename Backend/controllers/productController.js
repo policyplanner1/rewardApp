@@ -1,6 +1,7 @@
 const ProductModel = require("../models/productModel");
 
 class ProductController {
+  // create Product
   async createProduct(req, res) {
     try {
       const vendorId = req.user.vendor_id;
@@ -137,17 +138,72 @@ class ProductController {
     }
   }
 
-  // Get products based on role
-  async getAllProducts(req, res) {
+  // Delete Product
+  async deleteProduct(req, res) {
     try {
-      const products = await ProductModel.getProductsByUserId(
-        req.user.user_id,
-        req.user.role
-      );
+      const productId = req.params.id;
 
-      return res.json({ success: true, data: products });
+      if (!productId) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Product ID is required" });
+      }
+
+      await ProductModel.deleteProduct(productId);
+
+      return res.json({
+        success: true,
+        message: "Product deleted successfully",
+      });
     } catch (err) {
-      return res.status(500).json({ success: false, message: err.message });
+      console.error("PRODUCT DELETE ERROR:", err);
+      return res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+  }
+
+  // Get all Products
+  async getAllProductDetails(req, res) {
+    try {
+      const products = await ProductModel.getAllProductDetails();
+      return res.json({
+        success: true,
+        products,
+      });
+    } catch (err) {
+      console.error("GET ALL PRODUCTS ERROR:", err);
+      return res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+  }
+
+  // Get all products by vendor
+  async getProductsByVendor(req, res) {
+    try {
+      const vendorId = req.params.vendorId; 
+      if (!vendorId) {
+        return res.status(400).json({
+          success: false,
+          message: "Vendor ID is required",
+        });
+      }
+
+      const products = await ProductModel.getProductsByVendor(vendorId);
+
+      return res.json({
+        success: true,
+        products,
+      });
+    } catch (err) {
+      console.error("GET PRODUCTS BY VENDOR ERROR:", err);
+      return res.status(500).json({
+        success: false,
+        message: err.message,
+      });
     }
   }
 
@@ -160,6 +216,20 @@ class ProductController {
       );
 
       return res.json({ success: true, data: documents });
+    } catch (err) {
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  }
+
+  // Get products based on role
+  async getAllProducts(req, res) {
+    try {
+      const products = await ProductModel.getProductsByUserId(
+        req.user.user_id,
+        req.user.role
+      );
+
+      return res.json({ success: true, data: products });
     } catch (err) {
       return res.status(500).json({ success: false, message: err.message });
     }
