@@ -385,21 +385,14 @@ class ProductModel {
          product_name,
          description,
          short_description,
-         size,
-         color,
-         model,
-         dimension,
-         stock,
-         vendor_price,
-         sale_price,
          tax_code,
          expiry_date,
          custom_category,
          custom_subcategory,
          custom_sub_subcategory,
          status,
-         created_at,
-         updated_at
+         rejection_reason,
+         created_at
        FROM products
        ORDER BY product_id DESC`
       );
@@ -427,21 +420,14 @@ class ProductModel {
          product_name,
          description,
          short_description,
-         size,
-         color,
-         model,
-         dimension,
-         stock,
-         vendor_price,
-         sale_price,
          tax_code,
          expiry_date,
          custom_category,
          custom_subcategory,
          custom_sub_subcategory,
          status,
-         created_at,
-         updated_at
+         rejection_reason,
+         created_at
        FROM products
        WHERE vendor_id = ?
        ORDER BY product_id DESC`,
@@ -452,64 +438,6 @@ class ProductModel {
       console.error("Error fetching products by vendor:", error);
       throw error;
     }
-  }
-
-  async getProductsByUserId(userId, userRole) {
-    let query = `
-      SELECT 
-        p.*,
-        c.category_name,
-        (SELECT image_url FROM product_images WHERE product_id=p.product_id LIMIT 1) AS mainImage
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.category_id
-    `;
-
-    let params = [];
-
-    if (userRole === "vendor") {
-      const [[vendor]] = await db.execute(
-        `SELECT vendor_id FROM vendors WHERE user_id=?`,
-        [userId]
-      );
-
-      if (!vendor) return [];
-
-      query += ` WHERE p.vendor_id=?`;
-      params.push(vendor.vendor_id);
-    }
-
-    query += " ORDER BY p.created_at DESC";
-
-    const [rows] = await db.execute(query, params);
-    return rows;
-  }
-
-  async getProductById(productId) {
-    const [[product]] = await db.execute(
-      `SELECT p.*, v.company_name, c.category_name 
-       FROM products p
-       JOIN vendors v ON p.vendor_id = v.vendor_id
-       JOIN categories c ON p.category_id = c.category_id
-       WHERE p.product_id = ?`,
-      [productId]
-    );
-
-    if (!product) return null;
-
-    const [images] = await db.execute(
-      `SELECT * FROM product_images WHERE product_id = ?`,
-      [productId]
-    );
-
-    const [documents] = await db.execute(
-      `SELECT pd.*, dt.document_name 
-       FROM product_documents pd
-       JOIN document_types dt ON pd.document_type_id = dt.document_type_id
-       WHERE pd.product_id = ?`,
-      [productId]
-    );
-
-    return { product, images, documents };
   }
 
   async updateProductStatus(productId, status, reason) {

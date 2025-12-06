@@ -221,39 +221,6 @@ class ProductController {
     }
   }
 
-  // Get products based on role
-  async getAllProducts(req, res) {
-    try {
-      const products = await ProductModel.getProductsByUserId(
-        req.user.user_id,
-        req.user.role
-      );
-
-      return res.json({ success: true, data: products });
-    } catch (err) {
-      return res.status(500).json({ success: false, message: err.message });
-    }
-  }
-
-  // Get single product
-  async getProduct(req, res) {
-    try {
-      const productId = req.params.productId;
-      const product = await ProductModel.getProductById(productId);
-
-      if (!product) {
-        return res.status(404).json({
-          success: false,
-          message: "Product not found",
-        });
-      }
-
-      return res.json({ success: true, data: product });
-    } catch (err) {
-      return res.status(500).json({ success: false, message: err.message });
-    }
-  }
-
   // Update product status
   async updateStatus(req, res) {
     try {
