@@ -75,6 +75,68 @@ class ProductController {
     }
   }
 
+  // Get product by ID
+  async getProductDetailsById(req, res) {
+    try {
+      const productId = req.params.id;
+
+      if (!productId) {
+        return res.status(400).json({
+          success: false,
+          message: "Product ID is required",
+        });
+      }
+
+      const product = await ProductModel.getProductDetailsById(productId);
+
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          message: "Product not found",
+        });
+      }
+
+      return res.json({
+        success: true,
+        product,
+      });
+    } catch (error) {
+      console.error("GET PRODUCT BY ID ERROR:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  // Update Product
+  async updateProduct(req, res) {
+    try {
+      const productId = req.params.id;
+      const body = req.body;
+      const files = req.files;
+
+      if (!productId) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Product ID is required" });
+      }
+
+      await ProductModel.updateProduct(productId, body, files);
+
+      return res.json({
+        success: true,
+        message: "Product updated successfully",
+      });
+    } catch (err) {
+      console.error("PRODUCT UPDATE ERROR:", err);
+      return res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+  }
+
   // Get products based on role
   async getAllProducts(req, res) {
     try {
