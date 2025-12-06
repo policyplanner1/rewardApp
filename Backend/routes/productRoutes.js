@@ -6,7 +6,7 @@ const { authenticateToken, authorizeRoles } = require("../middleware/auth");
 
 // CREATE PRODUCT (images + ALL category documents)
 router.post(
-  "/create",
+  "/create-product",
   authenticateToken,
   authorizeRoles("vendor"),
   upload.any(),

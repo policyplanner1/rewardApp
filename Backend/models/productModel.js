@@ -11,10 +11,9 @@ class ProductModel {
     const [result] = await db.execute(
       `INSERT INTO products 
      (vendor_id, category_id, subcategory_id, sub_subcategory_id, brand_name, manufacturer, item_type, barcode, 
-      product_name, description, short_description, size, color, model, dimension,
-      stock, vendor_price, sale_price, tax_code, expiry_date,
+      product_name, description, short_description,tax_code, expiry_date,
       custom_category, custom_subcategory, custom_sub_subcategory, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
       [
         safe(vendorId),
         safe(data.category_id),
@@ -27,13 +26,6 @@ class ProductModel {
         safe(data.productName),
         safe(data.description),
         safe(data.shortDescription),
-        safe(data.size),
-        safe(data.color),
-        safe(data.model),
-        safe(data.dimension),
-        safe(data.stock),
-        safe(data.aa),
-        safe(data.salesPrice),
         safe(data.taxCode),
         safe(data.expiryDate),
         custom_category,

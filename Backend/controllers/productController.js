@@ -8,7 +8,7 @@ class ProductController {
       const body = req.body;
 
       // Mandatory category
-      if (!body.category_id) {
+      if (!body.category_id && !body.custom_category) {
         return res.status(400).json({
           success: false,
           message: "Category ID is required",
