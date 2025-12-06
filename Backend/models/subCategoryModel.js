@@ -6,7 +6,7 @@ class SubCategoryModel {
   async createSubCategory(data) {
     try {
       const subcategoryName = data.name || "";
-      const categoryId = data.categoryId; 
+      const categoryId = data.category_id; 
 
       const [result] = await db.execute(
         `INSERT INTO sub_categories (category_id, subcategory_name, created_at)

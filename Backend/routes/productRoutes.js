@@ -74,7 +74,7 @@ router.delete(
 router.get(
   "/all-products",
   authenticateToken,
-  authorizeRoles("vendor"),
+  authorizeRoles("vendor_manager"),
   ProductController.getAllProductDetails
 );
 
