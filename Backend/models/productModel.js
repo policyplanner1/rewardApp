@@ -54,7 +54,7 @@ class ProductModel {
   // store product Documents
   async insertProductDocuments(productId, categoryId, files) {
     const [docTypes] = await db.execute(
-      `SELECT d.document_id, d.document_key
+      `SELECT d.document_id,
      FROM category_documents cd
      JOIN documents d ON cd.document_id = d.document_id
      WHERE cd.category_id = ?`,
@@ -154,7 +154,7 @@ class ProductModel {
 
       // 3️⃣ Get product documents
       const [documents] = await db.execute(
-        `SELECT pd.id, pd.file_path, pd.mime_type, d.document_key, d.document_name
+        `SELECT pd.id, pd.file_path, pd.mime_type, d.document_name
        FROM product_documents pd
        JOIN documents d ON pd.document_id = d.document_id
        WHERE pd.product_id = ?`,
@@ -208,13 +208,6 @@ class ProductModel {
       product_name = ?, 
       description = ?, 
       short_description = ?, 
-      size = ?, 
-      color = ?, 
-      model = ?, 
-      dimension = ?, 
-      stock = ?, 
-      vendor_price = ?, 
-      sale_price = ?, 
       tax_code = ?, 
       expiry_date = ?, 
       custom_category = ?, 
@@ -232,13 +225,6 @@ class ProductModel {
         safe(data.productName),
         safe(data.description),
         safe(data.shortDescription),
-        safe(data.size),
-        safe(data.color),
-        safe(data.model),
-        safe(data.dimension),
-        safe(data.stock),
-        safe(data.aa),
-        safe(data.salesPrice),
         safe(data.taxCode),
         safe(data.expiryDate),
         custom_category,

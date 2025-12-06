@@ -57,7 +57,7 @@ class SubCategoryModel {
   async updateSubCategory(id, data) {
     try {
       const subcategoryName = data.name;
-      const categoryId = data.categoryId; 
+      const categoryId = data.category_id; 
 
       const [result] = await db.execute(
         `UPDATE sub_categories 
