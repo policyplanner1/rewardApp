@@ -33,7 +33,7 @@ interface SubCategory {
 interface SubSubCategory {
   sub_subcategory_id: number;
   subcategory_id: number;
-  sub_subcategory_name: string;
+  name: string;
   attributes?: any;
 }
 
@@ -150,7 +150,7 @@ const FormInput = ({
 );
 
 const SectionHeader = ({ icon: Icon, title, description }: any) => (
-  <div className="flex items-center space-x-3 mb-4 border-b pb-2">
+  <div className="flex items-center pb-2 mb-4 space-x-3 border-b">
     <Icon className="text-2xl" style={{ color: "#852BAF" }} />
     <div>
       <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
@@ -164,9 +164,7 @@ export default function ProductListingDynamic() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
-  const [subSubCategories, setSubSubCategories] = useState<SubSubCategory[]>(
-    []
-  );
+  const [subSubCategories, setSubSubCategories] = useState<SubSubCategory[]>([]);
   const [requiredDocs, setRequiredDocs] = useState<RequiredDocument[]>([]);
   const [docFiles, setDocFiles] = useState<Record<number, File | null>>({}); // key by document_id
   const [loading, setLoading] = useState(false);
@@ -240,11 +238,14 @@ export default function ProductListingDynamic() {
   };
 
   const fetchSubSubCategories = async (subcategoryId: number) => {
+    
     try {
       const res = await fetch(
         `${API_BASE}/api/subsubcategory/${subcategoryId}`
+        
       );
       const json = await res.json();
+      console.log("Sub-subcategories response:", json.data);
       if (json.success) {
         setSubSubCategories(json.data);
       }
@@ -608,20 +609,20 @@ export default function ProductListingDynamic() {
           title="Required Documents"
           description="Upload documents required by category"
         />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {requiredDocs.map((doc) => (
             <div
               key={doc.document_id}
-              className="p-4 border rounded-lg bg-white shadow-sm"
+              className="p-4 bg-white border rounded-lg shadow-sm"
             >
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block mb-2 text-sm font-medium text-gray-700">
                 {doc.document_name}{" "}
                 {doc.status === 1 && <span className="text-red-500">*</span>}
                 {doc.status === 1 && (
-                  <span className="text-xs text-gray-500 ml-2">(Required)</span>
+                  <span className="ml-2 text-xs text-gray-500">(Required)</span>
                 )}
                 {doc.status !== 1 && (
-                  <span className="text-xs text-gray-500 ml-2">(Optional)</span>
+                  <span className="ml-2 text-xs text-gray-500">(Optional)</span>
                 )}
               </label>
               <input
@@ -630,11 +631,11 @@ export default function ProductListingDynamic() {
                 onChange={(e) => onDocInputChange(e, doc.document_id)}
                 className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#852BAF] file:text-white"
               />
-              <div className="text-xs text-gray-500 mt-2">
+              <div className="mt-2 text-xs text-gray-500">
                 Accepted: PDF, DOC, DOCX, JPG, PNG
               </div>
               {docFiles[doc.document_id] && (
-                <div className="text-xs text-green-600 mt-1">
+                <div className="mt-1 text-xs text-green-600">
                   ✓ {docFiles[doc.document_id]?.name}
                 </div>
               )}
@@ -660,16 +661,16 @@ export default function ProductListingDynamic() {
         {product.variants.map((variant, index) => (
           <div
             key={index}
-            className="p-6 border rounded-xl bg-gray-50 shadow-sm mb-6"
+            className="p-6 mb-6 border shadow-sm rounded-xl bg-gray-50"
           >
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center justify-between mb-4">
               
 
               {product.variants.length > 1 && (
                 <button
                   type="button"
                   onClick={() => removeVariant(index)}
-                  className="text-red-600 hover:text-red-800 p-2"
+                  className="p-2 text-red-600 hover:text-red-800"
                 >
                   <FaTrash />
                 </button>
@@ -677,10 +678,10 @@ export default function ProductListingDynamic() {
             </div>
 
             {/* === ALWAYS SHOW SIMPLE INPUTS === */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 gap-4 mb-4 md:grid-cols-3">
               {/* Size */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block mb-1 text-sm font-medium text-gray-700">
                   Size
                 </label>
                 <input
@@ -696,7 +697,7 @@ export default function ProductListingDynamic() {
 
               {/* Color */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block mb-1 text-sm font-medium text-gray-700">
                   Color
                 </label>
                 <input
@@ -712,7 +713,7 @@ export default function ProductListingDynamic() {
 
               {/* Dimension */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block mb-1 text-sm font-medium text-gray-700">
                   Dimension
                 </label>
                 <input
@@ -728,7 +729,7 @@ export default function ProductListingDynamic() {
 
               {/* MRP */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block mb-1 text-sm font-medium text-gray-700">
                   MRP
                 </label>
                 <input
@@ -744,7 +745,7 @@ export default function ProductListingDynamic() {
 
               {/* Sales Price */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block mb-1 text-sm font-medium text-gray-700">
                   Sales Price *
                 </label>
                 <input
@@ -761,7 +762,7 @@ export default function ProductListingDynamic() {
 
               {/* Stock */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block mb-1 text-sm font-medium text-gray-700">
                   Stock *
                 </label>
                 <input
@@ -778,7 +779,7 @@ export default function ProductListingDynamic() {
 
               {/* SKU */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block mb-1 text-sm font-medium text-gray-700">
                   SKU
                 </label>
                 <input
@@ -796,14 +797,14 @@ export default function ProductListingDynamic() {
             {/* === ONLY SHOW CUSTOM ATTRIBUTES IF PRESENT === */}
             {attributes?.attributes && (
               <div className="mb-4">
-                <h4 className="font-medium text-gray-700 mb-2">
+                <h4 className="mb-2 font-medium text-gray-700">
                   Product Attributes
                 </h4>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                   {Object.keys(attributes.attributes).map((key) => (
                     <div key={key}>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block mb-1 text-sm font-medium text-gray-700">
                         {key}
                       </label>
                       <input
@@ -827,11 +828,11 @@ export default function ProductListingDynamic() {
 
             {/* === VARIANT IMAGES === */}
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block mb-2 text-sm font-medium text-gray-700">
                 Variant Images
               </label>
 
-              <div className="flex items-center p-3 border border-dashed border-gray-400 rounded-lg bg-white">
+              <div className="flex items-center p-3 bg-white border border-gray-400 border-dashed rounded-lg">
                 <span className="flex-1 text-sm text-gray-600">
                   {variant.images.length === 0
                     ? "No images chosen"
@@ -885,12 +886,12 @@ export default function ProductListingDynamic() {
     const subsubcategory = subSubCategories.find(
       (ss) => ss.sub_subcategory_id === product.subSubCategoryId
     );
-    return subsubcategory?.sub_subcategory_name || "Not selected";
+    return subsubcategory?.name || "Not selected";
   };
 
   if (loading && categories.length === 0) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen">
         <FaSpinner className="animate-spin text-4xl text-[#852BAF]" />
         <span className="ml-4 text-gray-600">Loading categories...</span>
       </div>
@@ -899,20 +900,20 @@ export default function ProductListingDynamic() {
 
   return (
     <div className="p-6" style={{ backgroundColor: "#FFFAFB" }}>
-      <div className="bg-white rounded-2xl p-6 shadow-xl border border-gray-100 max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">
+      <div className="p-6 mx-auto bg-white border border-gray-100 shadow-xl rounded-2xl max-w-7xl">
+        <h1 className="mb-6 text-3xl font-bold text-gray-900">
           New Product Listing
         </h1>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-700 font-medium">Error: {error}</p>
+          <div className="p-4 mb-6 border border-red-200 rounded-lg bg-red-50">
+            <p className="font-medium text-red-700">Error: {error}</p>
           </div>
         )}
 
         {success && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <p className="text-green-700 font-medium">{success}</p>
+          <div className="p-4 mb-6 border border-green-200 rounded-lg bg-green-50">
+            <p className="font-medium text-green-700">{success}</p>
           </div>
         )}
 
@@ -925,10 +926,10 @@ export default function ProductListingDynamic() {
               description="Choose category, sub-category and type"
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
               {/* Category */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block mb-2 text-sm font-medium text-gray-700">
                   Category <span className="text-red-500">*</span>
                 </label>
 
@@ -964,7 +965,7 @@ export default function ProductListingDynamic() {
                     value={custom_category}
                     onChange={(e) => setCustomCategory(e.target.value)}
                     placeholder="Enter new category"
-                    className="mt-3 w-full p-3 border rounded-lg"
+                    className="w-full p-3 mt-3 border rounded-lg"
                   />
                 )}
               </div>
@@ -972,7 +973,7 @@ export default function ProductListingDynamic() {
               {/* Sub Category */}
               {/* Sub Category */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block mb-2 text-sm font-medium text-gray-700">
                   Sub Category
                 </label>
 
@@ -1011,7 +1012,7 @@ export default function ProductListingDynamic() {
                     value={custom_subcategory}
                     onChange={(e) => setCustomSubCategory(e.target.value)}
                     placeholder="Enter new sub-category"
-                    className="mt-3 w-full p-3 border rounded-lg"
+                    className="w-full p-3 mt-3 border rounded-lg"
                   />
                 )}
               </div>
@@ -1019,7 +1020,7 @@ export default function ProductListingDynamic() {
               {/* Sub Sub Category */}
               {/* Sub Sub Category */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block mb-2 text-sm font-medium text-gray-700">
                   Type / Sub-type
                 </label>
 
@@ -1053,7 +1054,7 @@ export default function ProductListingDynamic() {
                       key={t.sub_subcategory_id}
                       value={t.sub_subcategory_id}
                     >
-                      {t.sub_subcategory_name}
+                      {t.name}
                     </option>
                   ))}
 
@@ -1066,7 +1067,7 @@ export default function ProductListingDynamic() {
                     value={custom_subsubcategory}
                     onChange={(e) => setCustomSubSubCategory(e.target.value)}
                     placeholder="Enter new type"
-                    className="mt-3 w-full p-3 border rounded-lg"
+                    className="w-full p-3 mt-3 border rounded-lg"
                   />
                 )}
               </div>
@@ -1076,8 +1077,8 @@ export default function ProductListingDynamic() {
             {(product.categoryId ||
               product.subCategoryId ||
               product.subSubCategoryId) && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg border">
-                <h4 className="font-medium text-gray-700 mb-2">
+              <div className="p-3 mt-4 border rounded-lg bg-gray-50">
+                <h4 className="mb-2 font-medium text-gray-700">
                   Selected Categories:
                 </h4>
                 <div className="flex items-center text-sm text-gray-600">
@@ -1115,7 +1116,7 @@ export default function ProductListingDynamic() {
               description="Basic product information"
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
               <FormInput
                 id="brandName"
                 name="brandName"
@@ -1212,7 +1213,7 @@ export default function ProductListingDynamic() {
               description="Tax, expiry, and other details"
             />
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
               <FormInput
                 id="taxCode"
                 name="taxCode"
@@ -1241,7 +1242,7 @@ export default function ProductListingDynamic() {
               description="Main images for product listing"
             />
 
-            <div className="flex items-center p-3 border border-dashed border-gray-400 rounded-lg bg-white">
+            <div className="flex items-center p-3 bg-white border border-gray-400 border-dashed rounded-lg">
               <span className="flex-1 text-sm text-gray-600">
                 {product.productImages.length === 0
                   ? "No images chosen"
@@ -1258,7 +1259,7 @@ export default function ProductListingDynamic() {
                 />
               </label>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="mt-2 text-xs text-gray-500">
               Upload high-quality product images (max 10)
             </p>
           </section>
@@ -1271,14 +1272,14 @@ export default function ProductListingDynamic() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full px-6 py-3 text-lg font-bold text-white rounded-full shadow-md disabled:opacity-50 flex items-center justify-center transition-all duration-200 hover:shadow-lg"
+              className="flex items-center justify-center w-full px-6 py-3 text-lg font-bold text-white transition-all duration-200 rounded-full shadow-md disabled:opacity-50 hover:shadow-lg"
               style={{
                 background: "linear-gradient(to right, #852BAF, #FC3F78)",
               }}
             >
               {isSubmitting ? (
                 <>
-                  <FaSpinner className="animate-spin mr-2" />
+                  <FaSpinner className="mr-2 animate-spin" />
                   Submitting...
                 </>
               ) : (
