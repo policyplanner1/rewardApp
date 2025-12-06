@@ -18,15 +18,15 @@ class CategoryModel {
   }
 
   // GET ALL CATEGORIES
-  async getAllCategories() {
-    try {
-      const [rows] = await db.execute(`SELECT * FROM categories`);
-      return rows;
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-      throw error;
-    }
-  }
+  // async getAllCategories() {
+  //   try {
+  //     const [rows] = await db.execute(`SELECT * FROM categories`);
+  //     return rows;
+  //   } catch (error) {
+  //     console.error("Error fetching categories:", error);
+  //     throw error;
+  //   }
+  // }
 
   // GET CATEGORY BY ID
   async getCategoryById(id) {

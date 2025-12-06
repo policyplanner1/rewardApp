@@ -61,7 +61,7 @@ router.put(
   router.post('/create-category',authenticateToken,authorizeRoles("vendor_manager"),VendorController.createCategory);
 
   // 2)All categories
-  router.get('/category',authenticateToken,authorizeRoles("vendor_manager"),VendorController.getAllCategories);
+  // router.get('/category',authenticateToken,authorizeRoles("vendor_manager"),VendorController.getAllCategories);
 
   // 3)get category by ID
   router.get('/category/:id',authenticateToken,authorizeRoles("vendor_manager"),VendorController.getCategoryById);

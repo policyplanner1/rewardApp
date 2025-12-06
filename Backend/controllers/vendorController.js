@@ -183,25 +183,25 @@ class VendorController {
     }
   }
 
-  // vendor manager fetch all categories
-  async getAllCategories(req, res) {
-    try {
-      const data = await categoryModel.getAllCategories();
+  // // vendor manager fetch all categories
+  // async getAllCategories(req, res) {
+  //   try {
+  //     const data = await categoryModel.getAllCategories();
 
-      res.status(200).json({
-        success: true,
-        data,
-        message: data.length ? "Fetched all categories" : "No categories found",
-      });
-    } catch (error) {
-      console.error("fetching category error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Error fetching categories",
-        error: error.message,
-      });
-    }
-  }
+  //     res.status(200).json({
+  //       success: true,
+  //       data,
+  //       message: data.length ? "Fetched all categories" : "No categories found",
+  //     });
+  //   } catch (error) {
+  //     console.error("fetching category error:", error);
+  //     res.status(500).json({
+  //       success: false,
+  //       message: "Error fetching categories",
+  //       error: error.message,
+  //     });
+  //   }
+  // }
 
   // get category by ID
   async getCategoryById(req, res) {
