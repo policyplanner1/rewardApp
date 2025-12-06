@@ -1,8 +1,6 @@
 const db = require("../config/database");
 
 class ProductModel {
-
-  // create a Product
   async createProduct(vendorId, data) {
     const safe = (v) => (v === undefined || v === "" ? null : v);
     let custom_category = data.custom_category || null;
@@ -46,7 +44,6 @@ class ProductModel {
     return result.insertId;
   }
 
-  // insert product Images
   async insertProductImages(productId, files) {
     for (const file of files) {
       // Only insert if the field is meant for images
@@ -60,7 +57,6 @@ class ProductModel {
     }
   }
 
-  // store product Documents
   async insertProductDocuments(productId, categoryId, files) {
     const [docTypes] = await db.execute(
       `SELECT d.document_id, d.document_key
@@ -84,42 +80,6 @@ class ProductModel {
        (product_id, document_id, file_path, mime_type)
        VALUES (?, ?, ?, ?)`,
         [productId, docInfo.document_id, file.path, file.mimetype]
-      );
-    }
-  }
-
-  // Insert product variant
-  async createProductVariant(productId, variant) {
-    const safe = (v) => (v === undefined || v === "" ? null : v);
-
-    const [result] = await db.execute(
-      `INSERT INTO product_variants
-     (product_id, size, color, weight, custom_attributes, sku, mrp, vendor_price, sale_price, stock)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        productId,
-        safe(variant.size),
-        safe(variant.color),
-        safe(variant.dimension),
-        JSON.stringify(variant.customAttributes || {}),
-        safe(variant.sku),
-        safe(variant.MRP),
-        safe(variant.vendorPrice || variant.salesPrice),
-        safe(variant.salesPrice),
-        safe(variant.stock),
-      ]
-    );
-
-    return result.insertId;
-  }
-
-  // Insert variant images
-  async insertProductVariantImages(variantId, files) {
-    for (const file of files) {
-      await db.execute(
-        `INSERT INTO product_variant_images (variant_id, image_url)
-       VALUES (?, ?)`,
-        [variantId, file.path]
       );
     }
   }

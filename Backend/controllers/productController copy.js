@@ -6,7 +6,7 @@ class ProductController {
       const vendorId = req.user.vendor_id;
       const body = req.body;
 
-      // Mandatory category
+      // Category mandatory and custom category
       if (!body.category_id) {
         return res.status(400).json({
           success: false,
@@ -16,49 +16,21 @@ class ProductController {
 
       const productId = await ProductModel.createProduct(vendorId, body);
 
-      // Handle uploaded files
-      if (req.files && req.files.length) {
-        const mainImages = req.files.filter((f) => f.fieldname === "images");
+      if (req.files) {
+        // 2. Separate images and other documents
+        const images = req.files.filter((f) => f.fieldname === "images");
         const otherFiles = req.files.filter((f) => f.fieldname !== "images");
 
-        // Insert main product images
-        if (mainImages.length) {
-          await ProductModel.insertProductImages(productId, mainImages);
+        if (images.length) {
+          await ProductModel.insertProductImages(productId, images);
         }
 
-        // Insert product documents
         if (otherFiles.length) {
           await ProductModel.insertProductDocuments(
             productId,
             body.category_id,
             otherFiles
           );
-        }
-      }
-
-      //  Handle product variants
-      if (body.variants && Array.isArray(body.variants)) {
-        for (let i = 0; i < body.variants.length; i++) {
-          const variant = body.variants[i];
-
-          // Insert variant in product_variants table
-          const variantId = await ProductModel.createProductVariant(
-            productId,
-            variant
-          );
-
-          // Match uploaded files for this variant (fieldname convention: variant_0_image, variant_1_image, etc.)
-          const variantFiles = req.files.filter((f) =>
-            f.fieldname.startsWith(`variant_${i}_`)
-          );
-
-          // Insert variant images
-          if (variantFiles.length) {
-            await ProductModel.insertProductVariantImages(
-              variantId,
-              variantFiles
-            );
-          }
         }
       }
 
@@ -90,6 +62,7 @@ class ProductController {
   }
 
   // Get categories documents based on Id
+
   async getRequiredDocuments(req, res) {
     try {
       const categoryID = req.params.id;
