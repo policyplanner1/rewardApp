@@ -91,6 +91,41 @@ router.put(
 
 
 // vendor Manager sub_sub_category Routes
+// SUB SUB CATEGORY ROUTES
+router.post(
+  "/create-sub-subcategory",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  VendorController.createSubSubCategory
+);
+
+router.get(
+  "/sub-subcategory",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  VendorController.getAllSubSubCategories
+);
+
+router.get(
+  "/sub-subcategory/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  VendorController.getSubSubCategoryById
+);
+
+router.put(
+  "/update-sub-subcategory/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  VendorController.updateSubSubCategory
+);
+
+router.delete(
+  "/delete-sub-subcategory/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  VendorController.deleteSubSubCategory
+);
 
 
 module.exports = router;
