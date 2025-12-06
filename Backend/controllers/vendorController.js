@@ -1,5 +1,7 @@
 const VendorModel = require("../models/vendorModel");
 const categoryModel = require("../models/categoryModel");
+const subCategoryModel = require("../models/subCategoryModel");
+const subSubCategoryModel = require("../models/subSubCategoryModel");
 
 class VendorController {
   /* ============================================================
@@ -183,25 +185,25 @@ class VendorController {
     }
   }
 
-  // vendor manager fetch all categories
-  async getAllCategories(req, res) {
-    try {
-      const data = await categoryModel.getAllCategories();
+  // // vendor manager fetch all categories
+  // async getAllCategories(req, res) {
+  //   try {
+  //     const data = await categoryModel.getAllCategories();
 
-      res.status(200).json({
-        success: true,
-        data,
-        message: data.length ? "Fetched all categories" : "No categories found",
-      });
-    } catch (error) {
-      console.error("fetching category error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Error fetching categories",
-        error: error.message,
-      });
-    }
-  }
+  //     res.status(200).json({
+  //       success: true,
+  //       data,
+  //       message: data.length ? "Fetched all categories" : "No categories found",
+  //     });
+  //   } catch (error) {
+  //     console.error("fetching category error:", error);
+  //     res.status(500).json({
+  //       success: false,
+  //       message: "Error fetching categories",
+  //       error: error.message,
+  //     });
+  //   }
+  // }
 
   // get category by ID
   async getCategoryById(req, res) {
@@ -253,6 +255,260 @@ class VendorController {
       });
     }
   }
+
+  // create Sub Categories
+  async createSubCategory(req, res) {
+    try {
+      const data = req.body;
+
+      await subCategoryModel.createSubCategory(data);
+
+      res.status(201).json({
+        success: true,
+        message: "sub category created successfully",
+      });
+    } catch (error) {
+      console.error("sub category creation error:", error);
+      res.status(500).json({
+        success: false,
+        message: "sub category creation error",
+        error: error.message,
+      });
+    }
+  }
+
+  // GET ALL SUB CATEGORIES
+  async getAllSubCategories(req, res) {
+    try {
+      const categories = await subCategoryModel.getAllSubCategories();
+
+      res.status(200).json({
+        success: true,
+        data: categories,
+      });
+    } catch (error) {
+      console.error("Get all sub categories error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error fetching sub categories",
+        error: error.message,
+      });
+    }
+  }
+
+  // GET SUB CATEGORY BY ID
+  async getSubCategoryById(req, res) {
+    try {
+      const id = req.params.id;
+
+      const category = await subCategoryModel.getSubCategoryById(id);
+
+      if (!category) {
+        return res.status(404).json({
+          success: false,
+          message: "Sub category not found",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: category,
+      });
+    } catch (error) {
+      console.error("Get sub category error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error fetching sub category",
+        error: error.message,
+      });
+    }
+  }
+
+  // UPDATE SUB CATEGORY
+  async updateSubCategory(req, res) {
+    try {
+      const id = req.params.id;
+      const data = req.body;
+
+      const updated = await subCategoryModel.updateSubCategory(id, data);
+
+      if (!updated) {
+        return res.status(404).json({
+          success: false,
+          message: "Sub category not found",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Sub category updated successfully",
+        data: updated,
+      });
+    } catch (error) {
+      console.error("Update sub category error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error updating sub category",
+        error: error.message,
+      });
+    }
+  }
+
+  // DELETE SUB CATEGORY
+  async deleteSubCategory(req, res) {
+    try {
+      const id = req.params.id;
+
+      const deleted = await subCategoryModel.deleteSubCategory(id);
+
+      if (deleted === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Sub category not found",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Sub category deleted successfully",
+      });
+    } catch (error) {
+      console.error("Delete sub category error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error deleting sub category",
+        error: error.message,
+      });
+    }
+  }
+
+   // CREATE subSubCategory
+  async createSubSubCategory(req, res) {
+    try {
+      const data = req.body;
+
+      await subSubCategoryModel.createSubSubCategory(data);
+
+      res.status(201).json({
+        success: true,
+        message: "Sub-Sub Category created successfully",
+      });
+    } catch (error) {
+      console.error("Create Sub-Sub Category error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error creating Sub-Sub Category",
+        error: error.message,
+      });
+    }
+  }
+
+  // GET ALL subSubCategory
+  async getAllSubSubCategories(req, res) {
+    try {
+      const categories = await subSubCategoryModel.getAllSubSubCategories();
+
+      res.status(200).json({
+        success: true,
+        data: categories,
+      });
+    } catch (error) {
+      console.error("Get Sub-Sub Categories error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error fetching Sub-Sub Categories",
+        error: error.message,
+      });
+    }
+  }
+
+  // GET BY ID subSubCategory
+  async getSubSubCategoryById(req, res) {
+    try {
+      const id = req.params.id;
+
+      const category = await subSubCategoryModel.getSubSubCategoryById(id);
+
+      if (!category) {
+        return res.status(404).json({
+          success: false,
+          message: "Sub-Sub Category not found",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: category,
+      });
+    } catch (error) {
+      console.error("Get Sub-Sub Category error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error fetching Sub-Sub Category",
+        error: error.message,
+      });
+    }
+  }
+
+  // UPDATE subSubCategory
+  async updateSubSubCategory(req, res) {
+    try {
+      const id = req.params.id;
+      const data = req.body;
+
+      const updated = await subSubCategoryModel.updateSubSubCategory(id, data);
+
+      if (!updated) {
+        return res.status(404).json({
+          success: false,
+          message: "Sub-Sub Category not found",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Sub-Sub Category updated successfully",
+        data: updated,
+      });
+    } catch (error) {
+      console.error("Update Sub-Sub Category error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error updating Sub-Sub Category",
+        error: error.message,
+      });
+    }
+  }
+
+  // DELETE subSubCategory
+  async deleteSubSubCategory(req, res) {
+    try {
+      const id = req.params.id;
+
+      const deleted = await subSubCategoryModel.deleteSubSubCategory(id);
+
+      if (deleted === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Sub-Sub Category not found",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Sub-Sub Category deleted successfully",
+      });
+    } catch (error) {
+      console.error("Delete Sub-Sub Category error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error deleting Sub-Sub Category",
+        error: error.message,
+      });
+    }
+  }
+
+
 }
 
 module.exports = new VendorController();
