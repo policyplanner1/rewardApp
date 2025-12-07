@@ -36,11 +36,14 @@ class ProductController {
           );
         }
       }
-
       //  Handle product variants
-      if (body.variants && Array.isArray(body.variants)) {
-        for (let i = 0; i < body.variants.length; i++) {
-          const variant = body.variants[i];
+      if (body.variants) {
+        let variants=JSON.parse(body.variants)
+
+        if(!variants && !Array.isArray(variants)) return;
+
+        for (let i = 0; i < variants.length; i++) {
+          const variant = variants[i];
 
           // Insert variant in product_variants table
           const variantId = await ProductModel.createProductVariant(
