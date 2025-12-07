@@ -54,27 +54,25 @@ class ProductModel {
   // store product Documents
   async insertProductDocuments(productId, categoryId, files) {
     const [docTypes] = await db.execute(
-      `SELECT d.document_id,
-     FROM category_documents cd
+      `SELECT d.document_id
+     FROM category_document cd
      JOIN documents d ON cd.document_id = d.document_id
      WHERE cd.category_id = ?`,
       [categoryId]
     );
 
     if (!docTypes.length) return;
-
-    const requiredKeys = docTypes.map((d) => d.document_key);
+    const validDocumentIds = docTypes.map((d) => d.document_id);
 
     for (const file of files) {
-      if (!requiredKeys.includes(file.fieldname)) continue;
-
-      const docInfo = docTypes.find((d) => d.document_key === file.fieldname);
+      const docId = parseInt(file.fieldname);
+      if (!validDocumentIds.includes(docId)) continue;
 
       await db.execute(
         `INSERT INTO product_documents
        (product_id, document_id, file_path, mime_type)
        VALUES (?, ?, ?, ?)`,
-        [productId, docInfo.document_id, file.path, file.mimetype]
+        [productId, docId, file.path, file.mimetype]
       );
     }
   }
