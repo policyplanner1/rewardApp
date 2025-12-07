@@ -6,6 +6,7 @@ const { authenticateToken, authorizeRoles } = require("../middleware/auth");
 
 const router = express.Router();
 
+// create vendor
 router.post(
   "/onboard",
   authenticateToken,
@@ -19,7 +20,7 @@ router.post(
     { name: "vendorAgreementFile", maxCount: 1 },
     { name: "brandLogoFile", maxCount: 1 },
     { name: "authorizationLetterFile", maxCount: 1 },
-    { name: "addressProofElectricityBillFile", maxCount: 1 }
+    { name: "addressProofElectricityBillFile", maxCount: 1 },
   ]),
   VendorController.onboardVendor
 );
@@ -57,41 +58,84 @@ router.put(
 );
 
 // vendor Manager category Routes
-  // 1)create Category
-  router.post('/create-category',authenticateToken,authorizeRoles("vendor_manager"),VendorController.createCategory);
+// 1)create Category
+router.post(
+  "/create-category",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  VendorController.createCategory
+);
 
-  // 2)All categories
-  // router.get('/category',authenticateToken,authorizeRoles("vendor_manager"),VendorController.getAllCategories);
+// 2)All categories
+// router.get('/category',authenticateToken,authorizeRoles("vendor_manager"),VendorController.getAllCategories);
 
-  // 3)get category by ID
-  router.get('/category/:id',authenticateToken,authorizeRoles("vendor_manager"),VendorController.getCategoryById);
+// 3)get category by ID
+router.get(
+  "/category/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  VendorController.getCategoryById
+);
 
-  // 4)update category
-  router.put('/update-category/:id',authenticateToken,authorizeRoles("vendor_manager"),VendorController.updateCategory);
+// 4)update category
+router.put(
+  "/update-category/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  VendorController.updateCategory
+);
 
-  // 5)delete a category
-  router.delete('/delete-category/:id',authenticateToken,authorizeRoles("vendor_manager"),VendorController.deleteCategory);
-
+// 5)delete a category
+router.delete(
+  "/delete-category/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  VendorController.deleteCategory
+);
 
 // vendor Manager subCategory Routes
-  // 1)create subCategory
-  router.post('/create-subcategory',authenticateToken,authorizeRoles("vendor_manager"),VendorController.createSubCategory);
+// 1)create subCategory
+router.post(
+  "/create-subcategory",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  VendorController.createSubCategory
+);
 
-  // 2)All sub subCategory
-  router.get('/subcategory',authenticateToken,authorizeRoles("vendor_manager"),VendorController.getAllSubCategories);
+// 2)All sub subCategory
+router.get(
+  "/subcategory",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  VendorController.getAllSubCategories
+);
 
-  // 3)get subCategory by ID
-  router.get('/subcategory/:id',authenticateToken,authorizeRoles("vendor_manager"),VendorController.getSubCategoryById);
+// 3)get subCategory by ID
+router.get(
+  "/subcategory/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  VendorController.getSubCategoryById
+);
 
-  // 4)update subCategory
-  router.put('/update-subcategory/:id',authenticateToken,authorizeRoles("vendor_manager"),VendorController.updateSubCategory);
+// 4)update subCategory
+router.put(
+  "/update-subcategory/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  VendorController.updateSubCategory
+);
 
-  // 5)delete a subCategory
-  router.delete('/delete-subcategory/:id',authenticateToken,authorizeRoles("vendor_manager"),VendorController.deleteSubCategory);
+// 5)delete a subCategory
+router.delete(
+  "/delete-subcategory/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  VendorController.deleteSubCategory
+);
 
-
-// vendor Manager sub_sub_category Routes
-// SUB SUB CATEGORY ROUTES
+// vendor Manager sub_subCategory Routes
+// 1)create sub_subcategory Routes
 router.post(
   "/create-sub-subcategory",
   authenticateToken,
@@ -99,6 +143,7 @@ router.post(
   VendorController.createSubSubCategory
 );
 
+// 2)Fetch all sub_subcategories
 router.get(
   "/sub-subcategory",
   authenticateToken,
@@ -106,6 +151,7 @@ router.get(
   VendorController.getAllSubSubCategories
 );
 
+// 3)fetch sub_subcategory by id
 router.get(
   "/sub-subcategory/:id",
   authenticateToken,
@@ -113,6 +159,7 @@ router.get(
   VendorController.getSubSubCategoryById
 );
 
+// 4)update sub_subcategory
 router.put(
   "/update-sub-subcategory/:id",
   authenticateToken,
@@ -120,12 +167,12 @@ router.put(
   VendorController.updateSubSubCategory
 );
 
+// 5)delete sub_subcategory
 router.delete(
   "/delete-sub-subcategory/:id",
   authenticateToken,
   authorizeRoles("vendor_manager"),
   VendorController.deleteSubSubCategory
 );
-
 
 module.exports = router;
