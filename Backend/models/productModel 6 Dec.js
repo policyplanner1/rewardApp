@@ -259,12 +259,9 @@ class ProductModel {
     }
 
     // 3️⃣ Handle product variants
-    if (data.variants) {
-      let variants = JSON.parse(data.variants);
-      if (!variants && !Array.isArray(variants)) return;
-
-      for (let i = 0; i < variants.length; i++) {
-        const variant = variants[i];
+    if (data.variants && Array.isArray(data.variants)) {
+      for (let i = 0; i < data.variants.length; i++) {
+        const variant = data.variants[i];
 
         if (variant.variant_id) {
           // Existing variant -> update
