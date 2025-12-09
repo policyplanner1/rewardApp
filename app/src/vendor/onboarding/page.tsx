@@ -88,6 +88,9 @@ const initialFormData: VendorOnboardingData = {
   vendorAgreementFile: null,
   brandLogoFile: null,
   authorizationLetterFile: null,
+  nocFile: null,
+  rightsAdvisoryFile: null,
+  electricityBillFile: null,
 
   agreementAccepted: false,
 
@@ -330,7 +333,7 @@ export default function Onboarding() {
     }
 
     // Validate required files
-    const requiredFilesMissing = !formData.gstinFile || !formData.panFile || !formData.bankProofFile || !formData.signatoryIdFile || !formData.businessProfileFile;
+    const requiredFilesMissing = !formData.gstinFile || !formData.panFile || !formData.bankProofFile || !formData.signatoryIdFile || !formData.businessProfileFile || !formData.nocFile || !formData.electricityBillFile || !formData.rightsAdvisoryFile;
     if (requiredFilesMissing) {
       alert('Please upload all mandatory documents: GST Certificate, PAN Card, Bank Proof, Signatory ID Proof, and Business Profile.');
       return;
@@ -393,7 +396,7 @@ export default function Onboarding() {
     // Append file fields
     const fileFields: Array<keyof VendorOnboardingData> = [
       'gstinFile','panFile','bankProofFile','signatoryIdFile','businessProfileFile',
-      'vendorAgreementFile','brandLogoFile','authorizationLetterFile'
+      'vendorAgreementFile','brandLogoFile','authorizationLetterFile','nocFile','electricityBillFile','rightsAdvisoryFile'
     ];
 
     fileFields.forEach((field) => {
@@ -526,15 +529,37 @@ export default function Onboarding() {
                 accept=".jpg, .jpeg, .png, .svg"
                 description="Upload brand logo (PNG/JPG/SVG)."
               />
-               {/* <FileUploadInput
+              {/* Noc */}
+               <FileUploadInput
                 id="nocFile"
-                label="noc"
-                file={formData.bankProofFile}
+                label="NOC"
+                file={formData.nocFile}
                 onChange={handleChange}
                 required
                 accept=".jpg, .jpeg, .png, .pdf"
-                description="Upload a Cancelled Cheque with company name and account details."
-              /> */}
+                description="Upload a No objection certificate."
+              />
+              {/* Electricity */}
+              <FileUploadInput
+                id="electricityBillFile"
+                label="Electricity bill"
+                file={formData.electricityBillFile}
+                onChange={handleChange}
+                required
+                accept=".jpg, .jpeg, .png, .pdf"
+                description="Upload Electricity bill."
+              />
+
+              {/* Advisory File */}
+              <FileUploadInput
+                id="rightsAdvisoryFile"
+                label="Advisory/ Disclaimer"
+                file={formData.rightsAdvisoryFile}
+                onChange={handleChange}
+                required
+                accept=".jpg, .jpeg, .png, .pdf"
+                description="Rights Granted by the Advisory Certificate."
+              />
 
               {/* Vendor agreement - checkbox + optional upload */}
               <div className="col-span-1 md:col-span-2 lg:col-span-3">
