@@ -2,6 +2,7 @@ const VendorModel = require("../models/vendorModel");
 const categoryModel = require("../models/categoryModel");
 const subCategoryModel = require("../models/subCategoryModel");
 const subSubCategoryModel = require("../models/subSubCategoryModel");
+const db = require("../config/database");
 
 class VendorController {
   /* ============================================================
@@ -9,22 +10,27 @@ class VendorController {
   ============================================================ */
   async onboardVendor(req, res) {
     try {
+      const connection = await db.getConnection();
+      await connection.beginTransaction(); // START TRANSACTION
+
       const userId = req.user.user_id;
       const data = req.body;
       const files = req.files;
+    
+      const vendorId = await VendorModel.createVendor(connection,data, userId);
 
-      const vendorId = await VendorModel.createVendor(data, userId);
+      await VendorModel.insertAddress(connection,vendorId, "business", data);
+      await VendorModel.insertAddress(connection,vendorId, "billing", data);
+      await VendorModel.insertAddress(connection,vendorId, "shipping", data);
 
-      await VendorModel.insertAddress(vendorId, "business", data);
-      await VendorModel.insertAddress(vendorId, "billing", data);
-      await VendorModel.insertAddress(vendorId, "shipping", data);
-
-      await VendorModel.insertBankDetails(vendorId, data);
-      await VendorModel.insertContacts(vendorId, data);
+      await VendorModel.insertBankDetails(connection,vendorId, data);
+      await VendorModel.insertContacts(connection,vendorId, data);
 
       if (files) {
-        await VendorModel.insertCommonDocuments(vendorId, files);
+        await VendorModel.insertCommonDocuments(connection,vendorId, files);
       }
+
+      await connection.commit();
 
       return res.status(201).json({
         success: true,
@@ -32,12 +38,16 @@ class VendorController {
         vendorId,
       });
     } catch (err) {
+      await connection.rollback();
+
       console.error("ONBOARD ERROR:", err);
       res.status(500).json({
         success: false,
         message: "Onboarding failed",
         error: err.message,
       });
+    }finally{
+       connection.release(); // release connection back to pool
     }
   }
 

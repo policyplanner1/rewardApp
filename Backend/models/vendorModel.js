@@ -4,8 +4,8 @@ class VendorModel {
   /* ============================================================
       CREATE VENDOR
   ============================================================ */
-  async createVendor(data, userId) {
-    const [result] = await db.execute(
+  async createVendor(connection,data, userId) {
+    const [result] = await connection.execute(
       `INSERT INTO vendors 
         (user_id, company_name, full_name, vendor_type, gstin, ipaddress, pan_number, status, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?,'pending', NOW())`,
@@ -25,7 +25,7 @@ class VendorModel {
   /* ============================================================
       INSERT ADDRESS (business/billing/shipping)
   ============================================================ */
-  async insertAddress(vendorId, type, d) {
+  async insertAddress(connection,vendorId, type, d) {
     const address = {
       line1: d[`${type}AddressLine1`] || d.addressLine1 || "",
       line2: d[`${type}AddressLine2`] || d.addressLine2 || "",
@@ -35,7 +35,7 @@ class VendorModel {
       pincode: d[`${type}Pincode`] || d.pincode || "",
     };
 
-    await db.execute(
+    await connection.execute(
       `INSERT INTO vendor_addresses 
         (vendor_id, type, line1, line2, line3, city, state, pincode)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -55,8 +55,8 @@ class VendorModel {
   /* ============================================================
       INSERT BANK DETAILS
   ============================================================ */
-  async insertBankDetails(vendorId, d) {
-    await db.execute(
+  async insertBankDetails(connection,vendorId, d) {
+    await connection.execute(
       `INSERT INTO vendor_bank_details 
         (vendor_id, bank_name, account_number, branch, ifsc_code)
        VALUES (?, ?, ?, ?, ?)`,
@@ -73,8 +73,8 @@ class VendorModel {
   /* ============================================================
       INSERT CONTACT DETAILS
   ============================================================ */
-  async insertContacts(vendorId, d) {
-    await db.execute(
+  async insertContacts(connection,vendorId, d) {
+    await connection.execute(
       `INSERT INTO vendor_contacts
         (vendor_id, primary_contact, alternate_contact, email, payment_terms, comments)
        VALUES (?, ?, ?, ?, ?, ?)`,
@@ -93,11 +93,11 @@ class VendorModel {
       INSERT DOCUMENTS (DYNAMIC)
       Works with ANY file key from frontend
   ============================================================ */
-  async insertCommonDocuments(vendorId, files) {
+  async insertCommonDocuments(connection,vendorId, files) {
     for (const key of Object.keys(files)) {
       const file = files[key][0];
 
-      await db.execute(
+      await connection.execute(
         `INSERT INTO vendor_documents 
            (vendor_id, document_key, file_path, mime_type, uploaded_at)
          VALUES (?, ?, ?, ?, NOW())`,
