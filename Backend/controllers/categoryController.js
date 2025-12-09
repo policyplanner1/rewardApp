@@ -1,17 +1,17 @@
 const db = require("../config/database");
 
 class CategoryController {
-
   // Get all categories
   async getAllCategories(req, res) {
     try {
-      const [rows] = await db.execute(`SELECT * FROM categories ORDER BY category_name ASC`);
+      const [rows] = await db.execute(
+        `SELECT * FROM categories ORDER BY category_name ASC`
+      );
 
       res.json({
         success: true,
         data: rows
       });
-
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
     }
@@ -35,13 +35,12 @@ class CategoryController {
         success: true,
         data: docs
       });
-
     } catch (err) {
-console.log("Category document fetch error:", err.message);
-return res.json({
-  success: true,
-  data: []
-});
+      return res.json({
+        success: true,
+        data: [],
+        message:err.message
+      });
     }
   }
 }
