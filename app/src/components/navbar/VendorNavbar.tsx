@@ -161,7 +161,7 @@ export default function VendorNavbar() {
     { href: "/src/vendor/products/list", label: "Products", Icon: Package },
 
     {
-      href: "/src/vendor/products/track-order",
+      href: "/src/vendor/track-order",
       label: "Track Order",
       Icon: OrderTrackingV3,
     },
