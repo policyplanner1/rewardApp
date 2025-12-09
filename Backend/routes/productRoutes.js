@@ -6,7 +6,7 @@ const { authenticateToken, authorizeRoles } = require("../middleware/auth");
 
 // CREATE PRODUCT (images + ALL category documents)
 router.post(
-  "/create",
+  "/create-product",
   authenticateToken,
   authorizeRoles("vendor"),
   upload.any(),
@@ -20,9 +20,6 @@ router.get(
   authorizeRoles("vendor", "vendor_manager"),
   ProductController.getProductDetailsById
 );
-
-
-
 
 
 // get product Documents
@@ -62,7 +59,7 @@ router.delete(
 router.get(
   "/all-products",
   authenticateToken,
-  authorizeRoles("vendor"),
+  authorizeRoles("vendor_manager"),
   ProductController.getAllProductDetails
 );
 
