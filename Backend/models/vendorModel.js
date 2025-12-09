@@ -1,25 +1,23 @@
-const db = require('../config/database');
+const db = require("../config/database");
 
 class VendorModel {
-
   /* ============================================================
       CREATE VENDOR
   ============================================================ */
   async createVendor(data, userId) {
     const [result] = await db.execute(
       `INSERT INTO vendors 
-        (user_id, company_name, full_name, vendor_type, gstin, pan_number,
-         udyam_number, listed_products, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())`,
+        (user_id, company_name, full_name, vendor_type, gstin, ip_address, pan_number, listed_products, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?,'pending', NOW())`,
       [
         userId,
-        data.companyName || '',
-        data.fullName || '',
-        data.vendorType || '',
-        data.gstin || '',
-        data.panNumber || '',
-        data.udyamNumber || '',
-        Number(data.noOfListedProducts) || 0
+        data.companyName || "",
+        data.fullName || "",
+        data.vendorType || "",
+        data.gstin || "",
+        data.ip_address || "",
+        data.panNumber || "",
+        Number(data.noOfListedProducts) || 0,
       ]
     );
     return result.insertId;
@@ -30,12 +28,12 @@ class VendorModel {
   ============================================================ */
   async insertAddress(vendorId, type, d) {
     const address = {
-      line1: d[`${type}AddressLine1`] || d.addressLine1 || '',
-      line2: d[`${type}AddressLine2`] || d.addressLine2 || '',
-      line3: d[`${type}AddressLine3`] || d.addressLine3 || '',
-      city: d[`${type}City`] || d.city || '',
-      state: d[`${type}State`] || d.state || '',
-      pincode: d[`${type}Pincode`] || d.pincode || ''
+      line1: d[`${type}AddressLine1`] || d.addressLine1 || "",
+      line2: d[`${type}AddressLine2`] || d.addressLine2 || "",
+      line3: d[`${type}AddressLine3`] || d.addressLine3 || "",
+      city: d[`${type}City`] || d.city || "",
+      state: d[`${type}State`] || d.state || "",
+      pincode: d[`${type}Pincode`] || d.pincode || "",
     };
 
     await db.execute(
@@ -50,7 +48,7 @@ class VendorModel {
         address.line3,
         address.city,
         address.state,
-        address.pincode
+        address.pincode,
       ]
     );
   }
@@ -65,10 +63,10 @@ class VendorModel {
        VALUES (?, ?, ?, ?, ?)`,
       [
         vendorId,
-        d.bankName || '',
-        d.accountNumber || '',
-        d.branch || '',
-        d.ifscCode || ''
+        d.bankName || "",
+        d.accountNumber || "",
+        d.branch || "",
+        d.ifscCode || "",
       ]
     );
   }
@@ -83,11 +81,11 @@ class VendorModel {
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
         vendorId,
-        d.primaryContactNumber || '',
+        d.primaryContactNumber || "",
         d.alternateContactNumber || null,
-        d.email || '',
-        d.paymentTerms || '',
-        d.comments || ''
+        d.email || "",
+        d.paymentTerms || "",
+        d.comments || "",
       ]
     );
   }
@@ -106,9 +104,9 @@ class VendorModel {
          VALUES (?, ?, ?, ?, NOW())`,
         [
           vendorId,
-          key,              // e.g. "gstinFile", "panFile", etc
+          key, 
           file.path,
-          file.mimetype
+          file.mimetype,
         ]
       );
     }
@@ -129,19 +127,23 @@ class VendorModel {
     if (!vendor) return null;
 
     const [addresses] = await db.execute(
-      'SELECT * FROM vendor_addresses WHERE vendor_id = ?', [vendorId]
+      "SELECT * FROM vendor_addresses WHERE vendor_id = ?",
+      [vendorId]
     );
 
     const [[bank]] = await db.execute(
-      'SELECT * FROM vendor_bank_details WHERE vendor_id = ?', [vendorId]
+      "SELECT * FROM vendor_bank_details WHERE vendor_id = ?",
+      [vendorId]
     );
 
     const [[contacts]] = await db.execute(
-      'SELECT * FROM vendor_contacts WHERE vendor_id = ?', [vendorId]
+      "SELECT * FROM vendor_contacts WHERE vendor_id = ?",
+      [vendorId]
     );
 
     const [documents] = await db.execute(
-      'SELECT * FROM vendor_documents WHERE vendor_id = ?', [vendorId]
+      "SELECT * FROM vendor_documents WHERE vendor_id = ?",
+      [vendorId]
     );
 
     return { vendor, addresses, bank, contacts, documents };
