@@ -11,6 +11,7 @@ interface VendorOnboardingData {
   vendorType: 'Manufacturer' | 'Trader' | 'Service Provider' | '';
   gstin: string;
   panNumber: string;
+  ip_address: string;
 
   // Documents (common)
   gstinFile: File | null;          // GST certificate
@@ -21,6 +22,9 @@ interface VendorOnboardingData {
   vendorAgreementFile: File | null; // Optional: signed agreement (we'll also include checkbox)
   brandLogoFile: File | null;     // Brand logo (PNG/JPG)
   authorizationLetterFile: File | null; // Conditional: for Trader only
+  electricityBillFile: File | null ;
+  rightsAdvisoryFile: File | null ;
+  nocFile: File | null ;
 
   // A boolean for agreement acceptance
   agreementAccepted: boolean;
@@ -74,6 +78,7 @@ const initialFormData: VendorOnboardingData = {
   vendorType: '',
   gstin: '',
   panNumber: '',
+  ip_address: '',
 
   gstinFile: null,
   panFile: null,
@@ -365,7 +370,7 @@ export default function Onboarding() {
 
     // Append text fields (only string/boolean types)
     const textFields: Array<keyof VendorOnboardingData> = [
-      'companyName','fullName','vendorType','gstin','panNumber',
+      'companyName','fullName','vendorType','gstin','panNumber','ip_address',
       'agreementAccepted','companyEmail','companyPhone',
       'addressLine1','addressLine2','addressLine3','city','state','pincode',
       'billingAddressLine1','billingAddressLine2','billingCity','billingState','billingPincode',
@@ -457,6 +462,7 @@ export default function Onboarding() {
 
               <FormInput id="gstin" label="GSTIN" value={formData.gstin} onChange={handleChange} />
               <FormInput id="panNumber" label="PAN Number" value={formData.panNumber} onChange={handleChange} required />
+              <FormInput id="ip_address" label="IP Address" value={formData.ip_address} onChange={handleChange} />
 
               {/* File uploads: only the common docs */}
               <FileUploadInput
@@ -520,7 +526,7 @@ export default function Onboarding() {
                 accept=".jpg, .jpeg, .png, .svg"
                 description="Upload brand logo (PNG/JPG/SVG)."
               />
-               <FileUploadInput
+               {/* <FileUploadInput
                 id="nocFile"
                 label="noc"
                 file={formData.bankProofFile}
@@ -528,7 +534,7 @@ export default function Onboarding() {
                 required
                 accept=".jpg, .jpeg, .png, .pdf"
                 description="Upload a Cancelled Cheque with company name and account details."
-              />
+              /> */}
 
               {/* Vendor agreement - checkbox + optional upload */}
               <div className="col-span-1 md:col-span-2 lg:col-span-3">
