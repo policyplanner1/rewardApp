@@ -1,9 +1,13 @@
 const ProductModel = require("../models/productModel");
+const db = require("../config/database");
 
 class ProductController {
   // create Product
   async createProduct(req, res) {
     try {
+      const connection = await db.getConnection();
+      await connection.beginTransaction(); // START TRANSACTION
+
       const vendorId = req.user.vendor_id;
       const body = req.body;
 
@@ -15,7 +19,11 @@ class ProductController {
         });
       }
 
-      const productId = await ProductModel.createProduct(vendorId, body);
+      const productId = await ProductModel.createProduct(
+        connection,
+        vendorId,
+        body
+      );
 
       // Handle uploaded files
       if (req.files && req.files.length) {
@@ -24,12 +32,17 @@ class ProductController {
 
         // Insert main product images
         if (mainImages.length) {
-          await ProductModel.insertProductImages(productId, mainImages);
+          await ProductModel.insertProductImages(
+            connection,
+            productId,
+            mainImages
+          );
         }
 
         // Insert product documents
         if (otherFiles.length) {
           await ProductModel.insertProductDocuments(
+            connection,
             productId,
             body.category_id,
             otherFiles
@@ -38,15 +51,16 @@ class ProductController {
       }
       //  Handle product variants
       if (body.variants) {
-        let variants=JSON.parse(body.variants)
+        let variants = JSON.parse(body.variants);
 
-        if(!variants && !Array.isArray(variants)) return;
+        if (!variants && !Array.isArray(variants)) return;
 
         for (let i = 0; i < variants.length; i++) {
           const variant = variants[i];
 
           // Insert variant in product_variants table
           const variantId = await ProductModel.createProductVariant(
+            connection,
             productId,
             variant
           );
@@ -59,6 +73,7 @@ class ProductController {
           // Insert variant images
           if (variantFiles.length) {
             await ProductModel.insertProductVariantImages(
+              connection,
               variantId,
               variantFiles
             );
@@ -66,16 +81,22 @@ class ProductController {
         }
       }
 
+      await connection.commit();
+
       return res.json({
         success: true,
         productId,
       });
     } catch (err) {
+      await connection.rollback();
+
       console.log("PRODUCT CREATE ERROR:", err);
       return res.status(500).json({
         success: false,
         message: err.message,
       });
+    }finally{
+       connection.release(); // release connection back to pool
     }
   }
 
@@ -187,7 +208,7 @@ class ProductController {
   // Get all products by vendor
   async getProductsByVendor(req, res) {
     try {
-      const vendorId = req.params.vendorId; 
+      const vendorId = req.params.vendorId;
       if (!vendorId) {
         return res.status(400).json({
           success: false,

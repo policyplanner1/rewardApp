@@ -2,13 +2,13 @@ const db = require("../config/database");
 
 class ProductModel {
   // create a Product
-  async createProduct(vendorId, data) {
+  async createProduct(connection,vendorId, data) {
     const safe = (v) => (v === undefined || v === "" ? null : v);
     let custom_category = data.custom_category || null;
     let custom_subcategory = data.custom_subcategory || null;
     let custom_sub_subcategory = data.custom_sub_subcategory || null;
 
-    const [result] = await db.execute(
+    const [result] = await connection.execute(
       `INSERT INTO products 
      (vendor_id, category_id, subcategory_id, sub_subcategory_id, brand_name, manufacturer, item_type, barcode, 
       product_name, description, short_description,tax_code, expiry_date,
@@ -38,12 +38,12 @@ class ProductModel {
   }
 
   // insert product Images
-  async insertProductImages(productId, files) {
+  async insertProductImages(connection,productId, files) {
     for (const file of files) {
       // Only insert if the field is meant for images
       if (file.fieldname !== "images") continue;
 
-      await db.execute(
+      await connection.execute(
         `INSERT INTO product_images (product_id, image_url)
        VALUES (?, ?)`,
         [productId, file.path]
@@ -52,8 +52,8 @@ class ProductModel {
   }
 
   // store product Documents
-  async insertProductDocuments(productId, categoryId, files) {
-    const [docTypes] = await db.execute(
+  async insertProductDocuments(connection,productId, categoryId, files) {
+    const [docTypes] = await connection.execute(
       `SELECT d.document_id
      FROM category_document cd
      JOIN documents d ON cd.document_id = d.document_id
@@ -78,10 +78,10 @@ class ProductModel {
   }
 
   // Insert product variant
-  async createProductVariant(productId, variant) {
+  async createProductVariant(connection,productId, variant) {
     const safe = (v) => (v === undefined || v === "" ? null : v);
 
-    const [result] = await db.execute(
+    const [result] = await connection.execute(
       `INSERT INTO product_variants
      (product_id, size, color, weight, custom_attributes, sku, mrp, vendor_price, sale_price, stock)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -103,9 +103,9 @@ class ProductModel {
   }
 
   // Insert variant images
-  async insertProductVariantImages(variantId, files) {
+  async insertProductVariantImages(connection,variantId, files) {
     for (const file of files) {
-      await db.execute(
+      await connection.execute(
         `INSERT INTO product_variant_images (variant_id, image_url)
        VALUES (?, ?)`,
         [variantId, file.path]
