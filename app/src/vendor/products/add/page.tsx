@@ -63,11 +63,11 @@ interface Variant {
 }
 
 interface ProductData {
+  productName: string;
   brandName: string;
   manufacturer: string;
   itemType: string;
   barCode: string;
-  productName: string;
   description: string;
   shortDescription: string;
   categoryId: number | null;
@@ -1117,6 +1117,14 @@ export default function ProductListingDynamic() {
             />
 
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+                <FormInput
+                id="productName"
+                name="productName"
+                label="Product Name"
+                value={product.itemType}
+                onChange={handleFieldChange}
+                placeholder="Type of product (e.g., Shoes, TV)"
+              />
               <FormInput
                 id="brandName"
                 name="brandName"
@@ -1136,37 +1144,28 @@ export default function ProductListingDynamic() {
                 onChange={handleFieldChange}
                 placeholder="Manufacturer name"
               />
-
-              <FormInput
-                id="itemType"
-                name="itemType"
-                label="Item Type"
-                value={product.itemType}
-                onChange={handleFieldChange}
-                placeholder="Electronics, Clothing, Food"
-              />
-
+               
               <FormInput
                 id="barCode"
                 name="barCode"
                 label="Barcode"
                 value={product.barCode}
                 onChange={handleFieldChange}
-                placeholder="EAN / SKU / Code"
+                placeholder="EAN/Code"
               />
 
               <FormInput
-                id="productName"
-                name="productName"
-                label="Product Name"
+                id="model/SKU"
+                name="model/SKU"
+                label="Model / SKU"
                 required
                 value={product.productName}
                 onChange={handleFieldChange}
-                placeholder="Full product name"
+                placeholder="Enter Model or SKU"
               />
 
               <FormInput
-                id="model"
+                id="tax"
                 name="model"
                 label="Model / SKU"
                 value={product.model}
@@ -1214,14 +1213,7 @@ export default function ProductListingDynamic() {
             />
 
             <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-              <FormInput
-                id="taxCode"
-                name="taxCode"
-                label="Tax Code"
-                value={product.taxCode}
-                onChange={handleFieldChange}
-                placeholder="GST18, HSNXXXX"
-              />
+             
               <FormInput
                 id="expiryDate"
                 name="expiryDate"

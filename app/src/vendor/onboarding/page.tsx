@@ -153,7 +153,7 @@ const FormInput = ({
       onChange={onChange}
       placeholder={placeholder || `Enter ${label.toLowerCase()}`}
       required={required}
-      className="p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-brand-purple focus:border-brand-purple transition duration-150"
+      className="p-3 transition duration-150 border border-gray-300 rounded-lg focus:ring-1 focus:ring-brand-purple focus:border-brand-purple"
     />
   </div>
 );
@@ -182,19 +182,19 @@ const FileUploadInput = ({
     const fileText = file ? file.name : 'No file selected';
 
     return (
-        <div className="flex flex-col space-y-1 col-span-1">
-            <label htmlFor={id as string} className="text-sm font-medium text-gray-700 flex items-center">
+        <div className="flex flex-col col-span-1 space-y-1">
+            <label htmlFor={id as string} className="flex items-center text-sm font-medium text-gray-700">
                 <FaFileUpload className="mr-2 text-brand-purple" style={{ color: '#852BAF' }} />
-                Upload {label} {required && <span className="text-red-500 ml-1">*</span>}
+                Upload {label} {required && <span className="ml-1 text-red-500">*</span>}
             </label>
-            {description ? <p className="text-xs text-gray-500 mb-1">{description}</p> : null}
-            <div className="flex items-center space-x-2 p-3 border border-dashed border-gray-400 rounded-lg bg-gray-50 hover:bg-gray-100 transition duration-150">
+            {description ? <p className="mb-1 text-xs text-gray-500">{description}</p> : null}
+            <div className="flex items-center p-3 space-x-2 transition duration-150 border border-gray-400 border-dashed rounded-lg bg-gray-50 hover:bg-gray-100">
                 <span className={`flex-1 text-sm truncate ${file ? 'text-gray-900' : 'text-gray-500'}`}>
                     {fileText}
                 </span>
                 <label 
                     htmlFor={id as string} 
-                    className="cursor-pointer bg-brand-purple text-white px-3 py-1 text-xs font-medium rounded-full hover:opacity-90 transition duration-150"
+                    className="px-3 py-1 text-xs font-medium text-white transition duration-150 rounded-full cursor-pointer bg-brand-purple hover:opacity-90"
                     style={{ backgroundColor: '#852BAF' }}
                 >
                     Choose File
@@ -216,10 +216,10 @@ const FileUploadInput = ({
 
 // --- Reusable Section Header ---
 const SectionHeader = ({ icon: Icon, title, description }: { icon: any, title: string, description: string }) => (
-  <div className="flex items-center space-x-3 mb-4 border-b pb-2">
+  <div className="flex items-center pb-2 mb-4 space-x-3 border-b">
     <Icon className="text-2xl" style={{ color: '#852BAF' }} />
     <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
-    <p className="text-sm text-gray-500 hidden md:block">{description}</p>
+    <p className="hidden text-sm text-gray-500 md:block">{description}</p>
   </div>
 );
 
@@ -423,16 +423,16 @@ export default function Onboarding() {
 
   return (
     <div className="p-6" style={{ backgroundColor: '#FFFAFB' }}>
-      <div className="bg-white rounded-2xl p-6 shadow-2xl border border-gray-100">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Vendor Onboarding Form</h1>
-        <p className="text-gray-600 mb-6 border-b pb-4">Please fill in your complete KYC and business profile details.</p>
+      <div className="p-6 bg-white border border-gray-100 shadow-2xl rounded-2xl">
+        <h1 className="mb-2 text-3xl font-bold text-gray-900">Vendor Onboarding Form</h1>
+        <p className="pb-4 mb-6 text-gray-600 border-b">Please fill in your complete KYC and business profile details.</p>
 
         <form onSubmit={handleSubmit} className="space-y-8">
 
           {/* A. Business Information */}
           <section className="space-y-4">
             <SectionHeader icon={FaBuilding} title="Business Information & Documents" description="Upload only the common mandatory documents." />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
 
               <FormInput id="companyName" label="Company Name" value={formData.companyName} onChange={handleChange} required />
               <FormInput id="fullName" label="Full Name (as per PAN Card)" value={formData.fullName} onChange={handleChange} required />
@@ -446,7 +446,7 @@ export default function Onboarding() {
                   value={formData.vendorType}
                   onChange={handleVendorTypeChange}
                   required
-                  className="p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-brand-purple focus:border-brand-purple transition duration-150"
+                  className="p-3 transition duration-150 border border-gray-300 rounded-lg focus:ring-1 focus:ring-brand-purple focus:border-brand-purple"
                 >
                   <option value="">Select vendor type</option>
                   <option value="Manufacturer">Manufacturer</option>
@@ -520,20 +520,29 @@ export default function Onboarding() {
                 accept=".jpg, .jpeg, .png, .svg"
                 description="Upload brand logo (PNG/JPG/SVG)."
               />
+               <FileUploadInput
+                id="nocFile"
+                label="noc"
+                file={formData.bankProofFile}
+                onChange={handleChange}
+                required
+                accept=".jpg, .jpeg, .png, .pdf"
+                description="Upload a Cancelled Cheque with company name and account details."
+              />
 
               {/* Vendor agreement - checkbox + optional upload */}
               <div className="col-span-1 md:col-span-2 lg:col-span-3">
-                <div className="flex items-center space-x-3 mb-3">
+                <div className="flex items-center mb-3 space-x-3">
                   <input
                     type="checkbox"
                     id="agreementAccepted"
                     name="agreementAccepted"
                     checked={formData.agreementAccepted}
                     onChange={handleChange}
-                    className="h-4 w-4 text-brand-purple border-gray-300 rounded"
+                    className="w-4 h-4 border-gray-300 rounded text-brand-purple"
                     style={{ accentColor: '#852BAF' }}
                   />
-                  <label htmlFor="agreementAccepted" className="text-sm text-gray-700 font-medium">
+                  <label htmlFor="agreementAccepted" className="text-sm font-medium text-gray-700">
                     I accept the Vendor Agreement terms.
                   </label>
                 </div>
@@ -552,7 +561,7 @@ export default function Onboarding() {
               {formData.vendorType === 'Manufacturer' && (
                 <>
                   <div className="flex flex-col space-y-1">
-                    <label htmlFor="companyEmail" className="text-sm font-medium text-gray-700 flex items-center">
+                    <label htmlFor="companyEmail" className="flex items-center text-sm font-medium text-gray-700">
                       <FaEnvelope className="mr-2 text-brand-purple" style={{ color: '#852BAF' }} />
                       Company Email <span className="text-red-500">*</span>
                     </label>
@@ -564,7 +573,7 @@ export default function Onboarding() {
                       onChange={handleChange}
                       placeholder="Enter official company email"
                       required
-                      className="p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-brand-purple focus:border-brand-purple transition duration-150"
+                      className="p-3 transition duration-150 border border-gray-300 rounded-lg focus:ring-1 focus:ring-brand-purple focus:border-brand-purple"
                     />
                   </div>
 
@@ -598,7 +607,7 @@ export default function Onboarding() {
           {/* Address Sections */}
           <section className="space-y-4">
             <SectionHeader icon={FaAddressBook} title="Registered Address" description="The official registered address of your business." />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
               <FormInput id="addressLine1" label="Address Line 1" value={formData.addressLine1} onChange={handleChange} required />
               <FormInput id="addressLine2" label="Address Line 2" value={formData.addressLine2} onChange={handleChange} />
               <FormInput id="addressLine3" label="Address Line 3" value={formData.addressLine3} onChange={handleChange} />
@@ -619,10 +628,10 @@ export default function Onboarding() {
                 id="sameAsAddress" 
                 checked={isSameAsAddress} 
                 onChange={() => handleCheckboxChange('billing')}
-                className="h-4 w-4 text-brand-purple border-gray-300 rounded focus:ring-brand-purple"
+                className="w-4 h-4 border-gray-300 rounded text-brand-purple focus:ring-brand-purple"
                 style={{ accentColor: '#852BAF' }}
               />
-              <label htmlFor="sameAsAddress" className="ml-2 text-sm text-gray-700 font-medium">
+              <label htmlFor="sameAsAddress" className="ml-2 text-sm font-medium text-gray-700">
                 Same as Registered Address
               </label>
             </div>
@@ -647,10 +656,10 @@ export default function Onboarding() {
                 id="sameAsBilling" 
                 checked={isSameAsBilling} 
                 onChange={() => handleCheckboxChange('shipping')}
-                className="h-4 w-4 text-brand-pink border-gray-300 rounded focus:ring-brand-pink"
+                className="w-4 h-4 border-gray-300 rounded text-brand-pink focus:ring-brand-pink"
                 style={{ accentColor: '#FC3F78' }}
               />
-              <label htmlFor="sameAsBilling" className="ml-2 text-sm text-gray-700 font-medium">
+              <label htmlFor="sameAsBilling" className="ml-2 text-sm font-medium text-gray-700">
                 Same as Billing Address
               </label>
             </div>
@@ -668,7 +677,7 @@ export default function Onboarding() {
           {/* Bank Details */}
           <section className="space-y-4">
             <SectionHeader icon={FaUniversity} title="Bank Details & Proof" description="Account details for receiving payments and required proof." />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
               
               <FormInput id="bankName" label="Bank Name" value={formData.bankName} onChange={handleChange} required />
               <FormInput id="accountNumber" label="Account Number" value={formData.accountNumber} onChange={handleChange} type="text" required />
@@ -691,7 +700,7 @@ export default function Onboarding() {
           {/* Contact Details */}
           <section className="space-y-4">
             <SectionHeader icon={FaPhoneAlt} title="Contact Details" description="Primary and secondary contact information." />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
               <FormInput id="primaryContactNumber" label="Primary Contact Number" value={formData.primaryContactNumber} onChange={handleChange} type="tel" required />
               <FormInput id="email" label="Email" value={formData.email} onChange={handleChange} type="email" required />
               <FormInput id="alternateContactNumber" label="Alternate Contact Number" value={formData.alternateContactNumber} onChange={handleChange} type="tel" />
@@ -715,7 +724,7 @@ export default function Onboarding() {
                 value={formData.comments}
                 onChange={handleChange as (e: ChangeEvent<HTMLTextAreaElement>) => void}
                 placeholder="Add any specific notes or requirements here..."
-                className="p-3 border border-gray-300 rounded-lg focus:ring-1 focus:ring-brand-purple focus:border-brand-purple transition duration-150"
+                className="p-3 transition duration-150 border border-gray-300 rounded-lg focus:ring-1 focus:ring-brand-purple focus:border-brand-purple"
               />
             </div>
           </section>
@@ -724,7 +733,7 @@ export default function Onboarding() {
           <div className="pt-4 border-t">
             <button
               type="submit"
-              className="w-full md:w-auto px-6 py-3 text-lg font-semibold text-white rounded-full transition duration-300 hover:shadow-lg"
+              className="w-full px-6 py-3 text-lg font-semibold text-white transition duration-300 rounded-full md:w-auto hover:shadow-lg"
               style={{ background: 'linear-gradient(to right, #852BAF, #FC3F78)' }}
             >
               Submit Onboarding Application

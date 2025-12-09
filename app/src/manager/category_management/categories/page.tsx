@@ -1,165 +1,169 @@
 'use client';
 
+import { api } from '@/app/src/api/api';
 import React, { useState, useEffect } from 'react';
 import { 
-  FiEdit, FiTrash2, FiEye, FiPlus, FiCheckCircle, FiXCircle, 
-  FiCalendar, FiTag, FiX, FiSave 
+  FiEdit, FiTrash2, FiEye, FiPlus, FiCalendar,
+  FiX, FiSave, FiTag
 } from 'react-icons/fi';
 
-type Status = 'active' | 'inactive';
+type Status = "active" | "inactive";
 
 interface Category {
-  id: number;
-  category_name: string;
+  category_id: number;
+  name: string;
   status: Status;
   created_at: string;
-  icon?: string;
 }
 
-const BRAND = {
-  purple: '#852BAF',
-  pink: '#FC3F78',
-  lightPurple: '#D887FD',
-  gradient: 'linear-gradient(135deg, #852BAF 0%, #FC3F78 100%)',
-  gradientHover: 'linear-gradient(135deg, #70249A 0%, #E0356B 100%)'
-};
-
-const DUMMY_CATEGORIES: Category[] = [
-  { id: 1, category_name: 'Electronics', status: 'active', created_at: '2025-10-01' },
-  { id: 2, category_name: 'Apparel', status: 'inactive', created_at: '2025-09-15'  },
-  { id: 3, category_name: 'Home Goods', status: 'active', created_at: '2025-11-05' },
-  { id: 4, category_name: 'Books & Media', status: 'active', created_at: '2025-12-01'}
-];
-
-// STATUS BADGE
-const StatusBadge: React.FC<{ status: Status }> = ({ status }) => {
-  const isActive = status === 'active';
-  return (
-    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${
-      isActive ? 'bg-green-100 text-green-700' : 'bg-rose-100 text-rose-700'
-    }`}>
-      <span className={`h-2 w-2 rounded-full mr-2 ${isActive ? 'bg-green-500' : 'bg-rose-500'}`}></span>
-      {isActive ? 'Active' : 'Inactive'}
-    </span>
-  );
-};
-
-// ICON PLACEHOLDER
-const IconPlaceholder: React.FC<{ name: string; size?: 'sm' | 'lg' }> = ({ name, size = 'sm' }) => {
-  const classes = size === 'lg' ? 'w-14 h-14 text-2xl' : 'w-10 h-10 text-lg';
-  return (
-    <div className={`${classes} rounded-2xl bg-purple-50 border flex items-center justify-center font-bold`} style={{ color: BRAND.purple }}>
-      {name.charAt(0).toUpperCase()}
-    </div>
-  );
-};
-
 export default function CategoryManagement() {
-  const [categories, setCategories] = useState<Category[]>(DUMMY_CATEGORIES);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selected, setSelected] = useState<Category | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState('');
-  const [isAdding, setIsAdding] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // ADD CATEGORY
-  const handleAdd = (e?: React.FormEvent) => {
+  /* ==========================================
+     1️⃣ FETCH ALL CATEGORIES
+  ========================================== */
+  const fetchCategories = async () => {
+    try {
+      const res = await api.get("/category");
+
+      const formatted = res.data.map((c: any) => ({
+        category_id: c.category_id,
+        name: c.category_name || "Unnamed",
+        status: c.status === 1 ? "active" : "inactive",
+        created_at: c.created_at
+      }));
+
+      setCategories(formatted);
+    } catch (err) {
+      console.log("Fetch Category Error:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  /* ==========================================
+     2️⃣ CREATE CATEGORY
+  ========================================== */
+  const handleAdd = async (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!newCategoryName.trim()) return;
 
-    setIsAdding(true);
+    try {
+      setLoading(true);
 
-    const id = categories.length ? Math.max(...categories.map(c => c.id)) + 1 : 1;
+      await api.post("/vendor/create-category", {
+        name: newCategoryName,
+        status: 1
+      });
 
-    const newCat: Category = {
-      id,
-      category_name: newCategoryName.trim(),
-      status: 'active',
-      created_at: new Date().toISOString().split('T')[0],
-    };
-
-    setTimeout(() => {
-      setCategories([newCat, ...categories]);
-      setNewCategoryName('');
-      setIsAdding(false);
-    }, 300);
+      setNewCategoryName("");
+      fetchCategories();
+    } catch (err) {
+      console.log("Add category error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // VIEW DETAILS
-  const handleView = (cat: Category) => {
-    setSelected(cat);
-    setEditName(cat.category_name);
-    setIsEditing(false);
-    setDrawerOpen(true);
+  /* ==========================================
+     3️⃣ VIEW CATEGORY
+  ========================================== */
+  const handleView = async (categoryId: number) => {
+    try {
+      const res = await api.get(`/vendor/category/${categoryId}`);
+
+      const data: Category = {
+        category_id: res.data.category_id,
+        name: res.data.category_name,
+        status: res.data.status === 1 ? "active" : "inactive",
+        created_at: res.data.created_at
+      };
+
+      setSelected(data);
+      setEditName(data.name);
+      setDrawerOpen(true);
+      setIsEditing(false);
+    } catch (err) {
+      console.log("View error:", err);
+    }
   };
 
   const closeDrawer = () => {
     setDrawerOpen(false);
-    setTimeout(() => {
-      setSelected(null);
-      setIsEditing(false);
-    }, 300);
+    setTimeout(() => setSelected(null), 300);
   };
 
-  // TOGGLE STATUS
-  const toggleStatus = (id: number) => {
-    setCategories(prev =>
-      prev.map(c =>
-        c.id === id ? { ...c, status: c.status === 'active' ? 'inactive' : 'active' } : c
-      )
-    );
+  /* ==========================================
+     4️⃣ UPDATE CATEGORY
+  ========================================== */
+  const handleSaveEdit = async () => {
+    if (!selected) return;
 
-    if (selected?.id === id) {
-      setSelected(prev => prev ? { ...prev, status: prev.status === 'active' ? 'inactive' : 'active' } : prev);
+    try {
+      await api.put(`/vendor/update-category/${selected.category_id}`, {
+        name: editName,
+        status: selected.status === "active" ? 1 : 0
+      });
+
+      fetchCategories();
+      setIsEditing(false);
+    } catch (err) {
+      console.log("Update error:", err);
     }
   };
 
-  // DELETE
-  const handleDelete = (id: number) => {
-    if (!confirm('Delete category?')) return;
-    setCategories(prev => prev.filter(c => c.id !== id));
-    if (selected?.id === id) closeDrawer();
-  };
+  /* ==========================================
+     5️⃣ DELETE CATEGORY
+  ========================================== */
+  const handleDelete = async (id: number) => {
+    if (!confirm("Delete category?")) return;
 
-  const handleSaveEdit = () => {
-    if (!selected) return;
-    if (!editName.trim()) return alert('Category name required');
-
-    setCategories(prev => prev.map(c =>
-      c.id === selected.id ? { ...c, category_name: editName } : c
-    ));
-
-    setSelected(prev => prev ? { ...prev, category_name: editName } : prev);
-    setIsEditing(false);
+    try {
+      await api.delete(`/vendor/delete-category/${id}`);
+      fetchCategories();
+      closeDrawer();
+    } catch (err) {
+      console.log("Delete error:", err);
+    }
   };
 
   return (
-    <div className="min-h-screen p-6 bg-gray-50">
+    <div className="min-h-screen p-8 bg-gradient-to-br from-purple-50 to-pink-50">
 
-      {/* HEADER */}
-      <h1 className="flex items-center gap-2 mb-6 text-3xl font-bold text-purple-700">
-        <FiTag /> Category Management
+      {/* PAGE HEADER */}
+      <h1 className="flex items-center gap-3 mb-6 text-4xl font-bold text-purple-700 drop-shadow-sm">
+        <FiTag className="text-purple-600" /> 
+        Category Management
       </h1>
 
-      {/* ADD CATEGORY */}
-      <form onSubmit={handleAdd} className="flex gap-3 mb-6">
+      {/* ADD CATEGORY INPUT */}
+      <form onSubmit={handleAdd} className="flex gap-4 mb-8">
         <input
           value={newCategoryName}
           onChange={e => setNewCategoryName(e.target.value)}
-          className="flex-1 px-4 py-3 border rounded-xl"
+          className="flex-1 px-5 py-3 border shadow-sm rounded-xl focus:ring-2 focus:ring-purple-400"
           placeholder="Enter category name..."
         />
+
         <button
           type="submit"
-          className="px-6 py-3 text-white bg-purple-600 rounded-xl"
+          disabled={loading}
+          className="flex items-center gap-2 px-6 py-3 font-semibold text-white transition-all bg-purple-600 shadow rounded-xl hover:bg-purple-700"
         >
           <FiPlus /> Add
         </button>
       </form>
 
       {/* TABLE */}
-      <div className="bg-white shadow rounded-2xl">
+      <div className="overflow-hidden bg-white shadow-xl rounded-2xl">
         <table className="min-w-full">
           <thead className="text-white bg-purple-600">
             <tr>
@@ -172,132 +176,133 @@ export default function CategoryManagement() {
 
           <tbody>
             {categories.map(cat => (
-              <tr key={cat.id} className="border-b hover:bg-purple-50">
-                <td className="flex items-center gap-4 px-6 py-4">
-                  <IconPlaceholder name={cat.category_name} />
-                  <div>
-                    <div className="font-semibold">{cat.category_name}</div>
-                  </div>
+              <tr key={cat.category_id} className="transition hover:bg-purple-50">
+                
+                <td className="px-6 py-4 font-semibold">{cat.name}</td>
+
+                <td className="px-6 py-4">
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    cat.status === "active"
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-600"
+                  }`}>
+                    {cat.status}
+                  </span>
                 </td>
 
                 <td className="px-6 py-4">
-                  <button onClick={() => toggleStatus(cat.id)}>
-                    <StatusBadge status={cat.status} />
+                  {new Date(cat.created_at).toLocaleDateString()}
+                </td>
+
+                <td className="flex justify-end gap-3 px-6 py-4 text-right">
+                  <button className="p-2 text-blue-600 hover:text-blue-800" 
+                    onClick={() => handleView(cat.category_id)}>
+                    <FiEye size={18} />
+                  </button>
+
+                  <button className="p-2 text-purple-600 hover:text-purple-800"
+                    onClick={() => { handleView(cat.category_id); setIsEditing(true); }}>
+                    <FiEdit size={18} />
+                  </button>
+
+                  <button className="p-2 text-red-600 hover:text-red-800"
+                    onClick={() => handleDelete(cat.category_id)}>
+                    <FiTrash2 size={18} />
                   </button>
                 </td>
 
-                <td className="px-6 py-4">{cat.created_at}</td>
-
-                <td className="flex justify-end gap-2 px-6 py-4 text-right">
-                  <button className="p-2" onClick={() => handleView(cat)}>
-                    <FiEye />
-                  </button>
-                  <button className="p-2 text-purple-600" onClick={() => { handleView(cat); setIsEditing(true); }}>
-                    <FiEdit />
-                  </button>
-                  <button className="p-2 text-rose-600" onClick={() => handleDelete(cat.id)}>
-                    <FiTrash2 />
-                  </button>
-                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* DRAWER */}
-      <div className={`fixed inset-0 z-50 transition ${drawerOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-black/40" onClick={closeDrawer}></div>
-
-        {/* Drawer */}
-        <div className={`absolute right-0 top-0 h-full w-[420px] bg-white shadow-xl transition-transform ${drawerOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      {/* DRAWER PANEL */}
+      {selected && (
+        <div className={`fixed inset-0 z-50 transition ${drawerOpen ? "opacity-100" : "opacity-0 pointer-events-none"}`}>
           
-          {/* HEADER */}
-          <div className="flex justify-between p-6 border-b">
-            <div>
-              <h2 className="text-xl font-bold">{selected?.category_name}</h2>
-              <p className="flex items-center gap-2 text-sm text-gray-500">
-                <FiCalendar /> {selected?.created_at}
-              </p>
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={closeDrawer}></div>
+
+          <div className={`absolute right-0 top-0 h-full w-[420px] bg-white shadow-2xl rounded-l-2xl transition-transform ${
+              drawerOpen ? "translate-x-0" : "translate-x-full"
+            }`}>
+
+            {/* DRAWER HEADER */}
+            <div className="flex justify-between p-6 bg-purple-600 border-b rounded-tl-2xl">
+              <div>
+                <h2 className="text-xl font-bold text-white">{selected.name}</h2>
+                <p className="flex items-center gap-2 text-sm text-purple-100">
+                  <FiCalendar /> {new Date(selected.created_at).toLocaleDateString()}
+                </p>
+              </div>
+              <button onClick={closeDrawer} className="text-white hover:text-gray-200">
+                <FiX size={22} />
+              </button>
             </div>
-            <button onClick={closeDrawer}>
-              <FiX />
-            </button>
-          </div>
 
-          {/* BODY */}
-          <div className="p-6">
+            {/* DRAWER BODY */}
+            <div className="p-6">
 
-            {!isEditing ? (
-              <>
-                {/* VIEW MODE */}
-                <div className="mb-6">
-                  <h4 className="mb-1 font-semibold">Status</h4>
-                  <StatusBadge status={selected?.status!} />
-                </div>
-
-                <div className="mb-6">
-                 
-                </div>
-
+              {!isEditing ? (
                 <button
-                  className="flex items-center justify-center w-full gap-2 py-3 mb-3 text-white bg-purple-600 rounded-xl"
+                  className="w-full py-3 mb-3 font-semibold text-white bg-purple-600 rounded-xl hover:bg-purple-700"
                   onClick={() => setIsEditing(true)}
                 >
-                  <FiEdit /> Edit Category
+                  <FiEdit className="inline-block mr-2" />
+                  Edit Category
                 </button>
-              </>
-            ) : (
-              <>
-                <div className="mb-6">
-                  <label className="text-sm font-medium">Category Name</label>
-                  <input
-                    value={editName}
-                    onChange={e => setEditName(e.target.value)}
-                    className="w-full px-4 py-3 border rounded-xl"
-                  />
-                </div>
-
-                <div className="mb-6">
-                  <label className="text-sm font-medium">Status</label>
-                  <div className="flex gap-3 mt-2">
-                    {(['active', 'inactive'] as Status[]).map(status => (
-                      <button
-                        key={status}
-                        onClick={() => setSelected(prev => prev ? { ...prev, status } : prev)}
-                        className={`flex-1 px-4 py-3 rounded-xl border ${
-                          selected?.status === status
-                            ? 'bg-purple-100 border-purple-600 text-purple-700'
-                            : 'border-gray-300'
-                        }`}
-                      >
-                        {status}
-                      </button>
-                    ))}
+              ) : (
+                <>
+                  {/* NAME INPUT */}
+                  <div className="mb-6">
+                    <label className="text-sm font-medium">Category Name</label>
+                    <input
+                      value={editName}
+                      onChange={e => setEditName(e.target.value)}
+                      className="w-full px-4 py-3 border shadow-sm rounded-xl focus:ring-2 focus:ring-purple-400"
+                    />
                   </div>
-                </div>
 
-                {/* BUTTONS */}
-                <button
-                  onClick={handleSaveEdit}
-                  className="flex items-center justify-center w-full gap-2 py-3 mb-3 text-white bg-purple-700 rounded-xl"
-                >
-                  <FiSave /> Save Changes
-                </button>
+                  {/* STATUS SELECT */}
+                  <div className="mb-6">
+                    <label className="text-sm font-medium">Status</label>
+                    <select 
+                      value={selected.status}
+                      onChange={e => setSelected({
+                        ...selected,
+                        status: e.target.value as Status
+                      })}
+                      className="w-full px-4 py-3 border shadow-sm rounded-xl"
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
 
-                <button
-                  onClick={() => setIsEditing(false)}
-                  className="w-full py-3 border rounded-xl"
-                >
-                  Cancel
-                </button>
-              </>
-            )}
+                  {/* SAVE BUTTON */}
+                  <button
+                    onClick={handleSaveEdit}
+                    className="w-full py-3 mb-3 font-semibold text-white bg-purple-700 rounded-xl hover:bg-purple-800"
+                  >
+                    <FiSave className="inline-block mr-2" />
+                    Save Changes
+                  </button>
+
+                  {/* CANCEL BUTTON */}
+                  <button
+                    onClick={() => setIsEditing(false)}
+                    className="w-full py-3 border rounded-xl"
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
+            </div>
+
           </div>
-
         </div>
-      </div>
+      )}
+
     </div>
   );
 }

@@ -21,21 +21,9 @@ router.get(
   ProductController.getProductDetailsById
 );
 
-// Get products
-router.get(
-  "/",
-  authenticateToken,
-  authorizeRoles("vendor", "admin", "vendor_manager"),
-  ProductController.getAllProducts
-);
 
-// Get single product
-router.get(
-  "/:productId",
-  authenticateToken,
-  authorizeRoles("vendor", "admin", "vendor_manager"),
-  ProductController.getProduct
-);
+
+
 
 // get product Documents
 router.get(
