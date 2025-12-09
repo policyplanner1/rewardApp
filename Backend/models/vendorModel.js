@@ -7,7 +7,7 @@ class VendorModel {
   async createVendor(data, userId) {
     const [result] = await db.execute(
       `INSERT INTO vendors 
-        (user_id, company_name, full_name, vendor_type, gstin, ip_address, pan_number, listed_products, status, created_at)
+        (user_id, company_name, full_name, vendor_type, gstin, ipaddress, pan_number, status, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?,'pending', NOW())`,
       [
         userId,
@@ -17,7 +17,6 @@ class VendorModel {
         data.gstin || "",
         data.ip_address || "",
         data.panNumber || "",
-        Number(data.noOfListedProducts) || 0,
       ]
     );
     return result.insertId;
@@ -102,12 +101,7 @@ class VendorModel {
         `INSERT INTO vendor_documents 
            (vendor_id, document_key, file_path, mime_type, uploaded_at)
          VALUES (?, ?, ?, ?, NOW())`,
-        [
-          vendorId,
-          key, 
-          file.path,
-          file.mimetype,
-        ]
+        [vendorId, key, file.path, file.mimetype]
       );
     }
   }
