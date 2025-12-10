@@ -2,7 +2,7 @@ const db = require("../config/database");
 
 class ProductModel {
   // create a Product
-  async createProduct(connection,vendorId, data) {
+  async createProduct(connection, vendorId, data) {
     const safe = (v) => (v === undefined || v === "" ? null : v);
     let custom_category = data.custom_category || null;
     let custom_subcategory = data.custom_subcategory || null;
@@ -38,7 +38,7 @@ class ProductModel {
   }
 
   // insert product Images
-  async insertProductImages(connection,productId, files) {
+  async insertProductImages(connection, productId, files) {
     for (const file of files) {
       // Only insert if the field is meant for images
       if (file.fieldname !== "images") continue;
@@ -52,7 +52,7 @@ class ProductModel {
   }
 
   // store product Documents
-  async insertProductDocuments(connection,productId, categoryId, files) {
+  async insertProductDocuments(connection, productId, categoryId, files) {
     const [docTypes] = await connection.execute(
       `SELECT d.document_id
      FROM category_document cd
@@ -78,7 +78,7 @@ class ProductModel {
   }
 
   // Insert product variant
-  async createProductVariant(connection,productId, variant) {
+  async createProductVariant(connection, productId, variant) {
     const safe = (v) => (v === undefined || v === "" ? null : v);
 
     const [result] = await connection.execute(
@@ -103,7 +103,7 @@ class ProductModel {
   }
 
   // Insert variant images
-  async insertProductVariantImages(connection,variantId, files) {
+  async insertProductVariantImages(connection, variantId, files) {
     for (const file of files) {
       await connection.execute(
         `INSERT INTO product_variant_images (variant_id, image_url)
@@ -374,28 +374,36 @@ class ProductModel {
     try {
       const [rows] = await db.execute(
         `SELECT 
-         product_id,
-         vendor_id,
-         category_id,
-         subcategory_id,
-         sub_subcategory_id,
-         brand_name,
-         manufacturer,
-         item_type,
-         barcode,
-         product_name,
-         description,
-         short_description,
-         tax_code,
-         expiry_date,
-         custom_category,
-         custom_subcategory,
-         custom_sub_subcategory,
-         status,
-         rejection_reason,
-         created_at
-       FROM products
-       ORDER BY product_id DESC`
+         p.product_id,
+         p.vendor_id,
+         v.full_name AS vendor_name,
+         p.category_id,
+         c.category_name,
+         p.subcategory_id,
+         sc.subcategory_name,
+         p.sub_subcategory_id,
+         ssc.name AS sub_subcategory_name,
+         p.brand_name,
+         p.manufacturer,
+         p.item_type,
+         p.barcode,
+         p.product_name,
+         p.description,
+         p.short_description,
+         p.tax_code,
+         p.expiry_date,
+         p.custom_category,
+         p.custom_subcategory,
+         p.custom_sub_subcategory,
+         p.status,
+         p.rejection_reason,
+         p.created_at
+       FROM products p
+       LEFT JOIN categories c ON p.category_id = c.category_id
+       LEFT JOIN sub_categories sc ON p.subcategory_id = sc.subcategory_id
+       LEFT JOIN sub_sub_categories ssc ON p.sub_subcategory_id = ssc.sub_subcategory_id
+       LEFT JOIN vendors v ON p.vendor_id = v.vendor_id
+       ORDER BY p.product_id DESC`
       );
       return rows;
     } catch (error) {
@@ -409,29 +417,37 @@ class ProductModel {
     try {
       const [rows] = await db.execute(
         `SELECT 
-         product_id,
-         vendor_id,
-         category_id,
-         subcategory_id,
-         sub_subcategory_id,
-         brand_name,
-         manufacturer,
-         item_type,
-         barcode,
-         product_name,
-         description,
-         short_description,
-         tax_code,
-         expiry_date,
-         custom_category,
-         custom_subcategory,
-         custom_sub_subcategory,
-         status,
-         rejection_reason,
-         created_at
-       FROM products
-       WHERE vendor_id = ?
-       ORDER BY product_id DESC`,
+         p.product_id,
+         p.vendor_id,
+         v.full_name AS vendor_name,
+         p.category_id,
+         c.category_name,
+         p.subcategory_id,
+         sc.subcategory_name,
+         p.sub_subcategory_id,
+         ssc.name AS sub_subcategory_name,
+         p.brand_name,
+         p.manufacturer,
+         p.item_type,
+         p.barcode,
+         p.product_name,
+         p.description,
+         p.short_description,
+         p.tax_code,
+         p.expiry_date,
+         p.custom_category,
+         p.custom_subcategory,
+         p.custom_sub_subcategory,
+         p.status,
+         p.rejection_reason,
+         p.created_at
+       FROM products p
+       LEFT JOIN categories c ON p.category_id = c.category_id
+       LEFT JOIN sub_categories sc ON p.subcategory_id = sc.subcategory_id
+       LEFT JOIN sub_sub_categories ssc ON p.sub_subcategory_id = ssc.sub_subcategory_id
+       LEFT JOIN vendors v ON p.vendor_id = v.vendor_id
+       WHERE p.vendor_id = ?
+       ORDER BY p.product_id DESC`,
         [vendorId]
       );
       return rows;
