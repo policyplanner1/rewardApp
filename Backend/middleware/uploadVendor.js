@@ -2,11 +2,11 @@ const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 
-const productStorage = multer.diskStorage({
+const vendorStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const vendorId = req.user.vendor_id;
 
-    const folder = path.join(__dirname, "../uploads/products", vendorId.toString());
+    const folder = path.join(__dirname, "../uploads/vendors", vendorId.toString(), "documents");
 
     if (!fs.existsSync(folder)) {
       fs.mkdirSync(folder, { recursive: true });
@@ -21,6 +21,7 @@ const productStorage = multer.diskStorage({
   },
 });
 
-const productUpload = multer({ storage: productStorage });
+const uploadVendor = multer({ storage: vendorStorage });
 
-module.exports = productUpload;
+module.exports = uploadVendor;
+  

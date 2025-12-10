@@ -1,7 +1,7 @@
 const express = require("express");
 const VendorController = require("../controllers/vendorController");
 const DocumentController = require("../controllers/documentController");
-const upload = require("../middleware/upload");
+const upload = require("../middleware/uploadVendor");
 const { authenticateToken, authorizeRoles } = require("../middleware/auth");
 
 const router = express.Router();
