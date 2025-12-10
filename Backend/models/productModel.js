@@ -449,12 +449,34 @@ class ProductModel {
         p.product_name,
         p.status,
         p.rejection_reason,
-        p.created_at
+        p.created_at,
+        COALESCE(
+        CONCAT(
+          '[',
+          GROUP_CONCAT(
+            DISTINCT
+            CASE 
+              WHEN pi.image_id IS NOT NULL THEN
+                JSON_OBJECT(
+                  'image_id', pi.image_id,
+                  'image_url', pi.image_url,
+                  'type', pi.type,
+                  'sort_order', pi.sort_order
+                )
+            END
+            ORDER BY pi.sort_order ASC SEPARATOR ','
+          ),
+          ']'
+        ),
+        '[]'
+      ) AS images
+
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.category_id
       LEFT JOIN sub_categories sc ON p.subcategory_id = sc.subcategory_id
       LEFT JOIN sub_sub_categories ssc ON p.sub_subcategory_id = ssc.sub_subcategory_id
       LEFT JOIN vendors v ON p.vendor_id = v.vendor_id
+      LEFT JOIN product_images pi ON p.product_id = pi.product_id
       ${where}
       ORDER BY p.${sortBy} ${sortOrder}
       LIMIT ? OFFSET ?
