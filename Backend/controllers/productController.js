@@ -231,6 +231,33 @@ class ProductController {
     }
   }
 
+  // My Listed Products
+   async getMyListedProducts(req, res) {
+    try {
+
+      const vendorId = req.user.vendor_id;
+      if (!vendorId) {
+        return res.status(400).json({
+          success: false,
+          message: "Vendor ID is required",
+        });
+      }
+
+      const products = await ProductModel.getProductsByVendor(vendorId);
+
+      return res.json({
+        success: true,
+        products,
+      });
+    } catch (err) {
+      console.error("Get my product list Error:", err);
+      return res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+  }
+
   // Get categories documents based on Id
   async getRequiredDocuments(req, res) {
     try {

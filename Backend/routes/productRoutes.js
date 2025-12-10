@@ -13,23 +13,6 @@ router.post(
   ProductController.createProduct
 );
 
-// Get product by ID
-router.get(
-  "/:id",
-  authenticateToken,
-  authorizeRoles("vendor", "vendor_manager"),
-  ProductController.getProductDetailsById
-);
-
-
-// get product Documents
-router.get(
-  "/category/required_docs/:id",
-  authenticateToken,
-  authorizeRoles("vendor", "admin", "vendor_manager"),
-  ProductController.getRequiredDocuments
-);
-
 // Update product approval
 router.put(
   "/status/:productId",
@@ -67,8 +50,33 @@ router.get(
 router.get(
   "/vendor-products/:vendorId",
   authenticateToken,
-  authorizeRoles("vendor", "vendor_manager"), 
+  authorizeRoles("admin", "vendor_manager"),
   ProductController.getProductsByVendor
 );
+
+router.get(
+  "/my-listed-products",
+  authenticateToken,
+  authorizeRoles("vendor"),
+  ProductController.getMyListedProducts
+);
+
+// get product Documents
+router.get(
+  "/category/required_docs/:id",
+  authenticateToken,
+  authorizeRoles("vendor", "admin", "vendor_manager"),
+  ProductController.getRequiredDocuments
+);
+
+// Get product by ID
+router.get(
+  "/:id",
+  authenticateToken,
+  authorizeRoles("vendor", "vendor_manager"),
+  ProductController.getProductDetailsById
+);
+
+
 
 module.exports = router;
