@@ -243,7 +243,22 @@ class ProductController {
         });
       }
 
-      const products = await ProductModel.getProductsByVendor(vendorId);
+      // Pagination
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const offset = (page - 1) * limit;
+
+      // Filters
+      const search = req.query.search || "";
+      const status = req.query.status || "";
+      const sortBy = req.query.sortBy || "created_at";
+      const sortOrder =
+        req.query.sortOrder?.toUpperCase() === "ASC" ? "ASC" : "DESC";
+
+      const { products, totalItems } = await ProductModel.getProductsByVendor(
+        vendorId,
+        { search, status, sortBy, sortOrder, limit, offset }
+      );
 
       const stats = products.reduce(
         (acc, product) => {
@@ -270,7 +285,10 @@ class ProductController {
       return res.json({
         success: true,
         products,
-        stats
+        stats,
+        total: totalItems,
+        totalPages: Math.ceil(totalItems / limit),
+        currentPage: page,
       });
     } catch (err) {
       console.error("Get my product list Error:", err);

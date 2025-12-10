@@ -413,44 +413,61 @@ class ProductModel {
   }
 
   // Get all products for a specific vendor
-  async getProductsByVendor(vendorId) {
+  async getProductsByVendor(
+    vendorId,
+    { search, status, sortBy, sortOrder, limit, offset }
+  ) {
     try {
-      const [rows] = await db.execute(
-        `SELECT 
-         p.product_id,
-         p.vendor_id,
-         v.full_name AS vendor_name,
-         p.category_id,
-         c.category_name,
-         p.subcategory_id,
-         sc.subcategory_name,
-         p.sub_subcategory_id,
-         ssc.name AS sub_subcategory_name,
-         p.brand_name,
-         p.manufacturer,
-         p.item_type,
-         p.barcode,
-         p.product_name,
-         p.description,
-         p.short_description,
-         p.tax_code,
-         p.expiry_date,
-         p.custom_category,
-         p.custom_subcategory,
-         p.custom_sub_subcategory,
-         p.status,
-         p.rejection_reason,
-         p.created_at
-       FROM products p
-       LEFT JOIN categories c ON p.category_id = c.category_id
-       LEFT JOIN sub_categories sc ON p.subcategory_id = sc.subcategory_id
-       LEFT JOIN sub_sub_categories ssc ON p.sub_subcategory_id = ssc.sub_subcategory_id
-       LEFT JOIN vendors v ON p.vendor_id = v.vendor_id
-       WHERE p.vendor_id = ?
-       ORDER BY p.product_id DESC`,
-        [vendorId]
-      );
-      return rows;
+      // WHERE conditions
+      let where = `WHERE p.vendor_id = ?`;
+      let params = [vendorId];
+
+      if (status) {
+        where += ` AND p.status = ?`;
+        params.push(status);
+      }
+
+      if (search) {
+        where += ` AND p.product_name LIKE ?`;
+        params.push(`%${search}%`);
+      }
+
+      // Validate sort column
+      const sortableColumns = ["created_at", "product_name", "brand_name"];
+      if (!sortableColumns.includes(sortBy)) sortBy = "created_at";
+
+      const query = `
+      SELECT 
+        SQL_CALC_FOUND_ROWS
+        p.product_id,
+        p.vendor_id,
+        v.full_name AS vendor_name,
+        c.category_name,
+        sc.subcategory_name,
+        ssc.name AS sub_subcategory_name,
+        p.brand_name,
+        p.product_name,
+        p.status,
+        p.rejection_reason,
+        p.created_at
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.category_id
+      LEFT JOIN sub_categories sc ON p.subcategory_id = sc.subcategory_id
+      LEFT JOIN sub_sub_categories ssc ON p.sub_subcategory_id = ssc.sub_subcategory_id
+      LEFT JOIN vendors v ON p.vendor_id = v.vendor_id
+      ${where}
+      ORDER BY p.${sortBy} ${sortOrder}
+      LIMIT ? OFFSET ?
+    `;
+
+      params.push(limit, offset);
+
+      const [rows] = await db.execute(query, params);
+
+      // Get total items for pagination
+      const [[{ total }]] = await db.execute(`SELECT FOUND_ROWS() AS total`);
+
+      return { products: rows, totalItems: total };
     } catch (error) {
       console.error("Error fetching products by vendor:", error);
       throw error;
