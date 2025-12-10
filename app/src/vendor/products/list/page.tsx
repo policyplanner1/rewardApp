@@ -648,31 +648,31 @@ export default function ProductManagerList() {
 
         {/* TABLE */}
         <div className="overflow-x-auto border border-gray-200 rounded-lg">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-max divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
+                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
                   Product
                 </th>
-                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
+                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
                   Brand
                 </th>
-                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
+                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
                   Category
                 </th>
-                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
+                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
                   Subcategory
                 </th>
-                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
+                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
                   SubType
                 </th>
-                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
+                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
                   Status
                 </th>
-                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
+                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
                   Rejection Reason
                 </th>
-                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
+                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
                   Actions
                 </th>
               </tr>
@@ -702,7 +702,7 @@ export default function ProductManagerList() {
 
                         {/* PRODUCT NAME */}
                         <div className="flex-1">
-                          <div className="font-semibold text-gray-900">
+                          <div className="font-semibold text-gray-700">
                             {product?.product_name || "Unnamed Product"}
                           </div>
                         </div>
@@ -751,44 +751,47 @@ export default function ProductManagerList() {
 
                     {/* ACTIONS */}
                     <td className="px-4 py-4">
-                      <div className="flex flex-col space-y-2">
+                      <div className="flex items-center space-x-2">
                         {/* View Button */}
                         <Link href={`/manager/products/${product.product_id}`}>
-                          <button className="flex items-center justify-center w-full px-3 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
-                            <FaEye className="mr-2" />
+                          <button className="p-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
+                            <FaEye />
                           </button>
                         </Link>
 
                         {/* Edit Button */}
-                        <Link
-                          href={`/vendor/products/edit/${product.product_id}`}
-                          target="_blank"
-                        >
-                          <button className="w-full px-3 py-2 text-sm text-purple-700 bg-purple-100 rounded hover:bg-purple-200">
-                            <FaEdit className="mr-2" />
+                        {product.status !== "approved" && (
+                          <Link
+                            href={`/vendor/products/edit/${product.product_id}`}
+                            target="_blank"
+                          >
+                            <button className="p-2 text-purple-700 bg-purple-100 rounded hover:bg-purple-200">
+                              <FaEdit />
+                            </button>
+                          </Link>
+                        )}
+
+                        {/* Delete Button — hide when approved */}
+                        {product.status !== "approved" && (
+                          <button
+                            onClick={() => openActionModal(product, "delete")}
+                            className="p-2 text-red-700 bg-red-100 rounded hover:bg-red-200"
+                          >
+                            <FaTrash />
                           </button>
-                        </Link>
+                        )}
 
-                        {/* Delete Button */}
-                        <button
-                          onClick={() =>
-                            // handleDeleteProduct(product.product_id)
-                            openActionModal(product, "delete")
-                          }
-                          className="w-full px-3 py-2 text-sm text-red-700 bg-red-100 rounded hover:bg-red-200"
-                        >
-                          <FaTrash className="mr-2" />
-                        </button>
-
-                        {/* Send for Approval */}
-                        {product.status !== "pending" && (
+                        {/* Resubmission Button — only show when rejected or resubmission, NEVER approved */}
+                        {["rejected", "resubmission"].includes(
+                          product.status
+                        ) && (
                           <button
                             onClick={() =>
                               openActionModal(product, "request_resubmission")
                             }
-                            className="w-full px-3 py-2 text-sm text-green-700 bg-green-100 rounded hover:bg-green-200"
+                            className="p-2 text-green-700 bg-green-100 rounded hover:bg-green-200"
                           >
-                            <FaPaperPlane className="mr-2" /> Send for Approval
+                            <FaPaperPlane />
                           </button>
                         )}
                       </div>
