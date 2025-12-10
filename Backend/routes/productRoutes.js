@@ -21,7 +21,7 @@ router.put(
   ProductController.updateStatus
 );
 
-// Update product
+// Update product by vendor
 router.put(
   "/update-product/:id",
   authenticateToken,
@@ -30,7 +30,7 @@ router.put(
   ProductController.updateProduct
 );
 
-// Delete product
+// Delete product by vendor
 router.delete(
   "/delete-product/:id",
   authenticateToken,
@@ -42,11 +42,11 @@ router.delete(
 router.get(
   "/all-products",
   authenticateToken,
-  authorizeRoles("vendor_manager"),
+  authorizeRoles("vendor_manager","admin"),
   ProductController.getAllProductDetails
 );
 
-// Get products by vendor
+// Get products by vendor(admin and vendor manager can check)
 router.get(
   "/vendor-products/:vendorId",
   authenticateToken,
@@ -54,6 +54,7 @@ router.get(
   ProductController.getProductsByVendor
 );
 
+// My Listed Products
 router.get(
   "/my-listed-products",
   authenticateToken,
