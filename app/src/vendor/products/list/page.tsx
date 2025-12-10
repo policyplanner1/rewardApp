@@ -688,11 +688,10 @@ export default function ProductManagerList() {
                         {/* IMAGE OR FALLBACK ICON */}
                         {product?.main_image ? (
                           <div className="flex-shrink-0 w-12 h-12 mr-3 overflow-hidden bg-gray-100 rounded">
-                            <img
-                              src={product?.main_image}
+                           <img
+                              src={product?.main_image ? `http://localhost:5000/uploads/${product.main_image}` : undefined}
                               alt={product?.product_name || "Product Image"}
-                              className="object-cover w-full h-full"
-                            />
+                              className="object-cover w-full h-full" />
                           </div>
                         ) : (
                           <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 mr-3 bg-gray-100 rounded">

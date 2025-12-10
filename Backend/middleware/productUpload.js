@@ -21,6 +21,12 @@ const productStorage = multer.diskStorage({
   },
 });
 
+// Helper to get relative path for DB
+function getRelativeFilePath(file) {
+  const vendorId = file.path.split("products")[1].split(path.sep)[1];
+  return `products/${vendorId}/${file.filename}`;
+}
+
 const productUpload = multer({ storage: productStorage });
 
-module.exports = productUpload;
+module.exports = { productUpload, getRelativeFilePath };

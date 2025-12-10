@@ -260,6 +260,21 @@ class ProductController {
         { search, status, sortBy, sortOrder, limit, offset }
       );
 
+      const processedProducts = products.map((product) => {
+        let images = [];
+        try {
+          images = JSON.parse(product.images);
+        } catch (err) {
+          images = [];
+        }
+
+        return {
+          ...product,
+          images,
+          main_image: images.length ? images[0].image_url : null,
+        };
+      });
+
       const stats = products.reduce(
         (acc, product) => {
           // Count total products
@@ -284,7 +299,7 @@ class ProductController {
 
       return res.json({
         success: true,
-        products,
+        products: processedProducts,
         stats,
         total: totalItems,
         totalPages: Math.ceil(totalItems / limit),

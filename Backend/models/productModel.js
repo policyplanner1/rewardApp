@@ -1,4 +1,5 @@
 const db = require("../config/database");
+const { getRelativeFilePath } = require("../middleware/productUpload");
 
 class ProductModel {
   // create a Product
@@ -43,10 +44,12 @@ class ProductModel {
       // Only insert if the field is meant for images
       if (file.fieldname !== "images") continue;
 
+      const relativePath = getRelativeFilePath(file);
+
       await connection.execute(
         `INSERT INTO product_images (product_id, image_url)
        VALUES (?, ?)`,
-        [productId, file.path]
+        [productId, relativePath]
       );
     }
   }
