@@ -22,18 +22,15 @@ import {
   FaDownload,
   FaUser,
   FaBox,
+  FaPaperPlane,
+  FaTrash,
 } from "react-icons/fa";
 import { FiPackage } from "react-icons/fi";
 
 /* ================================
        TYPES
 ================================ */
-type ProductStatus =
-  | "pending"
-  | "approved"
-  | "rejected"
-  | "resubmission"
-  | "draft";
+type ProductStatus = "pending" | "approved" | "rejected" | "resubmission";
 
 interface ProductDocument {
   document_id: number;
@@ -71,20 +68,19 @@ interface Stats {
   approved: number;
   rejected: number;
   resubmission: number;
-  draft: number;
   total: number;
 }
 
 interface ApiResponse {
   success: boolean;
-  data: ProductItem[];
+  products: ProductItem[];
   total: number;
   page: number;
   totalPages: number;
   stats?: Stats;
 }
 
-type ActionType = "approve" | "reject" | "request_resubmission";
+type ActionType = "approve" | "reject" | "request_resubmission" | "delete";
 
 /* ================================
        STATUS CHIP
@@ -92,7 +88,11 @@ type ActionType = "approve" | "reject" | "request_resubmission";
 const StatusChip = ({ status }: { status: ProductStatus }) => {
   const configMap: Record<
     ProductStatus,
-    { color: string; icon: React.ComponentType<{ size?: number }>; text: string }
+    {
+      color: string;
+      icon: React.ComponentType<{ size?: number }>;
+      text: string;
+    }
   > = {
     approved: {
       color: "bg-green-100 text-green-800 border-green-200",
@@ -113,11 +113,6 @@ const StatusChip = ({ status }: { status: ProductStatus }) => {
       color: "bg-yellow-100 text-yellow-800 border-yellow-200",
       icon: FaClock,
       text: "Pending",
-    },
-    draft: {
-      color: "bg-gray-100 text-gray-800 border-gray-200",
-      icon: FaClock,
-      text: "Draft",
     },
   };
 
@@ -194,6 +189,17 @@ const ActionModal = ({
       Icon: FaRedo,
       showReason: true,
       placeholder: "Specify required changes...",
+    },
+    delete: {
+      title: "Delete Product",
+      description: `Are you sure you want to delete "${product.product_name}"?`,
+      buttonText: "Delete",
+      buttonColor: "bg-red-600 hover:bg-red-700",
+      iconBg: "bg-red-100",
+      iconColor: "text-red-600",
+      Icon: FaTrash,
+      showReason: false,
+      placeholder: "",
     },
   }[actionType];
 
@@ -299,7 +305,6 @@ export default function ProductManagerList() {
     approved: 0,
     rejected: 0,
     resubmission: 0,
-    draft: 0,
   });
 
   // Modal state
@@ -344,7 +349,10 @@ export default function ProductManagerList() {
     );
   };
 
-  const handleDownloadDocument = (documentUrl: string, documentName: string) => {
+  const handleDownloadDocument = (
+    documentUrl: string,
+    documentName: string
+  ) => {
     const link = document.createElement("a");
     link.href = documentUrl;
     link.download = documentName;
@@ -376,7 +384,7 @@ export default function ProductManagerList() {
       });
 
       const response = await fetch(
-        `http://localhost:5000/api/manager/products?${params.toString()}`,
+        `http://localhost:5000/api/product/my-listed-products?${params.toString()}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -393,7 +401,7 @@ export default function ProductManagerList() {
       const data: ApiResponse = await response.json();
 
       if (data.success) {
-        setProducts(data.data);
+        setProducts(data.products);
         setPagination((prev) => ({
           ...prev,
           totalPages: data.totalPages || 1,
@@ -438,26 +446,26 @@ export default function ProductManagerList() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No token");
 
-      const response = await fetch(
-        `http://localhost:5000/api/manager/products/${productId}/status`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ action, reason }),
-        }
-      );
+      // const response = await fetch(
+      //   `http://localhost:5000/api/manager/products/${productId}/status`,
+      //   {
+      //     method: "PUT",
+      //     headers: {
+      //       Authorization: `Bearer ${token}`,
+      //       "Content-Type": "application/json",
+      //     },
+      //     body: JSON.stringify({ action, reason }),
+      //   }
+      // );
 
-      const data = await response.json();
+      // const data = await response.json();
 
-      if (!data.success) {
-        throw new Error(data.message || "Action failed");
-      }
+      // if (!data.success) {
+      //   throw new Error(data.message || "Action failed");
+      // }
 
-      alert(data.message || "Action completed successfully");
-      fetchProducts();
+      // alert(data.message || "Action completed successfully");
+      // fetchProducts();
     } catch (error: any) {
       console.error("Error performing action:", error);
       alert(error.message || "Error performing action");
@@ -503,7 +511,7 @@ export default function ProductManagerList() {
   /* ================================
        RENDER
   ================================= */
-  if (loading && products.length === 0) {
+  if (loading && products?.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <FaSpinner className="animate-spin text-4xl text-[#852BAF]" />
@@ -536,14 +544,14 @@ export default function ProductManagerList() {
               <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
                 Product Management
               </h1>
-              <p className="text-gray-600">
-                Review and manage vendor-submitted products
-              </p>
+              <p className="text-gray-600">Review and Manage Products</p>
             </div>
           </div>
 
           <div className="text-sm text-right text-gray-600">
-            <div className="font-semibold">Total: {stats.total} products</div>
+            <div className="font-semibold">
+              Total: {products?.length || 0} products
+            </div>
             <div className="text-xs">Auto-refreshes every 30s</div>
           </div>
         </div>
@@ -578,12 +586,6 @@ export default function ProductManagerList() {
             </div>
             <div className="text-xs text-blue-600">Resubmission</div>
           </div>
-          <div className="p-3 border border-gray-200 rounded-lg bg-gray-50">
-            <div className="text-xl font-bold text-gray-700">
-              {stats.draft}
-            </div>
-            <div className="text-xs text-gray-600">Draft</div>
-          </div>
         </div>
 
         {/* FILTERS + SEARCH */}
@@ -594,7 +596,7 @@ export default function ProductManagerList() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by product name, vendor, SKU..."
+                placeholder="Search by product name..."
                 className="w-full p-3 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#852BAF] focus:border-transparent"
               />
               <FaSearch className="absolute left-3 top-3.5 text-gray-400" />
@@ -622,7 +624,6 @@ export default function ProductManagerList() {
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
                 <option value="resubmission">Resubmission</option>
-                <option value="draft">Draft</option>
               </select>
               <FaFilter className="absolute left-3 top-3.5 text-gray-400" />
             </div>
@@ -641,8 +642,6 @@ export default function ProductManagerList() {
               <option value="created_at:asc">Oldest First</option>
               <option value="product_name:asc">Product Name A-Z</option>
               <option value="product_name:desc">Product Name Z-A</option>
-              <option value="sale_price:desc">Price: High to Low</option>
-              <option value="sale_price:asc">Price: Low to High</option>
             </select>
           </div>
         </div>
@@ -653,25 +652,25 @@ export default function ProductManagerList() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
-                  Product Details
+                  Product
                 </th>
                 <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
-                  Vendor Info
+                  Brand
                 </th>
                 <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
                   Category
                 </th>
-                <th
-                  className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort("created_at")}
-                >
-                  <div className="flex items-center">
-                    Submitted
-                    {getSortIcon("created_at")}
-                  </div>
+                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
+                  Subcategory
+                </th>
+                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
+                  SubType
                 </th>
                 <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
                   Status
+                </th>
+                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
+                  Rejection Reason
                 </th>
                 <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
                   Actions
@@ -680,200 +679,129 @@ export default function ProductManagerList() {
             </thead>
 
             <tbody className="bg-white divide-y divide-gray-200">
-              {products.map((product) => (
-                <tr key={product.product_id} className="hover:bg-gray-50">
-                  {/* PRODUCT DETAILS */}
-                  <td className="px-4 py-4">
-                    <div className="flex items-start">
-                      {product.main_image ? (
-                        <div className="flex-shrink-0 w-12 h-12 mr-3 overflow-hidden bg-gray-100 rounded">
-                          <img
-                            src={product.main_image}
-                            alt={product.product_name}
-                            className="object-cover w-full h-full"
-                          />
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 mr-3 bg-gray-100 rounded">
-                          <FaBox className="text-gray-400" />
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <div className="font-semibold text-gray-900">
-                          {product.product_name}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {product.brand_name}
-                        </div>
-                        <div className="mt-1 text-xs text-gray-500">
-                          SKU: {product.sku} | Stock: {product.stock}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Price: {formatPrice(product.sale_price)}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* VENDOR INFO */}
-                  <td className="px-4 py-4">
-                    <div className="flex items-center">
-                      <FaUser className="mr-2 text-gray-400" />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">
-                          {product.company_name}
-                        </div>
-                        <div className="text-xs text-gray-600">
-                          {product.vendor_name}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          ID: {product.vendor_id}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-
-                  {/* CATEGORY */}
-                  <td className="px-4 py-4">
-                    <div className="text-sm text-gray-900">
-                      {product.category_name || "N/A"}
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      {product.subcategory_name}
-                      {product.sub_subcategory_name &&
-                        ` › ${product.sub_subcategory_name}`}
-                    </div>
-                  </td>
-
-                  {/* DATE */}
-                  <td className="px-4 py-4 text-sm text-gray-600">
-                    {formatDate(product.created_at)}
-                  </td>
-
-                  {/* STATUS */}
-                  <td className="px-4 py-4">
-                    <div className="mb-2">
-                      <StatusChip status={product.status} />
-                    </div>
-                    {product.rejection_reason && (
-                      <div className="flex items-start max-w-xs text-xs text-red-600">
-                        <FaExclamationTriangle className="mr-1 mt-0.5" />
-                        {product.rejection_reason}
-                      </div>
-                    )}
-                  </td>
-
-                  {/* ACTIONS */}
-                  <td className="px-4 py-4">
-                    <div className="flex flex-col space-y-2">
-                      {/* View Button */}
-                      <Link href={`/manager/products/${product.product_id}`}>
-                        <button className="flex items-center justify-center w-full px-3 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
-                          <FaEye className="mr-2" /> View
-                        </button>
-                      </Link>
-
-                      {/* Documents */}
-                      {product.documents && product.documents.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {product.documents.slice(0, 2).map((doc, index) => (
-                            <button
-                              key={doc.document_id}
-                              onClick={() =>
-                                handleDownloadDocument(
-                                  doc.document_url,
-                                  doc.document_name
-                                )
-                              }
-                              className="flex items-center justify-center flex-1 px-2 py-1 text-xs text-blue-700 rounded bg-blue-50 hover:bg-blue-100"
-                              title={`Download ${doc.document_name}`}
-                            >
-                              <FaDownload className="mr-1" /> {index + 1}
-                            </button>
-                          ))}
-                          {product.documents.length > 2 && (
-                            <span className="px-2 text-xs text-gray-500">
-                              +{product.documents.length - 2} more
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Action Buttons */}
-                      <div className="grid grid-cols-3 gap-1">
-                        {/* Approve */}
-                        {(product.status === "pending" ||
-                          product.status === "resubmission" ||
-                          product.status === "draft") && (
-                          <button
-                            onClick={() =>
-                              openActionModal(product, "approve")
-                            }
-                            disabled={actionLoading === product.product_id}
-                            className="flex items-center justify-center px-2 py-1 text-xs text-green-700 bg-green-100 rounded hover:bg-green-200 disabled:opacity-50"
-                            title="Approve Product"
-                          >
-                            {actionLoading === product.product_id ? (
-                              <FaSpinner className="animate-spin" />
-                            ) : (
-                              <FaCheck />
-                            )}
-                          </button>
+              {products?.length > 0 ? (
+                products.map((product) => (
+                  <tr key={product.product_id} className="hover:bg-gray-50">
+                    {/* PRODUCT NAME */}
+                    <td className="px-4 py-4">
+                      <div className="flex items-start">
+                        {/* IMAGE OR FALLBACK ICON */}
+                        {product?.main_image ? (
+                          <div className="flex-shrink-0 w-12 h-12 mr-3 overflow-hidden bg-gray-100 rounded">
+                            <img
+                              src={product?.main_image}
+                              alt={product?.product_name || "Product Image"}
+                              className="object-cover w-full h-full"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 mr-3 bg-gray-100 rounded">
+                            <FaBox className="text-gray-400 text-lg" />
+                          </div>
                         )}
 
-                        {/* Reject */}
-                        {product.status !== "rejected" && (
-                          <button
-                            onClick={() => openActionModal(product, "reject")}
-                            disabled={actionLoading === product.product_id}
-                            className="flex items-center justify-center px-2 py-1 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200 disabled:opacity-50"
-                            title="Reject Product"
-                          >
-                            {actionLoading === product.product_id ? (
-                              <FaSpinner className="animate-spin" />
-                            ) : (
-                              <FaTimes />
-                            )}
-                          </button>
-                        )}
-
-                        {/* Request Changes */}
-                        {product.status !== "resubmission" && (
-                          <button
-                            onClick={() =>
-                              openActionModal(
-                                product,
-                                "request_resubmission"
-                              )
-                            }
-                            disabled={actionLoading === product.product_id}
-                            className="flex items-center justify-center px-2 py-1 text-xs text-blue-700 bg-blue-100 rounded hover:bg-blue-200 disabled:opacity-50"
-                            title="Request Changes"
-                          >
-                            {actionLoading === product.product_id ? (
-                              <FaSpinner className="animate-spin" />
-                            ) : (
-                              <FaEdit />
-                            )}
-                          </button>
-                        )}
+                        {/* PRODUCT NAME */}
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-900">
+                            {product?.product_name || "Unnamed Product"}
+                          </div>
+                        </div>
                       </div>
+                    </td>
 
-                      {/* Edit Link for rejected */}
-                      {product.status === "rejected" && (
+                    {/*   Brand Name */}
+                    <td className="px-4 py-4">
+                      <div className="text-sm text-gray-900">
+                        {product?.brand_name || "N/A"}
+                      </div>
+                    </td>
+
+                    {/* CATEGORY */}
+                    <td className="px-4 py-4">
+                      <div className="text-sm text-gray-900">
+                        {product?.category_name || "N/A"}
+                      </div>
+                    </td>
+
+                    {/* Subcategory Name */}
+                    <td className="px-4 py-4">
+                      <div className="text-sm text-gray-900">
+                        {product?.subcategory_name || "N/A"}
+                      </div>
+                    </td>
+
+                    {/* Sub sub category */}
+                    <td className="px-4 py-4">
+                      <div className="text-sm text-gray-900">
+                        {product?.sub_subcategory_name || "N/A"}
+                      </div>
+                    </td>
+
+                    {/* STATUS */}
+                    <td className="px-4 py-4">
+                      <StatusChip status={product?.status} />
+                    </td>
+
+                    {/* Rejection */}
+                    <td className="px-4 py-4">
+                      <div className="text-sm text-gray-900">
+                        {product?.rejection_reason || "N/A"}
+                      </div>
+                    </td>
+
+                    {/* ACTIONS */}
+                    <td className="px-4 py-4">
+                      <div className="flex flex-col space-y-2">
+                        {/* View Button */}
+                        <Link href={`/manager/products/${product.product_id}`}>
+                          <button className="flex items-center justify-center w-full px-3 py-2 text-sm text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
+                            <FaEye className="mr-2" />
+                          </button>
+                        </Link>
+
+                        {/* Edit Button */}
                         <Link
                           href={`/vendor/products/edit/${product.product_id}`}
                           target="_blank"
                         >
-                          <button className="w-full px-2 py-1 text-xs text-purple-700 bg-purple-100 rounded hover:bg-purple-200">
-                            Edit Product
+                          <button className="w-full px-3 py-2 text-sm text-purple-700 bg-purple-100 rounded hover:bg-purple-200">
+                            <FaEdit className="mr-2" />
                           </button>
                         </Link>
-                      )}
-                    </div>
+
+                        {/* Delete Button */}
+                        <button
+                          onClick={() =>
+                            // handleDeleteProduct(product.product_id)
+                            openActionModal(product, "delete")
+                          }
+                          className="w-full px-3 py-2 text-sm text-red-700 bg-red-100 rounded hover:bg-red-200"
+                        >
+                          <FaTrash className="mr-2" />
+                        </button>
+
+                        {/* Send for Approval */}
+                        {product.status !== "pending" && (
+                          <button
+                            onClick={() =>
+                              openActionModal(product, "request_resubmission")
+                            }
+                            className="w-full px-3 py-2 text-sm text-green-700 bg-green-100 rounded hover:bg-green-200"
+                          >
+                            <FaPaperPlane className="mr-2" /> Send for Approval
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={6} className="text-center py-4 text-gray-500">
+                    No products found.
                   </td>
                 </tr>
-              ))}
+              )}
             </tbody>
           </table>
         </div>
@@ -893,9 +821,7 @@ export default function ProductManagerList() {
 
             <div className="flex items-center space-x-2">
               <button
-                onClick={() =>
-                  handlePageChange(pagination.currentPage - 1)
-                }
+                onClick={() => handlePageChange(pagination.currentPage - 1)}
                 disabled={pagination.currentPage === 1}
                 className="px-3 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -936,12 +862,8 @@ export default function ProductManagerList() {
               )}
 
               <button
-                onClick={() =>
-                  handlePageChange(pagination.currentPage + 1)
-                }
-                disabled={
-                  pagination.currentPage === pagination.totalPages
-                }
+                onClick={() => handlePageChange(pagination.currentPage + 1)}
+                disabled={pagination.currentPage === pagination.totalPages}
                 className="px-3 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Next
@@ -951,7 +873,7 @@ export default function ProductManagerList() {
         )}
 
         {/* EMPTY STATE */}
-        {products.length === 0 && !loading && (
+        {products?.length === 0 && !loading && (
           <div className="py-12 text-center">
             <FaFileAlt className="mx-auto mb-4 text-4xl text-gray-400" />
             <h3 className="text-lg font-medium text-gray-900">
