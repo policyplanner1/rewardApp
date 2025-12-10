@@ -4,9 +4,10 @@ const db = require("../config/database");
 class ProductController {
   // create Product
   async createProduct(req, res) {
+    let connection;
     try {
-      const connection = await db.getConnection();
-      await connection.beginTransaction(); // START TRANSACTION
+      connection = await db.getConnection();
+      await connection.beginTransaction(); 
 
       const vendorId = req.user.vendor_id;
       const body = req.body;
@@ -88,15 +89,15 @@ class ProductController {
         productId,
       });
     } catch (err) {
-      await connection.rollback();
+      if (connection) await connection.rollback();
 
       console.log("PRODUCT CREATE ERROR:", err);
       return res.status(500).json({
         success: false,
         message: err.message,
       });
-    }finally{
-       connection.release(); // release connection back to pool
+    } finally {
+      if (connection) connection.release();
     }
   }
 
@@ -232,9 +233,8 @@ class ProductController {
   }
 
   // My Listed Products
-   async getMyListedProducts(req, res) {
+  async getMyListedProducts(req, res) {
     try {
-
       const vendorId = req.user.vendor_id;
       if (!vendorId) {
         return res.status(400).json({
