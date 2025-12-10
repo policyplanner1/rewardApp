@@ -7,7 +7,7 @@ class ProductController {
     let connection;
     try {
       connection = await db.getConnection();
-      await connection.beginTransaction(); 
+      await connection.beginTransaction();
 
       const vendorId = req.user.vendor_id;
       const body = req.body;
@@ -245,9 +245,32 @@ class ProductController {
 
       const products = await ProductModel.getProductsByVendor(vendorId);
 
+      const stats = products.reduce(
+        (acc, product) => {
+          // Count total products
+          acc.total += 1;
+
+          // Count products by their status
+          if (product.status === "pending") acc.pending += 1;
+          if (product.status === "approved") acc.approved += 1;
+          if (product.status === "rejected") acc.rejected += 1;
+          if (product.status === "resubmission") acc.resubmission += 1;
+
+          return acc;
+        },
+        {
+          pending: 0,
+          approved: 0,
+          rejected: 0,
+          resubmission: 0,
+          total: 0,
+        }
+      );
+
       return res.json({
         success: true,
         products,
+        stats
       });
     } catch (err) {
       console.error("Get my product list Error:", err);

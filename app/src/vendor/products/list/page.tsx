@@ -77,7 +77,7 @@ interface ApiResponse {
   total: number;
   page: number;
   totalPages: number;
-  stats?: Stats;
+  stats: Stats;
 }
 
 type ActionType = "approve" | "reject" | "request_resubmission" | "delete";
