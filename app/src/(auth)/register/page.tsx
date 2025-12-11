@@ -11,7 +11,7 @@ export default function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'vendor' as 'vendor' | 'vendor_manager' | 'admin',
+    role: 'vendor' as 'vendor' | 'vendor_manager' | 'admin' | 'warehouse_manager',
     phone: ''
   });
   const [error, setError] = useState('');
@@ -112,6 +112,7 @@ export default function RegisterPage() {
                 <option value="vendor">Vendor</option>
                 <option value="vendor_manager">Vendor Manager</option>
                 <option value="admin">Admin</option>
+                <option value="warehouse_manager">Warehouse Manager</option>
               </select>
             </div>
 
