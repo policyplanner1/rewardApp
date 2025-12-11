@@ -1,15 +1,12 @@
-// middleware/productUpload.js
 const multer = require("multer");
 const fs = require("fs");
 const path = require("path");
 
-const productStorage = multer.diskStorage({
+const tempFolder = path.join(__dirname, "../uploads/temp");
+if (!fs.existsSync(tempFolder)) fs.mkdirSync(tempFolder, { recursive: true });
+
+const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const vendorId = req.user.vendor_id;
-    const tempFolder = path.join(__dirname, "../uploads/temp", vendorId.toString());
-
-    if (!fs.existsSync(tempFolder)) fs.mkdirSync(tempFolder, { recursive: true });
-
     cb(null, tempFolder);
   },
   filename: (req, file, cb) => {
@@ -18,6 +15,6 @@ const productStorage = multer.diskStorage({
   },
 });
 
-const productUpload = multer({ storage: productStorage });
+const productUpload = multer({ storage });
 
 module.exports = { productUpload };

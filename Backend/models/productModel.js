@@ -41,7 +41,8 @@ class ProductModel {
   async insertProductImages(connection, productId, files) {
     for (const file of files) {
       await connection.execute(
-        `INSERT INTO product_images (product_id, image_url) VALUES (?, ?)`,
+        `INSERT INTO product_images (product_id, image_url)
+       VALUES (?, ?)`,
         [productId, file.finalPath]
       );
     }
@@ -49,21 +50,23 @@ class ProductModel {
 
   async insertProductDocuments(connection, productId, categoryId, files) {
     const [docTypes] = await connection.execute(
-      `SELECT d.document_id FROM category_document cd
-       JOIN documents d ON cd.document_id = d.document_id
-       WHERE cd.category_id = ?`,
+      `SELECT d.document_id
+     FROM category_document cd
+     JOIN documents d ON cd.document_id = d.document_id
+     WHERE cd.category_id = ?`,
       [categoryId]
     );
 
-    if (!docTypes.length) return;
-
     const validDocumentIds = docTypes.map((d) => d.document_id);
+
     for (const file of files) {
       const docId = parseInt(file.fieldname);
       if (!validDocumentIds.includes(docId)) continue;
 
       await connection.execute(
-        `INSERT INTO product_documents (product_id, document_id, file_path, mime_type) VALUES (?, ?, ?, ?)`,
+        `INSERT INTO product_documents 
+       (product_id, document_id, file_path, mime_type)
+       VALUES (?, ?, ?, ?)`,
         [productId, docId, file.finalPath, file.mimetype]
       );
     }
@@ -96,7 +99,8 @@ class ProductModel {
   async insertProductVariantImages(connection, variantId, files) {
     for (const file of files) {
       await connection.execute(
-        `INSERT INTO product_variant_images (variant_id, image_url) VALUES (?, ?)`,
+        `INSERT INTO product_variant_images (variant_id, image_url)
+       VALUES (?, ?)`,
         [variantId, file.finalPath]
       );
     }

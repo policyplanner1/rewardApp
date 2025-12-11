@@ -2,123 +2,110 @@ const ProductModel = require("../models/productModel");
 const db = require("../config/database");
 const fs = require("fs");
 const path = require("path");
+const { moveFile } = require("../utils/moveFile");
 
-const moveFile = (oldPath, newPath) => {
-  return new Promise((resolve, reject) => {
-    fs.rename(oldPath, newPath, (err) => {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
-};
 
 class ProductController {
   // create Product
   async createProduct(req, res) {
-    let connection;
-    try {
-      connection = await db.getConnection();
-      await connection.beginTransaction();
+  let connection;
+  try {
+    connection = await db.getConnection();
+    await connection.beginTransaction();
 
-      const vendorId = req.user.vendor_id;
-      const body = req.body;
+    const vendorId = req.user.vendor_id;
+    const body = req.body;
 
-      if (!body.category_id && !body.custom_category) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Category ID is required" });
-      }
-
-      // 1️⃣ Create product
-      const productId = await ProductModel.createProduct(
-        connection,
-        vendorId,
-        body
-      );
-
-      // 2️⃣ Prepare final folder for this product
-      const finalFolder = path.join(
-        __dirname,
-        "../uploads/products",
-        `${vendorId}`,
-        `${productId}`
-      );
-      if (!fs.existsSync(finalFolder))
-        fs.mkdirSync(finalFolder, { recursive: true });
-
-      // 3️⃣ Move uploaded files from temp → product folder
-      const movedFiles = [];
-      if (req.files && req.files.length) {
-        for (const file of req.files) {
-          const filename = path.basename(file.path);
-          const newPath = path.join(finalFolder, filename);
-          await moveFile(file.path, newPath);
-          file.finalPath = `products/${vendorId}/${productId}/${filename}`;
-          movedFiles.push(file);
-        }
-      }
-
-      // 4️⃣ Insert main images
-      const mainImages = movedFiles.filter((f) => f.fieldname === "images");
-      if (mainImages.length) {
-        await ProductModel.insertProductImages(
-          connection,
-          productId,
-          mainImages
-        );
-      }
-
-      // 5️⃣ Insert product documents
-      const docFiles = movedFiles.filter((f) => f.fieldname !== "images");
-      if (docFiles.length) {
-        await ProductModel.insertProductDocuments(
-          connection,
-          productId,
-          body.category_id,
-          docFiles
-        );
-      }
-
-      // 6️⃣ Handle product variants
-      if (body.variants) {
-        const variants =
-          typeof body.variants === "string"
-            ? JSON.parse(body.variants)
-            : body.variants;
-
-        for (let i = 0; i < variants.length; i++) {
-          const variant = variants[i];
-          const variantId = await ProductModel.createProductVariant(
-            connection,
-            productId,
-            variant
-          );
-
-          // Variant images: variant_0_image, variant_1_image...
-          const variantFiles = movedFiles.filter((f) =>
-            f.fieldname.startsWith(`variant_${i}_`)
-          );
-          if (variantFiles.length) {
-            await ProductModel.insertProductVariantImages(
-              connection,
-              variantId,
-              variantFiles
-            );
-          }
-        }
-      }
-
-      await connection.commit();
-      return res.json({ success: true, productId });
-    } catch (err) {
-      if (connection) await connection.rollback();
-      console.error("PRODUCT CREATE ERROR:", err);
-      return res.status(500).json({ success: false, message: err.message });
-    } finally {
-      if (connection) connection.release();
+    if (!body.category_id && !body.custom_category) {
+      return res.status(400).json({
+        success: false,
+        message: "Category ID is required",
+      });
     }
-  }
 
+    // 1️⃣ Create product entry
+    const productId = await ProductModel.createProduct(connection, vendorId, body);
+
+    // 2️⃣ Prepare folder structure
+    const baseFolder = path.join(__dirname, "../uploads/products", `${vendorId}`, `${productId}`);
+    const imagesFolder = path.join(baseFolder, "images");
+    const docsFolder = path.join(baseFolder, "documents");
+    const variantFolder = path.join(baseFolder, "variants");
+
+    [baseFolder, imagesFolder, docsFolder, variantFolder].forEach(folder => {
+      if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
+    });
+
+    // 3️⃣ Move files from temp → final folders
+    const movedFiles = [];
+
+    if (req.files && req.files.length) {
+      for (const file of req.files) {
+        const filename = path.basename(file.path);
+        let newPath;
+
+        // Main product images
+        if (file.fieldname === "images") {
+          newPath = path.join(imagesFolder, filename);
+          file.finalPath = `products/${vendorId}/${productId}/images/${filename}`;
+        }
+        // Documents (fieldname is numeric ID)
+        else if (!isNaN(parseInt(file.fieldname))) {
+          newPath = path.join(docsFolder, filename);
+          file.finalPath = `products/${vendorId}/${productId}/documents/${filename}`;
+        }
+        // Variant images (fieldname like variant_0_image)
+        else if (file.fieldname.startsWith("variant_")) {
+          newPath = path.join(variantFolder, filename);
+          file.finalPath = `products/${vendorId}/${productId}/variants/${filename}`;
+        } else {
+          continue; // skip unknown field
+        }
+
+        await moveFile(file.path, newPath);
+        movedFiles.push(file);
+      }
+    }
+
+    // 4️⃣ Insert main product images
+    const mainImages = movedFiles.filter(f => f.fieldname === "images");
+    if (mainImages.length) {
+      await ProductModel.insertProductImages(connection, productId, mainImages);
+    }
+
+    // 5️⃣ Insert product documents
+    const docFiles = movedFiles.filter(f => !isNaN(parseInt(f.fieldname)));
+    if (docFiles.length) {
+      await ProductModel.insertProductDocuments(connection, productId, body.category_id, docFiles);
+    }
+
+    // 6️⃣ Handle variants
+    if (body.variants) {
+      const variants = typeof body.variants === "string" ? JSON.parse(body.variants) : body.variants;
+
+      for (let i = 0; i < variants.length; i++) {
+        const variant = variants[i];
+        const variantId = await ProductModel.createProductVariant(connection, productId, variant);
+
+        // Variant images
+        const variantFiles = movedFiles.filter(f => f.fieldname.startsWith(`variant_${i}_`));
+        if (variantFiles.length) {
+          await ProductModel.insertProductVariantImages(connection, variantId, variantFiles);
+        }
+      }
+    }
+
+    await connection.commit();
+    return res.json({ success: true, productId });
+
+  } catch (err) {
+    if (connection) await connection.rollback();
+    console.error("PRODUCT CREATE ERROR:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  } finally {
+    if (connection) connection.release();
+  }
+}
   // Get product by ID
   async getProductDetailsById(req, res) {
     try {
