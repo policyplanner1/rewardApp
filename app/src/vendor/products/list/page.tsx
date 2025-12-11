@@ -405,7 +405,6 @@ export default function ProductManagerList() {
       }
 
       const data: ApiResponse = await response.json();
-      console.log(data,"Data")
 
       if (data.success) {
         setProducts(data.products);
@@ -686,136 +685,128 @@ export default function ProductManagerList() {
             </thead>
 
             <tbody className="bg-white divide-y divide-gray-200">
-              {products?.length > 0 ? (
-                products.map((product) => (
-                  <tr key={product.product_id} className="hover:bg-gray-50">
-                    {/* PRODUCT NAME */}
-                    <td className="px-4 py-4">
-                      <div className="flex items-start">
-                        {/* IMAGE OR FALLBACK ICON */}
-                        {product?.main_image ? (
-                          <div className="flex-shrink-0 w-12 h-12 mr-3 overflow-hidden bg-gray-100 rounded">
-                            <img
-                              src={
-                                product?.main_image
-                                  ? `http://localhost:5000/uploads/${product.main_image}`
-                                  : undefined
-                              }
-                              alt={product?.product_name || "Product Image"}
-                              className="object-cover w-full h-full"
-                            />
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 mr-3 bg-gray-100 rounded">
-                            <FaBox className="text-gray-400 text-lg" />
-                          </div>
-                        )}
+              {products.map((product) => (
+                <tr key={product.product_id} className="hover:bg-gray-50">
+                  {/* PRODUCT NAME */}
+                  <td className="px-4 py-4">
+                    <div className="flex items-start">
+                      {/* IMAGE OR FALLBACK ICON */}
+                      {product?.main_image ? (
+                        <div className="flex-shrink-0 w-12 h-12 mr-3 overflow-hidden bg-gray-100 rounded">
+                          <img
+                            src={
+                              product?.main_image
+                                ? `http://localhost:5000/uploads/${product.main_image}`
+                                : undefined
+                            }
+                            alt={product?.product_name || "Product Image"}
+                            className="object-cover w-full h-full"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 mr-3 bg-gray-100 rounded">
+                          <FaBox className="text-gray-400 text-lg" />
+                        </div>
+                      )}
 
-                        {/* PRODUCT NAME */}
-                        <div className="flex-1">
-                          <div className="font-semibold text-gray-700">
-                            {product?.product_name || "Unnamed Product"}
-                          </div>
+                      {/* PRODUCT NAME */}
+                      <div className="flex-1">
+                        <div className="font-semibold text-gray-700">
+                          {product?.product_name || "Unnamed Product"}
                         </div>
                       </div>
-                    </td>
+                    </div>
+                  </td>
 
-                    {/*   Brand Name */}
-                    <td className="px-4 py-4">
-                      <div className="text-sm text-gray-900">
-                        {product?.brand_name || "N/A"}
-                      </div>
-                    </td>
+                  {/*   Brand Name */}
+                  <td className="px-4 py-4">
+                    <div className="text-sm text-gray-900">
+                      {product?.brand_name || "N/A"}
+                    </div>
+                  </td>
 
-                    {/* CATEGORY */}
-                    <td className="px-4 py-4">
-                      <div className="text-sm text-gray-900">
-                        {product?.category_name || "N/A"}
-                      </div>
-                    </td>
+                  {/* CATEGORY */}
+                  <td className="px-4 py-4">
+                    <div className="text-sm text-gray-900">
+                      {product?.category_name || "N/A"}
+                    </div>
+                  </td>
 
-                    {/* Subcategory Name */}
-                    <td className="px-4 py-4">
-                      <div className="text-sm text-gray-900">
-                        {product?.subcategory_name || "N/A"}
-                      </div>
-                    </td>
+                  {/* Subcategory Name */}
+                  <td className="px-4 py-4">
+                    <div className="text-sm text-gray-900">
+                      {product?.subcategory_name || "N/A"}
+                    </div>
+                  </td>
 
-                    {/* Sub sub category */}
-                    <td className="px-4 py-4">
-                      <div className="text-sm text-gray-900">
-                        {product?.sub_subcategory_name || "N/A"}
-                      </div>
-                    </td>
+                  {/* Sub sub category */}
+                  <td className="px-4 py-4">
+                    <div className="text-sm text-gray-900">
+                      {product?.sub_subcategory_name || "N/A"}
+                    </div>
+                  </td>
 
-                    {/* STATUS */}
-                    <td className="px-4 py-4">
-                      <StatusChip status={product?.status} />
-                    </td>
+                  {/* STATUS */}
+                  <td className="px-4 py-4">
+                    <StatusChip status={product?.status} />
+                  </td>
 
-                    {/* Rejection */}
-                    <td className="px-4 py-4">
-                      <div className="text-sm text-gray-900">
-                        {product?.rejection_reason || "N/A"}
-                      </div>
-                    </td>
+                  {/* Rejection */}
+                  <td className="px-4 py-4">
+                    <div className="text-sm text-gray-900">
+                      {product?.rejection_reason || "N/A"}
+                    </div>
+                  </td>
 
-                    {/* ACTIONS */}
-                    <td className="px-4 py-4">
-                      <div className="flex items-center space-x-2">
-                        {/* View Button */}
-                        <Link href={`/manager/products/${product.product_id}`}>
-                          <button className="p-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
-                            <FaEye />
+                  {/* ACTIONS */}
+                  <td className="px-4 py-4">
+                    <div className="flex items-center space-x-2">
+                      {/* View Button */}
+                      <Link href={`/manager/products/${product.product_id}`}>
+                        <button className="p-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
+                          <FaEye />
+                        </button>
+                      </Link>
+
+                      {/* Edit Button */}
+                      {product.status !== "approved" && (
+                        <Link
+                          href={`/vendor/products/edit/${product.product_id}`}
+                          target="_blank"
+                        >
+                          <button className="p-2 text-purple-700 bg-purple-100 rounded hover:bg-purple-200">
+                            <FaEdit />
                           </button>
                         </Link>
+                      )}
 
-                        {/* Edit Button */}
-                        {product.status !== "approved" && (
-                          <Link
-                            href={`/vendor/products/edit/${product.product_id}`}
-                            target="_blank"
-                          >
-                            <button className="p-2 text-purple-700 bg-purple-100 rounded hover:bg-purple-200">
-                              <FaEdit />
-                            </button>
-                          </Link>
-                        )}
+                      {/* Delete Button — hide when approved */}
+                      {product.status !== "approved" && (
+                        <button
+                          onClick={() => openActionModal(product, "delete")}
+                          className="p-2 text-red-700 bg-red-100 rounded hover:bg-red-200"
+                        >
+                          <FaTrash />
+                        </button>
+                      )}
 
-                        {/* Delete Button — hide when approved */}
-                        {product.status !== "approved" && (
-                          <button
-                            onClick={() => openActionModal(product, "delete")}
-                            className="p-2 text-red-700 bg-red-100 rounded hover:bg-red-200"
-                          >
-                            <FaTrash />
-                          </button>
-                        )}
-
-                        {/* Resubmission Button — only show when rejected or resubmission, NEVER approved */}
-                        {["rejected", "resubmission"].includes(
-                          product.status
-                        ) && (
-                          <button
-                            onClick={() =>
-                              openActionModal(product, "request_resubmission")
-                            }
-                            className="p-2 text-green-700 bg-green-100 rounded hover:bg-green-200"
-                          >
-                            <FaPaperPlane />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="text-center py-4 text-gray-500">
-                    No products found.
+                      {/* Resubmission Button — only show when rejected or resubmission, NEVER approved */}
+                      {["rejected", "resubmission"].includes(
+                        product.status
+                      ) && (
+                        <button
+                          onClick={() =>
+                            openActionModal(product, "request_resubmission")
+                          }
+                          className="p-2 text-green-700 bg-green-100 rounded hover:bg-green-200"
+                        >
+                          <FaPaperPlane />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
         </div>
