@@ -41,7 +41,7 @@ interface DocumentType {
   document_id: number;
   document_name: string;
   status: number;
-  document_key?: string; // This might not come from your endpoint
+  document_key?: string;
 }
 
 interface RequiredDocument {
@@ -60,6 +60,7 @@ interface Variant {
   stock: string | number;
   sku: string;
   expiryDate: string;
+  manufacturingYear: string;
   materialType: string;
   images: File[];
 }
@@ -105,6 +106,7 @@ const initialProductData: ProductData = {
       stock: "",
       sku: "",
       expiryDate: "",
+      manufacturingYear: "",
       materialType: "",
       images: [],
     },
@@ -177,7 +179,7 @@ export default function ProductListingDynamic() {
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [isCustomSubcategory, setIsCustomSubcategory] = useState(false);
   const [isCustomSubSubcategory, setIsCustomSubSubcategory] = useState(false);
-
+  const [imageError, setImageError] = useState("");
   const [custom_category, setCustomCategory] = useState("");
   const [custom_subcategory, setCustomSubCategory] = useState("");
   const [custom_subsubcategory, setCustomSubSubCategory] = useState("");
@@ -202,6 +204,34 @@ export default function ProductListingDynamic() {
       setLoading(false);
     }
   };
+
+  const handleMainImages = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+
+    const files = Array.from(e.target.files);
+
+    if (files.length < 2) {
+      setImageError("Please select at least 1 image.");
+      return;
+    }
+
+    if (files.length > 5) {
+      setImageError("You can select a maximum of 5 images.");
+      return;
+    }
+
+    setImageError("");
+    setProduct((prev) => ({
+      ...prev,
+      productImages: files,
+    }));
+  };
+
+  useEffect(() => {
+    return () => {
+      product.productImages.forEach((file) => URL.revokeObjectURL(file));
+    };
+  }, [product.productImages]);
 
   // Fetch subcategories when category changes
   useEffect(() => {
@@ -320,14 +350,14 @@ export default function ProductListingDynamic() {
     }
   };
 
-  const handleMainImages = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setProduct((prev) => ({
-        ...prev,
-        productImages: Array.from(e.target.files || []),
-      }));
-    }
-  };
+  // const handleMainImages = (e: ChangeEvent<HTMLInputElement>) => {
+  //   if (e.target.files) {
+  //     setProduct((prev) => ({
+  //       ...prev,
+  //       productImages: Array.from(e.target.files || []),
+  //     }));
+  //   }
+  // };
 
   const handleVariantChange = (index: number, field: string, value: any) => {
     const updatedVariants = [...product.variants];
@@ -373,6 +403,7 @@ export default function ProductListingDynamic() {
           salesPrice: "",
           stock: "",
           expiryDate: "",
+          manufacturingYear: "",
           materialType: "",
           sku: "",
           images: [],
@@ -516,6 +547,10 @@ export default function ProductListingDynamic() {
           firstVariant.expiryDate?.toString() || ""
         );
         formData.append(
+          "manufacturingYear",
+          firstVariant.manufacturingYear?.toString() || ""
+        );
+        formData.append(
           "materialType",
           firstVariant.materialType?.toString() || ""
         );
@@ -546,6 +581,7 @@ export default function ProductListingDynamic() {
       const variantsPayload = product.variants.map((variant, index) => ({
         // sku: variant.sku || generateSKU(index),
         expiryDate: variant.expiryDate,
+        manufacturingYear: variant.manufacturingYear,
         materialType: variant.materialType,
         size: variant.size,
         color: variant.color,
@@ -831,6 +867,21 @@ export default function ProductListingDynamic() {
                     handleVariantChange(index, "expiry", e.target.value)
                   }
                   placeholder="Enter Expiry Date"
+                  className="w-full p-2 border rounded-lg"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Manufacturing Year
+                </label>
+                <input
+                  type="text"
+                  value={variant.manufacturingYear}
+                  onChange={(e) =>
+                    handleVariantChange(index, "manufacturing", e.target.value)
+                  }
+                  placeholder="Enter Manufacturing Year"
                   className="w-full p-2 border rounded-lg"
                 />
               </div>
@@ -1291,9 +1342,35 @@ export default function ProductListingDynamic() {
                 />
               </label>
             </div>
+
             <p className="mt-2 text-xs text-gray-500">
-              Upload high-quality product images (max 10)
+              Upload high-quality product images (min 1, max 5)
             </p>
+
+            {imageError && (
+              <p className="mt-1 text-xs text-red-500">{imageError}</p>
+            )}
+
+            {/* Image Previews */}
+            {product.productImages.length > 0 && (
+              <div className="mt-3 flex gap-2 flex-wrap">
+                {product.productImages.map((file, index) => {
+                  const url = URL.createObjectURL(file);
+                  return (
+                    <div
+                      key={index}
+                      className="w-20 h-20 border rounded overflow-hidden"
+                    >
+                      <img
+                        src={url}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </section>
 
           {/* Documents */}
