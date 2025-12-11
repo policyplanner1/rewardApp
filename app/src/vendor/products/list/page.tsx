@@ -762,7 +762,9 @@ export default function ProductManagerList() {
                   <td className="px-4 py-4">
                     <div className="flex items-center space-x-2">
                       {/* View Button*/}
-                      <Link href={`/manager/products/${product.product_id}`}>
+                      <Link
+                        href={`/src/vendor/products/review/${product.product_id}`}
+                      >
                         <button className="p-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
                           <FaEye />
                         </button>
@@ -773,7 +775,7 @@ export default function ProductManagerList() {
                         product.status
                       ) && (
                         <Link
-                          href={`/vendor/products/edit/${product.product_id}`}
+                          href={`/src/vendor/products/edit/${product.product_id}`}
                           target="_blank"
                         >
                           <button className="p-2 text-purple-700 bg-purple-100 rounded hover:bg-purple-200">
