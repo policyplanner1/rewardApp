@@ -210,7 +210,7 @@ export default function ProductListingDynamic() {
 
     const files = Array.from(e.target.files);
 
-    if (files.length < 2) {
+    if (files.length < 1) {
       setImageError("Please select at least 1 image.");
       return;
     }
@@ -397,7 +397,7 @@ export default function ProductListingDynamic() {
 
     const files = Array.from(e.target.files);
 
-    if (files.length < 2) {
+    if (files.length < 1) {
       alert("Please select at least 1 image for this variant.");
       return;
     }
@@ -540,6 +540,11 @@ export default function ProductListingDynamic() {
       formData.append("productName", product.productName);
       formData.append("description", product.description);
       formData.append("shortDescription", product.shortDescription);
+      if (isCustomCategory) formData.append("custom_category", custom_category);
+      if (isCustomSubcategory)
+        formData.append("custom_subcategory", custom_subcategory);
+      if (isCustomSubSubcategory)
+        formData.append("custom_sub_subcategory", custom_subsubcategory);
 
       if (product.subCategoryId) {
         formData.append("subcategory_id", product.subCategoryId.toString());
@@ -589,16 +594,7 @@ export default function ProductListingDynamic() {
       // Add document files - map document_id to field names
       Object.entries(docFiles).forEach(([docId, file]) => {
         if (file) {
-          const doc = requiredDocs.find(
-            (d) => d.document_id === parseInt(docId)
-          );
-          if (doc) {
-            // Use document_name as field name (convert to lowercase with underscores)
-            const fieldName = doc.document_name
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, "_");
-            formData.append(fieldName, file);
-          }
+          formData.append(docId, file);
         }
       });
 
@@ -620,21 +616,14 @@ export default function ProductListingDynamic() {
       formData.append("variants", JSON.stringify(variantsPayload));
 
       // Add variant images
-      product.variants.forEach((variant, variantIndex) => {
-        variant.images.forEach((file, fileIndex) => {
-          formData.append(
-            `variants[${variantIndex}][images][${fileIndex}]`,
-            file
-          );
+      product.variants.forEach((variant, index) => {
+        variant.images.forEach((file, imgIndex) => {
+          formData.append(`variant_${index}_${imgIndex}`, file);
         });
       });
 
-      console.log("Submitting form with category ID:", product.categoryId);
-      console.log("Required documents:", requiredDocs);
-      console.log("Document files:", docFiles);
-
       // Submit to backend
-      const response = await fetch(`${API_BASE}/api/products/create`, {
+      const response = await fetch(`${API_BASE}/api/product/create-product`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -791,7 +780,7 @@ export default function ProductListingDynamic() {
                   type="text"
                   value={variant.materialType}
                   onChange={(e) =>
-                    handleVariantChange(index, "material", e.target.value)
+                    handleVariantChange(index, "materialType", e.target.value)
                   }
                   placeholder="Enter Material Type"
                   className="w-full p-2 border rounded-lg"
@@ -889,7 +878,7 @@ export default function ProductListingDynamic() {
                   type="text"
                   value={variant.expiryDate}
                   onChange={(e) =>
-                    handleVariantChange(index, "expiry", e.target.value)
+                    handleVariantChange(index, "expiryDate", e.target.value)
                   }
                   placeholder="Enter Expiry Date"
                   className="w-full p-2 border rounded-lg"
@@ -904,7 +893,11 @@ export default function ProductListingDynamic() {
                   type="text"
                   value={variant.manufacturingYear}
                   onChange={(e) =>
-                    handleVariantChange(index, "manufacturing", e.target.value)
+                    handleVariantChange(
+                      index,
+                      "manufacturingYear",
+                      e.target.value
+                    )
                   }
                   placeholder="Enter Manufacturing Year"
                   className="w-full p-2 border rounded-lg"
@@ -1261,7 +1254,7 @@ export default function ProductListingDynamic() {
                 id="productName"
                 name="productName"
                 label="Product Name"
-                value={product.itemType}
+                value={product.productName}
                 onChange={handleFieldChange}
                 placeholder="Type of product (e.g., Shoes, TV)"
               />
@@ -1295,8 +1288,8 @@ export default function ProductListingDynamic() {
               />
 
               <FormInput
-                id="model/SKU"
-                name="model/SKU"
+                id="model"
+                name="model"
                 label="Model / SKU"
                 required
                 value={product.productName}
