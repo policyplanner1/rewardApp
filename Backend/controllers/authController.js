@@ -199,6 +199,7 @@ const authController = {
        LOGOUT
      ============================================================ */
   logout: (req, res) => {
+    res.clearCookie();
     return res.json({ success: true, message: "Logout successful" });
   },
 };

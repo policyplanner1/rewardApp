@@ -20,9 +20,9 @@ router.post('/admin/register', (req, res) =>
   authController.register(req, res, 'admin')
 );
 
-// router.post('/warehouse-manager/register', (req, res) => 
-//   authController.register(req, res, 'warehouse_manager')
-// );
+router.post('/warehouse-manager/register', (req, res) => 
+  authController.register(req, res, 'warehouse_manager')
+);
 
 /* ============================================================
    LOGIN (SEPARATE FOR EACH ROLE)
@@ -35,6 +35,11 @@ router.post('/vendor/login', (req, res) =>
 router.post('/manager/login', (req, res) =>
   authController.login(req, res, 'vendor_manager')
 );
+
+router.post('/warehouse-manager/login', (req, res) =>
+  authController.login(req, res, 'warehouse_manager')
+);
+
 
 router.post('/admin/login', (req, res) =>
   authController.login(req, res, 'admin')
