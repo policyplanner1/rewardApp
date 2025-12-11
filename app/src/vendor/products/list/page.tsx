@@ -452,29 +452,58 @@ export default function ProductManagerList() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No token");
 
-      // const response = await fetch(
-      //   `http://localhost:5000/api/manager/products/${productId}/status`,
-      //   {
-      //     method: "PUT",
-      //     headers: {
-      //       Authorization: `Bearer ${token}`,
-      //       "Content-Type": "application/json",
-      //     },
-      //     body: JSON.stringify({ action, reason }),
-      //   }
-      // );
+      // --- DELETE branch (implemented) ---
+      if (action === "delete") {
+        const res = await fetch(
+          `http://localhost:5000/api/product/delete-product/${productId}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          }
+        );
 
-      // const data = await response.json();
+        if (!res.ok) {
+          let text = await res.text().catch(() => "");
+          try {
+            const json = JSON.parse(text || "{}");
+            throw new Error(
+              json.message || `Failed to delete product (status ${res.status})`
+            );
+          } catch {
+            throw new Error(
+              text || `Failed to delete product (status ${res.status})`
+            );
+          }
+        }
 
-      // if (!data.success) {
-      //   throw new Error(data.message || "Action failed");
-      // }
+        // Parse response (if JSON)
+        const data = await res.json().catch(() => ({ success: true }));
 
-      // alert(data.message || "Action completed successfully");
-      // fetchProducts();
+        if (data && data.success === false) {
+          throw new Error(data.message || "Delete failed");
+        }
+
+        // Remove from local UI
+        setProducts((prev) => prev.filter((p) => p.product_id !== productId));
+
+        setStats((prev) => ({
+          ...prev,
+          total: Math.max(0, prev.total - 1),
+          pending: Math.max(0, prev.pending - 1), 
+        }));
+
+        alert(data.message || "Product deleted successfully");
+        return;
+      }
+
     } catch (error: any) {
       console.error("Error performing action:", error);
       alert(error.message || "Error performing action");
+      throw error; 
     } finally {
       setActionLoading(null);
     }
