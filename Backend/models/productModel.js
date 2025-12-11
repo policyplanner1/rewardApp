@@ -321,38 +321,38 @@ class ProductModel {
   }
 
   // delete product
-  async deleteProduct(productId) {
+  async deleteProduct(connection,productId,vendorId) {
     try {
       // Delete product variant images
-      const [variants] = await db.execute(
+      const [variants] = await connection.execute(
         `SELECT variant_id FROM product_variants WHERE product_id = ?`,
         [productId]
       );
       for (const variant of variants) {
-        await db.execute(
+        await connection.execute(
           `DELETE FROM product_variant_images WHERE variant_id = ?`,
           [variant.variant_id]
         );
       }
 
       // Delete product variants
-      await db.execute(`DELETE FROM product_variants WHERE product_id = ?`, [
+      await connection.execute(`DELETE FROM product_variants WHERE product_id = ?`, [
         productId,
       ]);
 
       // Delete product images
-      await db.execute(`DELETE FROM product_images WHERE product_id = ?`, [
+      await connection.execute(`DELETE FROM product_images WHERE product_id = ?`, [
         productId,
       ]);
 
       // Delete product documents
-      await db.execute(`DELETE FROM product_documents WHERE product_id = ?`, [
+      await connection.execute(`DELETE FROM product_documents WHERE product_id = ?`, [
         productId,
       ]);
 
       // Delete main product
-      await db.execute(`DELETE FROM products WHERE product_id = ?`, [
-        productId,
+      await connection.execute(`DELETE FROM products WHERE product_id = ? AND vendor_id = ?`, [
+        productId,vendorId
       ]);
 
       return true;
