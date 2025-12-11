@@ -1,14 +1,15 @@
 const db = require("../config/database");
+const { getRelativeFilePath } = require("../middleware/productUpload");
 
 class ProductModel {
   // create a Product
-  async createProduct(vendorId, data) {
+  async createProduct(connection, vendorId, data) {
     const safe = (v) => (v === undefined || v === "" ? null : v);
     let custom_category = data.custom_category || null;
     let custom_subcategory = data.custom_subcategory || null;
     let custom_sub_subcategory = data.custom_sub_subcategory || null;
 
-    const [result] = await db.execute(
+    const [result] = await connection.execute(
       `INSERT INTO products 
      (vendor_id, category_id, subcategory_id, sub_subcategory_id, brand_name, manufacturer, item_type, barcode, 
       product_name, description, short_description,tax_code, expiry_date,
@@ -38,22 +39,24 @@ class ProductModel {
   }
 
   // insert product Images
-  async insertProductImages(productId, files) {
+  async insertProductImages(connection, productId, files) {
     for (const file of files) {
       // Only insert if the field is meant for images
       if (file.fieldname !== "images") continue;
 
-      await db.execute(
+      const relativePath = getRelativeFilePath(file);
+
+      await connection.execute(
         `INSERT INTO product_images (product_id, image_url)
        VALUES (?, ?)`,
-        [productId, file.path]
+        [productId, relativePath]
       );
     }
   }
 
   // store product Documents
-  async insertProductDocuments(productId, categoryId, files) {
-    const [docTypes] = await db.execute(
+  async insertProductDocuments(connection, productId, categoryId, files) {
+    const [docTypes] = await connection.execute(
       `SELECT d.document_id
      FROM category_document cd
      JOIN documents d ON cd.document_id = d.document_id
@@ -78,10 +81,10 @@ class ProductModel {
   }
 
   // Insert product variant
-  async createProductVariant(productId, variant) {
+  async createProductVariant(connection, productId, variant) {
     const safe = (v) => (v === undefined || v === "" ? null : v);
 
-    const [result] = await db.execute(
+    const [result] = await connection.execute(
       `INSERT INTO product_variants
      (product_id, size, color, weight, custom_attributes, sku, mrp, vendor_price, sale_price, stock)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -103,9 +106,9 @@ class ProductModel {
   }
 
   // Insert variant images
-  async insertProductVariantImages(variantId, files) {
+  async insertProductVariantImages(connection, variantId, files) {
     for (const file of files) {
-      await db.execute(
+      await connection.execute(
         `INSERT INTO product_variant_images (variant_id, image_url)
        VALUES (?, ?)`,
         [variantId, file.path]
@@ -374,28 +377,36 @@ class ProductModel {
     try {
       const [rows] = await db.execute(
         `SELECT 
-         product_id,
-         vendor_id,
-         category_id,
-         subcategory_id,
-         sub_subcategory_id,
-         brand_name,
-         manufacturer,
-         item_type,
-         barcode,
-         product_name,
-         description,
-         short_description,
-         tax_code,
-         expiry_date,
-         custom_category,
-         custom_subcategory,
-         custom_sub_subcategory,
-         status,
-         rejection_reason,
-         created_at
-       FROM products
-       ORDER BY product_id DESC`
+         p.product_id,
+         p.vendor_id,
+         v.full_name AS vendor_name,
+         p.category_id,
+         c.category_name,
+         p.subcategory_id,
+         sc.subcategory_name,
+         p.sub_subcategory_id,
+         ssc.name AS sub_subcategory_name,
+         p.brand_name,
+         p.manufacturer,
+         p.item_type,
+         p.barcode,
+         p.product_name,
+         p.description,
+         p.short_description,
+         p.tax_code,
+         p.expiry_date,
+         p.custom_category,
+         p.custom_subcategory,
+         p.custom_sub_subcategory,
+         p.status,
+         p.rejection_reason,
+         p.created_at
+       FROM products p
+       LEFT JOIN categories c ON p.category_id = c.category_id
+       LEFT JOIN sub_categories sc ON p.subcategory_id = sc.subcategory_id
+       LEFT JOIN sub_sub_categories ssc ON p.sub_subcategory_id = ssc.sub_subcategory_id
+       LEFT JOIN vendors v ON p.vendor_id = v.vendor_id
+       ORDER BY p.product_id DESC`
       );
       return rows;
     } catch (error) {
@@ -405,36 +416,83 @@ class ProductModel {
   }
 
   // Get all products for a specific vendor
-  async getProductsByVendor(vendorId) {
+  async getProductsByVendor(
+    vendorId,
+    { search, status, sortBy, sortOrder, limit, offset }
+  ) {
     try {
-      const [rows] = await db.execute(
-        `SELECT 
-         product_id,
-         vendor_id,
-         category_id,
-         subcategory_id,
-         sub_subcategory_id,
-         brand_name,
-         manufacturer,
-         item_type,
-         barcode,
-         product_name,
-         description,
-         short_description,
-         tax_code,
-         expiry_date,
-         custom_category,
-         custom_subcategory,
-         custom_sub_subcategory,
-         status,
-         rejection_reason,
-         created_at
-       FROM products
-       WHERE vendor_id = ?
-       ORDER BY product_id DESC`,
-        [vendorId]
-      );
-      return rows;
+      // WHERE conditions
+      let where = `WHERE p.vendor_id = ?`;
+      let params = [vendorId];
+
+      if (status) {
+        where += ` AND p.status = ?`;
+        params.push(status);
+      }
+
+      if (search) {
+        where += ` AND p.product_name LIKE ?`;
+        params.push(`%${search}%`);
+      }
+
+      // Validate sort column
+      const sortableColumns = ["created_at", "product_name", "brand_name"];
+      if (!sortableColumns.includes(sortBy)) sortBy = "created_at";
+
+      const query = `
+      SELECT 
+        SQL_CALC_FOUND_ROWS
+        p.product_id,
+        p.vendor_id,
+        v.full_name AS vendor_name,
+        c.category_name,
+        sc.subcategory_name,
+        ssc.name AS sub_subcategory_name,
+        p.brand_name,
+        p.product_name,
+        p.status,
+        p.rejection_reason,
+        p.created_at,
+        COALESCE(
+        CONCAT(
+          '[',
+          GROUP_CONCAT(
+            DISTINCT
+            CASE 
+              WHEN pi.image_id IS NOT NULL THEN
+                JSON_OBJECT(
+                  'image_id', pi.image_id,
+                  'image_url', pi.image_url,
+                  'type', pi.type,
+                  'sort_order', pi.sort_order
+                )
+            END
+            ORDER BY pi.sort_order ASC SEPARATOR ','
+          ),
+          ']'
+        ),
+        '[]'
+      ) AS images
+
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.category_id
+      LEFT JOIN sub_categories sc ON p.subcategory_id = sc.subcategory_id
+      LEFT JOIN sub_sub_categories ssc ON p.sub_subcategory_id = ssc.sub_subcategory_id
+      LEFT JOIN vendors v ON p.vendor_id = v.vendor_id
+      LEFT JOIN product_images pi ON p.product_id = pi.product_id
+      ${where}
+      ORDER BY p.${sortBy} ${sortOrder}
+      LIMIT ? OFFSET ?
+    `;
+
+      params.push(limit, offset);
+
+      const [rows] = await db.execute(query, params);
+
+      // Get total items for pagination
+      const [[{ total }]] = await db.execute(`SELECT FOUND_ROWS() AS total`);
+
+      return { products: rows, totalItems: total };
     } catch (error) {
       console.error("Error fetching products by vendor:", error);
       throw error;

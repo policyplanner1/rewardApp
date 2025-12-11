@@ -1,9 +1,14 @@
 const ProductModel = require("../models/productModel");
+const db = require("../config/database");
 
 class ProductController {
   // create Product
   async createProduct(req, res) {
+    let connection;
     try {
+      connection = await db.getConnection();
+      await connection.beginTransaction();
+
       const vendorId = req.user.vendor_id;
       const body = req.body;
 
@@ -15,7 +20,11 @@ class ProductController {
         });
       }
 
-      const productId = await ProductModel.createProduct(vendorId, body);
+      const productId = await ProductModel.createProduct(
+        connection,
+        vendorId,
+        body
+      );
 
       // Handle uploaded files
       if (req.files && req.files.length) {
@@ -24,12 +33,17 @@ class ProductController {
 
         // Insert main product images
         if (mainImages.length) {
-          await ProductModel.insertProductImages(productId, mainImages);
+          await ProductModel.insertProductImages(
+            connection,
+            productId,
+            mainImages
+          );
         }
 
         // Insert product documents
         if (otherFiles.length) {
           await ProductModel.insertProductDocuments(
+            connection,
             productId,
             body.category_id,
             otherFiles
@@ -38,15 +52,16 @@ class ProductController {
       }
       //  Handle product variants
       if (body.variants) {
-        let variants=JSON.parse(body.variants)
+        let variants = JSON.parse(body.variants);
 
-        if(!variants && !Array.isArray(variants)) return;
+        if (!variants && !Array.isArray(variants)) return;
 
         for (let i = 0; i < variants.length; i++) {
           const variant = variants[i];
 
           // Insert variant in product_variants table
           const variantId = await ProductModel.createProductVariant(
+            connection,
             productId,
             variant
           );
@@ -59,6 +74,7 @@ class ProductController {
           // Insert variant images
           if (variantFiles.length) {
             await ProductModel.insertProductVariantImages(
+              connection,
               variantId,
               variantFiles
             );
@@ -66,16 +82,22 @@ class ProductController {
         }
       }
 
+      await connection.commit();
+
       return res.json({
         success: true,
         productId,
       });
     } catch (err) {
+      if (connection) await connection.rollback();
+
       console.log("PRODUCT CREATE ERROR:", err);
       return res.status(500).json({
         success: false,
         message: err.message,
       });
+    } finally {
+      if (connection) connection.release();
     }
   }
 
@@ -187,7 +209,7 @@ class ProductController {
   // Get all products by vendor
   async getProductsByVendor(req, res) {
     try {
-      const vendorId = req.params.vendorId; 
+      const vendorId = req.params.vendorId;
       if (!vendorId) {
         return res.status(400).json({
           success: false,
@@ -203,6 +225,88 @@ class ProductController {
       });
     } catch (err) {
       console.error("GET PRODUCTS BY VENDOR ERROR:", err);
+      return res.status(500).json({
+        success: false,
+        message: err.message,
+      });
+    }
+  }
+
+  // My Listed Products
+  async getMyListedProducts(req, res) {
+    try {
+      const vendorId = req.user.vendor_id;
+      if (!vendorId) {
+        return res.status(400).json({
+          success: false,
+          message: "Vendor ID is required",
+        });
+      }
+
+      // Pagination
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const offset = (page - 1) * limit;
+
+      // Filters
+      const search = req.query.search || "";
+      const status = req.query.status || "";
+      const sortBy = req.query.sortBy || "created_at";
+      const sortOrder =
+        req.query.sortOrder?.toUpperCase() === "ASC" ? "ASC" : "DESC";
+
+      const { products, totalItems } = await ProductModel.getProductsByVendor(
+        vendorId,
+        { search, status, sortBy, sortOrder, limit, offset }
+      );
+
+      const processedProducts = products.map((product) => {
+        let images = [];
+        try {
+          images = JSON.parse(product.images);
+        } catch (err) {
+          images = [];
+        }
+
+        return {
+          ...product,
+          images,
+          main_image: images.length ? images[0].image_url : null,
+        };
+      });
+
+      const stats = products.reduce(
+        (acc, product) => {
+          // Count total products
+          acc.total += 1;
+
+          // Count products by their status
+          if (product.status === "pending") acc.pending += 1;
+          if (product.status === "approved") acc.approved += 1;
+          if (product.status === "rejected") acc.rejected += 1;
+          if (product.status === "resubmission") acc.resubmission += 1;
+
+          return acc;
+        },
+        {
+          pending: 0,
+          approved: 0,
+          rejected: 0,
+          resubmission: 0,
+          total: 0,
+        }
+      );
+
+      return res.json({
+        success: true,
+        products: processedProducts,
+        stats,
+        total: totalItems,
+        totalPages: Math.ceil(totalItems / limit),
+        currentPage: page,
+      });
+    } catch (err) {
+      console.error("Get my product list Error:", err);
       return res.status(500).json({
         success: false,
         message: err.message,

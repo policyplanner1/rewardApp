@@ -1,25 +1,22 @@
-const db = require('../config/database');
+const db = require("../config/database");
 
 class VendorModel {
-
   /* ============================================================
       CREATE VENDOR
   ============================================================ */
-  async createVendor(data, userId) {
-    const [result] = await db.execute(
+  async createVendor(connection,data, userId) {
+    const [result] = await connection.execute(
       `INSERT INTO vendors 
-        (user_id, company_name, full_name, vendor_type, gstin, pan_number,
-         udyam_number, listed_products, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())`,
+        (user_id, company_name, full_name, vendor_type, gstin, ipaddress, pan_number, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?,'pending', NOW())`,
       [
         userId,
-        data.companyName || '',
-        data.fullName || '',
-        data.vendorType || '',
-        data.gstin || '',
-        data.panNumber || '',
-        data.udyamNumber || '',
-        Number(data.noOfListedProducts) || 0
+        data.companyName || "",
+        data.fullName || "",
+        data.vendorType || "",
+        data.gstin || "",
+        data.ip_address || "",
+        data.panNumber || "",
       ]
     );
     return result.insertId;
@@ -28,17 +25,17 @@ class VendorModel {
   /* ============================================================
       INSERT ADDRESS (business/billing/shipping)
   ============================================================ */
-  async insertAddress(vendorId, type, d) {
+  async insertAddress(connection,vendorId, type, d) {
     const address = {
-      line1: d[`${type}AddressLine1`] || d.addressLine1 || '',
-      line2: d[`${type}AddressLine2`] || d.addressLine2 || '',
-      line3: d[`${type}AddressLine3`] || d.addressLine3 || '',
-      city: d[`${type}City`] || d.city || '',
-      state: d[`${type}State`] || d.state || '',
-      pincode: d[`${type}Pincode`] || d.pincode || ''
+      line1: d[`${type}AddressLine1`] || d.addressLine1 || "",
+      line2: d[`${type}AddressLine2`] || d.addressLine2 || "",
+      line3: d[`${type}AddressLine3`] || d.addressLine3 || "",
+      city: d[`${type}City`] || d.city || "",
+      state: d[`${type}State`] || d.state || "",
+      pincode: d[`${type}Pincode`] || d.pincode || "",
     };
 
-    await db.execute(
+    await connection.execute(
       `INSERT INTO vendor_addresses 
         (vendor_id, type, line1, line2, line3, city, state, pincode)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -50,7 +47,7 @@ class VendorModel {
         address.line3,
         address.city,
         address.state,
-        address.pincode
+        address.pincode,
       ]
     );
   }
@@ -58,17 +55,17 @@ class VendorModel {
   /* ============================================================
       INSERT BANK DETAILS
   ============================================================ */
-  async insertBankDetails(vendorId, d) {
-    await db.execute(
+  async insertBankDetails(connection,vendorId, d) {
+    await connection.execute(
       `INSERT INTO vendor_bank_details 
         (vendor_id, bank_name, account_number, branch, ifsc_code)
        VALUES (?, ?, ?, ?, ?)`,
       [
         vendorId,
-        d.bankName || '',
-        d.accountNumber || '',
-        d.branch || '',
-        d.ifscCode || ''
+        d.bankName || "",
+        d.accountNumber || "",
+        d.branch || "",
+        d.ifscCode || "",
       ]
     );
   }
@@ -76,18 +73,18 @@ class VendorModel {
   /* ============================================================
       INSERT CONTACT DETAILS
   ============================================================ */
-  async insertContacts(vendorId, d) {
-    await db.execute(
+  async insertContacts(connection,vendorId, d) {
+    await connection.execute(
       `INSERT INTO vendor_contacts
         (vendor_id, primary_contact, alternate_contact, email, payment_terms, comments)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
         vendorId,
-        d.primaryContactNumber || '',
+        d.primaryContactNumber || "",
         d.alternateContactNumber || null,
-        d.email || '',
-        d.paymentTerms || '',
-        d.comments || ''
+        d.email || "",
+        d.paymentTerms || "",
+        d.comments || "",
       ]
     );
   }
@@ -96,20 +93,15 @@ class VendorModel {
       INSERT DOCUMENTS (DYNAMIC)
       Works with ANY file key from frontend
   ============================================================ */
-  async insertCommonDocuments(vendorId, files) {
+  async insertCommonDocuments(connection,vendorId, files) {
     for (const key of Object.keys(files)) {
       const file = files[key][0];
 
-      await db.execute(
+      await connection.execute(
         `INSERT INTO vendor_documents 
            (vendor_id, document_key, file_path, mime_type, uploaded_at)
          VALUES (?, ?, ?, ?, NOW())`,
-        [
-          vendorId,
-          key,              // e.g. "gstinFile", "panFile", etc
-          file.path,
-          file.mimetype
-        ]
+        [vendorId, key, file.path, file.mimetype]
       );
     }
   }
@@ -129,19 +121,23 @@ class VendorModel {
     if (!vendor) return null;
 
     const [addresses] = await db.execute(
-      'SELECT * FROM vendor_addresses WHERE vendor_id = ?', [vendorId]
+      "SELECT * FROM vendor_addresses WHERE vendor_id = ?",
+      [vendorId]
     );
 
     const [[bank]] = await db.execute(
-      'SELECT * FROM vendor_bank_details WHERE vendor_id = ?', [vendorId]
+      "SELECT * FROM vendor_bank_details WHERE vendor_id = ?",
+      [vendorId]
     );
 
     const [[contacts]] = await db.execute(
-      'SELECT * FROM vendor_contacts WHERE vendor_id = ?', [vendorId]
+      "SELECT * FROM vendor_contacts WHERE vendor_id = ?",
+      [vendorId]
     );
 
     const [documents] = await db.execute(
-      'SELECT * FROM vendor_documents WHERE vendor_id = ?', [vendorId]
+      "SELECT * FROM vendor_documents WHERE vendor_id = ?",
+      [vendorId]
     );
 
     return { vendor, addresses, bank, contacts, documents };

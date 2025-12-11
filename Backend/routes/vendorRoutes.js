@@ -1,7 +1,7 @@
 const express = require("express");
 const VendorController = require("../controllers/vendorController");
 const DocumentController = require("../controllers/documentController");
-const upload = require("../middleware/upload");
+const upload = require("../middleware/uploadVendor");
 const { authenticateToken, authorizeRoles } = require("../middleware/auth");
 
 const router = express.Router();
@@ -19,8 +19,10 @@ router.post(
     { name: "businessProfileFile", maxCount: 1 },
     { name: "vendorAgreementFile", maxCount: 1 },
     { name: "brandLogoFile", maxCount: 1 },
-    { name: "authorizationLetterFile", maxCount: 1 },
-    { name: "addressProofElectricityBillFile", maxCount: 1 },
+    // { name: "authorizationLetterFile", maxCount: 1 },
+    { name: "electricityBillFile", maxCount: 1 },
+    { name: "rightsAdvisoryFile", maxCount: 1 },
+    { name: "nocFile", maxCount: 1 },
   ]),
   VendorController.onboardVendor
 );

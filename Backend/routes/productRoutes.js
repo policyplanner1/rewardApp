@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const ProductController = require("../controllers/productController");
 const upload = require("../middleware/productUpload");
+const { productUpload } = require("../middleware/productUpload");
 const { authenticateToken, authorizeRoles } = require("../middleware/auth");
 
 // CREATE PRODUCT (images + ALL category documents)
@@ -9,25 +10,8 @@ router.post(
   "/create-product",
   authenticateToken,
   authorizeRoles("vendor"),
-  upload.any(),
+  productUpload.any(),
   ProductController.createProduct
-);
-
-// Get product by ID
-router.get(
-  "/:id",
-  authenticateToken,
-  authorizeRoles("vendor", "vendor_manager"),
-  ProductController.getProductDetailsById
-);
-
-
-// get product Documents
-router.get(
-  "/category/required_docs/:id",
-  authenticateToken,
-  authorizeRoles("vendor", "admin", "vendor_manager"),
-  ProductController.getRequiredDocuments
 );
 
 // Update product approval
@@ -38,16 +22,16 @@ router.put(
   ProductController.updateStatus
 );
 
-// Update product
+// Update product by vendor
 router.put(
   "/update-product/:id",
   authenticateToken,
   authorizeRoles("vendor"),
-  upload.any(),
+  productUpload.any(),
   ProductController.updateProduct
 );
 
-// Delete product
+// Delete product by vendor
 router.delete(
   "/delete-product/:id",
   authenticateToken,
@@ -59,16 +43,42 @@ router.delete(
 router.get(
   "/all-products",
   authenticateToken,
-  authorizeRoles("vendor_manager"),
+  authorizeRoles("vendor_manager","admin"),
   ProductController.getAllProductDetails
 );
 
-// Get products by vendor
+// Get products by vendor(admin and vendor manager can check)
 router.get(
   "/vendor-products/:vendorId",
   authenticateToken,
-  authorizeRoles("vendor", "vendor_manager"), 
+  authorizeRoles("admin", "vendor_manager"),
   ProductController.getProductsByVendor
 );
+
+// My Listed Products
+router.get(
+  "/my-listed-products",
+  authenticateToken,
+  authorizeRoles("vendor"),
+  ProductController.getMyListedProducts
+);
+
+// get product Documents
+router.get(
+  "/category/required_docs/:id",
+  authenticateToken,
+  authorizeRoles("vendor", "admin", "vendor_manager"),
+  ProductController.getRequiredDocuments
+);
+
+// Get product by ID
+router.get(
+  "/:id",
+  authenticateToken,
+  authorizeRoles("vendor", "vendor_manager"),
+  ProductController.getProductDetailsById
+);
+
+
 
 module.exports = router;

@@ -59,6 +59,8 @@ interface Variant {
   salesPrice: string | number;
   stock: string | number;
   sku: string;
+  expiryDate: string;
+  materialType: string;
   images: File[];
 }
 
@@ -74,8 +76,7 @@ interface ProductData {
   subCategoryId: number | null;
   subSubCategoryId: number | null;
   model?: string;
-  taxCode?: string;
-  expiryDate?: string;
+  gstIn?: string;
   variants: Variant[];
   productImages: File[];
 }
@@ -92,8 +93,7 @@ const initialProductData: ProductData = {
   subCategoryId: null,
   subSubCategoryId: null,
   model: "",
-  taxCode: "",
-  expiryDate: "",
+  gstIn: "",
   variants: [
     {
       size: "",
@@ -104,6 +104,8 @@ const initialProductData: ProductData = {
       salesPrice: "",
       stock: "",
       sku: "",
+      expiryDate: "",
+      materialType: "",
       images: [],
     },
   ],
@@ -164,7 +166,9 @@ export default function ProductListingDynamic() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
-  const [subSubCategories, setSubSubCategories] = useState<SubSubCategory[]>([]);
+  const [subSubCategories, setSubSubCategories] = useState<SubSubCategory[]>(
+    []
+  );
   const [requiredDocs, setRequiredDocs] = useState<RequiredDocument[]>([]);
   const [docFiles, setDocFiles] = useState<Record<number, File | null>>({}); // key by document_id
   const [loading, setLoading] = useState(false);
@@ -238,11 +242,9 @@ export default function ProductListingDynamic() {
   };
 
   const fetchSubSubCategories = async (subcategoryId: number) => {
-    
     try {
       const res = await fetch(
         `${API_BASE}/api/subsubcategory/${subcategoryId}`
-        
       );
       const json = await res.json();
       console.log("Sub-subcategories response:", json.data);
@@ -370,6 +372,8 @@ export default function ProductListingDynamic() {
           MRP: "",
           salesPrice: "",
           stock: "",
+          expiryDate: "",
+          materialType: "",
           sku: "",
           images: [],
         },
@@ -493,8 +497,7 @@ export default function ProductListingDynamic() {
       }
 
       if (product.model) formData.append("model", product.model);
-      if (product.taxCode) formData.append("taxCode", product.taxCode);
-      if (product.expiryDate) formData.append("expiryDate", product.expiryDate);
+      if (product.gstIn) formData.append("gstIn", product.gstIn);
 
       // Add first variant data as main product data (for backward compatibility)
       if (product.variants.length > 0) {
@@ -508,6 +511,14 @@ export default function ProductListingDynamic() {
           firstVariant.salesPrice?.toString() || "0"
         );
         formData.append("MRP", firstVariant.MRP?.toString() || "0");
+        formData.append(
+          "expiryDate",
+          firstVariant.expiryDate?.toString() || ""
+        );
+        formData.append(
+          "materialType",
+          firstVariant.materialType?.toString() || ""
+        );
       }
 
       // Add main product images
@@ -533,7 +544,9 @@ export default function ProductListingDynamic() {
 
       // Add variants as JSON
       const variantsPayload = product.variants.map((variant, index) => ({
-        sku: variant.sku || generateSKU(index),
+        // sku: variant.sku || generateSKU(index),
+        expiryDate: variant.expiryDate,
+        materialType: variant.materialType,
         size: variant.size,
         color: variant.color,
         dimension: variant.dimension,
@@ -589,14 +602,14 @@ export default function ProductListingDynamic() {
     }
   };
 
-  const generateSKU = (index: number) => {
-    const brand = product.brandName.substring(0, 3).toUpperCase() || "PRD";
-    const size =
-      product.variants[index].size?.substring(0, 2).toUpperCase() || "NA";
-    const color =
-      product.variants[index].color?.substring(0, 3).toUpperCase() || "DEF";
-    return `${brand}-${size}-${color}-${index + 1}`;
-  };
+  // const generateSKU = (index: number) => {
+  //   const brand = product.brandName.substring(0, 3).toUpperCase() || "PRD";
+  //   const size =
+  //     product.variants[index].size?.substring(0, 2).toUpperCase() || "NA";
+  //   const color =
+  //     product.variants[index].color?.substring(0, 3).toUpperCase() || "DEF";
+  //   return `${brand}-${size}-${color}-${index + 1}`;
+  // };
 
   // --- Render Components ---
   const renderDocUploads = () => {
@@ -647,7 +660,6 @@ export default function ProductListingDynamic() {
   };
 
   const renderVariantBuilder = () => {
-
     const attributes = getSelectedAttributes();
 
     return (
@@ -664,8 +676,6 @@ export default function ProductListingDynamic() {
             className="p-6 mb-6 border shadow-sm rounded-xl bg-gray-50"
           >
             <div className="flex items-center justify-between mb-4">
-              
-
               {product.variants.length > 1 && (
                 <button
                   type="button"
@@ -690,7 +700,7 @@ export default function ProductListingDynamic() {
                   onChange={(e) =>
                     handleVariantChange(index, "size", e.target.value)
                   }
-                  placeholder="Enter Size"
+                  placeholder="Enter Size / capacity / volume"
                   className="w-full p-2 border rounded-lg"
                 />
               </div>
@@ -707,6 +717,22 @@ export default function ProductListingDynamic() {
                     handleVariantChange(index, "color", e.target.value)
                   }
                   placeholder="Enter Color"
+                  className="w-full p-2 border rounded-lg"
+                />
+              </div>
+
+              {/* Material Type */}
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Material Type
+                </label>
+                <input
+                  type="text"
+                  value={variant.materialType}
+                  onChange={(e) =>
+                    handleVariantChange(index, "material", e.target.value)
+                  }
+                  placeholder="Enter Material Type"
                   className="w-full p-2 border rounded-lg"
                 />
               </div>
@@ -746,7 +772,7 @@ export default function ProductListingDynamic() {
               {/* Sales Price */}
               <div>
                 <label className="block mb-1 text-sm font-medium text-gray-700">
-                  Sales Price *
+                  Sales Price
                 </label>
                 <input
                   type="number"
@@ -763,7 +789,7 @@ export default function ProductListingDynamic() {
               {/* Stock */}
               <div>
                 <label className="block mb-1 text-sm font-medium text-gray-700">
-                  Stock *
+                  Stock
                 </label>
                 <input
                   type="number"
@@ -771,14 +797,14 @@ export default function ProductListingDynamic() {
                   onChange={(e) =>
                     handleVariantChange(index, "stock", e.target.value)
                   }
-                  placeholder="Enter Stock"
+                  placeholder="Enter Stock / Unit"
                   className="w-full p-2 border rounded-lg"
                   required
                 />
               </div>
 
               {/* SKU */}
-              <div>
+              {/* <div>
                 <label className="block mb-1 text-sm font-medium text-gray-700">
                   SKU
                 </label>
@@ -789,6 +815,22 @@ export default function ProductListingDynamic() {
                     handleVariantChange(index, "sku", e.target.value)
                   }
                   placeholder="Enter SKU"
+                  className="w-full p-2 border rounded-lg"
+                />
+              </div> */}
+
+              {/* expiryDate */}
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Expiry Date
+                </label>
+                <input
+                  type="text"
+                  value={variant.expiryDate}
+                  onChange={(e) =>
+                    handleVariantChange(index, "expiry", e.target.value)
+                  }
+                  placeholder="Enter Expiry Date"
                   className="w-full p-2 border rounded-lg"
                 />
               </div>
@@ -1117,7 +1159,7 @@ export default function ProductListingDynamic() {
             />
 
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-                <FormInput
+              <FormInput
                 id="productName"
                 name="productName"
                 label="Product Name"
@@ -1144,7 +1186,7 @@ export default function ProductListingDynamic() {
                 onChange={handleFieldChange}
                 placeholder="Manufacturer name"
               />
-               
+
               <FormInput
                 id="barCode"
                 name="barCode"
@@ -1165,19 +1207,18 @@ export default function ProductListingDynamic() {
               />
 
               <FormInput
-                id="tax"
-                name="model"
-                label="Model / SKU"
-                value={product.model}
+                id="gst"
+                name="gstIn"
+                label="GST"
+                value={product.gstIn}
                 onChange={handleFieldChange}
-                placeholder="Model number"
+                placeholder="GST"
               />
             </div>
           </section>
 
           {/* Product Description */}
           <section>
-           
             {renderVariantBuilder()}
 
             <FormInput
@@ -1205,7 +1246,7 @@ export default function ProductListingDynamic() {
           </section>
 
           {/* Additional Fields */}
-          <section>
+          {/* <section>
             <SectionHeader
               icon={FaDollarSign}
               title="Additional Information"
@@ -1213,7 +1254,6 @@ export default function ProductListingDynamic() {
             />
 
             <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-             
               <FormInput
                 id="expiryDate"
                 name="expiryDate"
@@ -1222,9 +1262,9 @@ export default function ProductListingDynamic() {
                 value={product.expiryDate}
                 onChange={handleFieldChange}
               />
-              <div></div> {/* Empty column for alignment */}
+              <div></div> 
             </div>
-          </section>
+          </section> */}
 
           {/* Main Product Images */}
           <section>

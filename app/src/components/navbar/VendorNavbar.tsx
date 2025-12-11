@@ -62,6 +62,34 @@ const PlusSquare = (props: any) => (
     <line x1="8" y1="12" x2="16" y2="12" />
   </svg>
 );
+
+const OrderTrackingV3 = (props: any) => (
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    {/* Package icon */}
+    <rect x="6" y="6" width="12" height="12" rx="2" ry="2" />
+    <path d="M6 6v12" />
+    <path d="M18 6v12" />
+    <path d="M6 12h12" />
+
+    {/* Progress Path */}
+    <path d="M4 16c4 2 8 2 12 0" />
+
+    {/* Progress Marker (checkmark) */}
+    <path d="M18 9l-2 2-4-4" />
+  </svg>
+);
+
 const Building2 = (props: any) => (
   <svg
     {...props}
@@ -131,8 +159,12 @@ export default function VendorNavbar() {
     },
 
     { href: "/src/vendor/products/list", label: "Products", Icon: Package },
-    // { href: '/src/vendor/products/add', label: 'Add Product', Icon: PlusSquare },
-    // { href: '/src/vendor/onboarding', label: 'Business Profile', Icon: Building2 },
+
+    {
+      href: "/src/vendor/track-order",
+      label: "Track Order",
+      Icon: OrderTrackingV3,
+    },
   ];
 
   const isActive = (href: string) => pathname === href;
