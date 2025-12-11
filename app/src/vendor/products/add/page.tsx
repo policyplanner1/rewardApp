@@ -378,15 +378,40 @@ export default function ProductListingDynamic() {
     setProduct((prev) => ({ ...prev, variants: updatedVariants }));
   };
 
+  // const handleVariantImages = (
+  //   variantIndex: number,
+  //   e: ChangeEvent<HTMLInputElement>
+  // ) => {
+  //   if (!e.target.files) return;
+  //   const files = Array.from(e.target.files);
+  //   const updatedVariants = [...product.variants];
+  //   updatedVariants[variantIndex].images = files;
+  //   setProduct((prev) => ({ ...prev, variants: updatedVariants }));
+  // };
+
   const handleVariantImages = (
     variantIndex: number,
-    e: ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>
   ) => {
     if (!e.target.files) return;
+
     const files = Array.from(e.target.files);
-    const updatedVariants = [...product.variants];
-    updatedVariants[variantIndex].images = files;
-    setProduct((prev) => ({ ...prev, variants: updatedVariants }));
+
+    if (files.length < 2) {
+      alert("Please select at least 1 image for this variant.");
+      return;
+    }
+
+    if (files.length > 5) {
+      alert("You can select a maximum of 5 images.");
+      return;
+    }
+
+    setProduct((prev) => {
+      const updatedVariants = [...prev.variants];
+      updatedVariants[variantIndex].images = files;
+      return { ...prev, variants: updatedVariants };
+    });
   };
 
   const addVariant = () => {
@@ -920,6 +945,7 @@ export default function ProductListingDynamic() {
             )}
 
             {/* === VARIANT IMAGES === */}
+            {/* Variant Images */}
             <div className="mt-4">
               <label className="block mb-2 text-sm font-medium text-gray-700">
                 Variant Images
@@ -942,6 +968,27 @@ export default function ProductListingDynamic() {
                   />
                 </label>
               </div>
+
+              {/* Image Previews */}
+              {variant.images.length > 0 && (
+                <div className="mt-3 flex gap-2 flex-wrap">
+                  {variant.images.map((file, imgIndex) => {
+                    const url = URL.createObjectURL(file);
+                    return (
+                      <div
+                        key={imgIndex}
+                        className="w-20 h-20 border rounded overflow-hidden"
+                      >
+                        <img
+                          src={url}
+                          alt={`Variant ${index + 1} - Image ${imgIndex + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         ))}
