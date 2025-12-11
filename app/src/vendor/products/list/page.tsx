@@ -761,15 +761,17 @@ export default function ProductManagerList() {
                   {/* ACTIONS */}
                   <td className="px-4 py-4">
                     <div className="flex items-center space-x-2">
-                      {/* View Button */}
+                      {/* View Button*/}
                       <Link href={`/manager/products/${product.product_id}`}>
                         <button className="p-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
                           <FaEye />
                         </button>
                       </Link>
 
-                      {/* Edit Button */}
-                      {product.status !== "approved" && (
+                      {/* Edit */}
+                      {!["approved", "rejected", "resubmission"].includes(
+                        product.status
+                      ) && (
                         <Link
                           href={`/vendor/products/edit/${product.product_id}`}
                           target="_blank"
@@ -780,8 +782,10 @@ export default function ProductManagerList() {
                         </Link>
                       )}
 
-                      {/* Delete Button — hide when approved */}
-                      {product.status !== "approved" && (
+                      {/* Delete */}
+                      {!["approved", "rejected", "resubmission"].includes(
+                        product.status
+                      ) && (
                         <button
                           onClick={() => openActionModal(product, "delete")}
                           className="p-2 text-red-700 bg-red-100 rounded hover:bg-red-200"
@@ -790,10 +794,8 @@ export default function ProductManagerList() {
                         </button>
                       )}
 
-                      {/* Resubmission Button — only show when rejected or resubmission, NEVER approved */}
-                      {["rejected", "resubmission"].includes(
-                        product.status
-                      ) && (
+                      {/* Request Resubmission*/}
+                      {product.status === "pending" && (
                         <button
                           onClick={() =>
                             openActionModal(product, "request_resubmission")
