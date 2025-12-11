@@ -1,5 +1,16 @@
 const ProductModel = require("../models/productModel");
 const db = require("../config/database");
+const fs = require("fs");
+const path = require("path");
+
+const moveFile = (oldPath, newPath) => {
+  return new Promise((resolve, reject) => {
+    fs.rename(oldPath, newPath, (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+};
 
 class ProductController {
   // create Product
@@ -12,66 +23,81 @@ class ProductController {
       const vendorId = req.user.vendor_id;
       const body = req.body;
 
-      // Mandatory category
       if (!body.category_id && !body.custom_category) {
-        return res.status(400).json({
-          success: false,
-          message: "Category ID is required",
-        });
+        return res
+          .status(400)
+          .json({ success: false, message: "Category ID is required" });
       }
 
+      // 1️⃣ Create product
       const productId = await ProductModel.createProduct(
         connection,
         vendorId,
         body
       );
 
-      // Handle uploaded files
+      // 2️⃣ Prepare final folder for this product
+      const finalFolder = path.join(
+        __dirname,
+        "../uploads/products",
+        `${vendorId}`,
+        `${productId}`
+      );
+      if (!fs.existsSync(finalFolder))
+        fs.mkdirSync(finalFolder, { recursive: true });
+
+      // 3️⃣ Move uploaded files from temp → product folder
+      const movedFiles = [];
       if (req.files && req.files.length) {
-        const mainImages = req.files.filter((f) => f.fieldname === "images");
-        const otherFiles = req.files.filter((f) => f.fieldname !== "images");
-
-        // Insert main product images
-        if (mainImages.length) {
-          await ProductModel.insertProductImages(
-            connection,
-            productId,
-            mainImages
-          );
-        }
-
-        // Insert product documents
-        if (otherFiles.length) {
-          await ProductModel.insertProductDocuments(
-            connection,
-            productId,
-            body.category_id,
-            otherFiles
-          );
+        for (const file of req.files) {
+          const filename = path.basename(file.path);
+          const newPath = path.join(finalFolder, filename);
+          await moveFile(file.path, newPath);
+          file.finalPath = `products/${vendorId}/${productId}/${filename}`;
+          movedFiles.push(file);
         }
       }
-      //  Handle product variants
-      if (body.variants) {
-        let variants = JSON.parse(body.variants);
 
-        if (!variants && !Array.isArray(variants)) return;
+      // 4️⃣ Insert main images
+      const mainImages = movedFiles.filter((f) => f.fieldname === "images");
+      if (mainImages.length) {
+        await ProductModel.insertProductImages(
+          connection,
+          productId,
+          mainImages
+        );
+      }
+
+      // 5️⃣ Insert product documents
+      const docFiles = movedFiles.filter((f) => f.fieldname !== "images");
+      if (docFiles.length) {
+        await ProductModel.insertProductDocuments(
+          connection,
+          productId,
+          body.category_id,
+          docFiles
+        );
+      }
+
+      // 6️⃣ Handle product variants
+      if (body.variants) {
+        const variants =
+          typeof body.variants === "string"
+            ? JSON.parse(body.variants)
+            : body.variants;
 
         for (let i = 0; i < variants.length; i++) {
           const variant = variants[i];
-
-          // Insert variant in product_variants table
           const variantId = await ProductModel.createProductVariant(
             connection,
             productId,
             variant
           );
 
-          // uploaded files for this variant (fieldname convention: variant_0_image, variant_1_image, etc.)
-          const variantFiles = req.files.filter((f) =>
+          // Variant images: variant_0_image, variant_1_image...
+          const variantFiles = movedFiles.filter((f) =>
             f.fieldname.startsWith(`variant_${i}_`)
           );
-
-          // Insert variant images
           if (variantFiles.length) {
             await ProductModel.insertProductVariantImages(
               connection,
@@ -83,19 +109,11 @@ class ProductController {
       }
 
       await connection.commit();
-
-      return res.json({
-        success: true,
-        productId,
-      });
+      return res.json({ success: true, productId });
     } catch (err) {
       if (connection) await connection.rollback();
-
-      console.log("PRODUCT CREATE ERROR:", err);
-      return res.status(500).json({
-        success: false,
-        message: err.message,
-      });
+      console.error("PRODUCT CREATE ERROR:", err);
+      return res.status(500).json({ success: false, message: err.message });
     } finally {
       if (connection) connection.release();
     }
@@ -243,12 +261,10 @@ class ProductController {
         });
       }
 
-      // Pagination
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
       const offset = (page - 1) * limit;
 
-      // Filters
       const search = req.query.search || "";
       const status = req.query.status || "";
       const sortBy = req.query.sortBy || "created_at";
@@ -264,7 +280,7 @@ class ProductController {
         let images = [];
         try {
           images = JSON.parse(product.images);
-        } catch (err) {
+        } catch {
           images = [];
         }
 
@@ -275,26 +291,17 @@ class ProductController {
         };
       });
 
-      const stats = products.reduce(
+      // Stats calculation
+      const stats = processedProducts.reduce(
         (acc, product) => {
-          // Count total products
           acc.total += 1;
-
-          // Count products by their status
           if (product.status === "pending") acc.pending += 1;
           if (product.status === "approved") acc.approved += 1;
           if (product.status === "rejected") acc.rejected += 1;
           if (product.status === "resubmission") acc.resubmission += 1;
-
           return acc;
         },
-        {
-          pending: 0,
-          approved: 0,
-          rejected: 0,
-          resubmission: 0,
-          total: 0,
-        }
+        { pending: 0, approved: 0, rejected: 0, resubmission: 0, total: 0 }
       );
 
       return res.json({

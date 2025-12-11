@@ -14,6 +14,7 @@ import {
   FaSearch,
   FaSort,
   FaSortUp,
+  FaQuestionCircle,
   FaSortDown,
   FaEdit,
   FaRedo,
@@ -116,7 +117,12 @@ const StatusChip = ({ status }: { status: ProductStatus }) => {
     },
   };
 
-  const cfg = configMap[status];
+  const cfg = configMap[status] ?? {
+    color: "bg-gray-200 text-gray-700 border-gray-300",
+    icon: FaQuestionCircle,
+    text: status || "Unknown",
+  };
+
   const Icon = cfg.icon;
 
   return (
@@ -399,6 +405,7 @@ export default function ProductManagerList() {
       }
 
       const data: ApiResponse = await response.json();
+      console.log(data,"Data")
 
       if (data.success) {
         setProducts(data.products);
@@ -688,10 +695,15 @@ export default function ProductManagerList() {
                         {/* IMAGE OR FALLBACK ICON */}
                         {product?.main_image ? (
                           <div className="flex-shrink-0 w-12 h-12 mr-3 overflow-hidden bg-gray-100 rounded">
-                           <img
-                              src={product?.main_image ? `http://localhost:5000/uploads/${product.main_image}` : undefined}
+                            <img
+                              src={
+                                product?.main_image
+                                  ? `http://localhost:5000/uploads/${product.main_image}`
+                                  : undefined
+                              }
                               alt={product?.product_name || "Product Image"}
-                              className="object-cover w-full h-full" />
+                              className="object-cover w-full h-full"
+                            />
                           </div>
                         ) : (
                           <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 mr-3 bg-gray-100 rounded">
