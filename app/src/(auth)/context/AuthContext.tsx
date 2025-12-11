@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 interface User {
   user_id: number;
   email: string;
-  role: "vendor" | "vendor_manager" | "admin";
+  role: "vendor" | "vendor_manager" | "admin" | "warehouse_manager";
   phone?: string;
 }
 
@@ -18,7 +18,7 @@ interface AuthContextType {
   register: (
     email: string,
     password: string,
-    role: "vendor" | "vendor_manager" | "admin",
+    role: "vendor" | "vendor_manager" | "admin" | "warehouse_manager",
     phone?: string
   ) => Promise<void>;
   logout: () => void;
@@ -50,6 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (role === "vendor") return "vendor";
     if (role === "vendor_manager") return "manager";
     if (role === "admin") return "admin";
+    if (role === "warehouse_manager") return "warehouse_manager";
     return role;
   };
 
@@ -79,6 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (loggedUser.role === "vendor") router.push("/src/vendor/dashboard");
       if (loggedUser.role === "vendor_manager") router.push("/src/manager/dashboard");
+      if (loggedUser.role === "warehouse_manager") router.push("/src/warehouse_manager/dashboard");
       if (loggedUser.role === "admin") router.push("/src/admin/dashboard");
 
     } catch (err: any) {
@@ -92,7 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (
     email: string,
     password: string,
-    role: "vendor" | "vendor_manager" | "admin",
+    role: "vendor" | "vendor_manager" | "admin" | "warehouse_manager",
     phone?: string
   ) => {
     try {
@@ -119,6 +121,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (newUser.role === "vendor") router.push("/src/vendor/dashboard");
       if (newUser.role === "vendor_manager") router.push("/src/manager/dashboard");
+      if (newUser.role === "warehouse_manager") router.push("/src/warehouse_manager/dashboard");
       if (newUser.role === "admin") router.push("/src/admin/dashboard");
 
     } catch (err: any) {
