@@ -8,7 +8,7 @@ export default function LoginPage() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    role: 'vendor' as 'vendor' | 'vendor_manager' | 'admin'
+    role: 'vendor' as 'vendor' | 'vendor_manager' | 'admin' | 'warehouse_manager'
   });
 
   const [error, setError] = useState('');
@@ -97,6 +97,7 @@ export default function LoginPage() {
                 <option value="vendor">Vendor</option>
                 <option value="vendor_manager">Vendor Manager</option>
                 <option value="admin">Admin</option>
+                <option value="warehouse_manager">Warehouse Manager</option>
               </select>
             </div>
 
