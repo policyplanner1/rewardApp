@@ -95,7 +95,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     email: string,
     password: string,
     role: "vendor" | "vendor_manager" | "admin" | "warehouse_manager",
-    role: "vendor" | "vendor_manager" | "admin" | "warehouse_manager",
     phone?: string
   ) => {
     try {
