@@ -14,6 +14,7 @@ import {
   FaSearch,
   FaSort,
   FaSortUp,
+  FaQuestionCircle,
   FaSortDown,
   FaEdit,
   FaRedo,
@@ -26,6 +27,9 @@ import {
   FaTrash,
 } from "react-icons/fa";
 import { FiPackage } from "react-icons/fi";
+
+const API_BASE = "http://localhost:5000";
+
 
 /* ================================
        TYPES
@@ -116,7 +120,12 @@ const StatusChip = ({ status }: { status: ProductStatus }) => {
     },
   };
 
-  const cfg = configMap[status];
+  const cfg = configMap[status] ?? {
+    color: "bg-gray-200 text-gray-700 border-gray-300",
+    icon: FaQuestionCircle,
+    text: status || "Unknown",
+  };
+
   const Icon = cfg.icon;
 
   return (
@@ -384,7 +393,7 @@ export default function ProductManagerList() {
       });
 
       const response = await fetch(
-        `http://localhost:5000/api/product/my-listed-products?${params.toString()}`,
+        `${API_BASE}/api/product/my-listed-products?${params.toString()}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -446,29 +455,58 @@ export default function ProductManagerList() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No token");
 
-      // const response = await fetch(
-      //   `http://localhost:5000/api/manager/products/${productId}/status`,
-      //   {
-      //     method: "PUT",
-      //     headers: {
-      //       Authorization: `Bearer ${token}`,
-      //       "Content-Type": "application/json",
-      //     },
-      //     body: JSON.stringify({ action, reason }),
-      //   }
-      // );
+      // --- DELETE branch (implemented) ---
+      if (action === "delete") {
+        const res = await fetch(
+          `http://localhost:5000/api/product/delete-product/${productId}`,
+          {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          }
+        );
 
-      // const data = await response.json();
+        if (!res.ok) {
+          let text = await res.text().catch(() => "");
+          try {
+            const json = JSON.parse(text || "{}");
+            throw new Error(
+              json.message || `Failed to delete product (status ${res.status})`
+            );
+          } catch {
+            throw new Error(
+              text || `Failed to delete product (status ${res.status})`
+            );
+          }
+        }
 
-      // if (!data.success) {
-      //   throw new Error(data.message || "Action failed");
-      // }
+        // Parse response (if JSON)
+        const data = await res.json().catch(() => ({ success: true }));
 
-      // alert(data.message || "Action completed successfully");
-      // fetchProducts();
+        if (data && data.success === false) {
+          throw new Error(data.message || "Delete failed");
+        }
+
+        // Remove from local UI
+        setProducts((prev) => prev.filter((p) => p.product_id !== productId));
+
+        setStats((prev) => ({
+          ...prev,
+          total: Math.max(0, prev.total - 1),
+          pending: Math.max(0, prev.pending - 1), 
+        }));
+
+        alert(data.message || "Product deleted successfully");
+        return;
+      }
+
     } catch (error: any) {
       console.error("Error performing action:", error);
       alert(error.message || "Error performing action");
+      throw error; 
     } finally {
       setActionLoading(null);
     }
@@ -648,162 +686,163 @@ export default function ProductManagerList() {
 
         {/* TABLE */}
         <div className="overflow-x-auto border border-gray-200 rounded-lg">
-          <table className="min-w-max divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
+                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
                   Product
                 </th>
-                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
+                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
                   Brand
                 </th>
-                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
+                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
                   Category
                 </th>
-                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
+                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
                   Subcategory
                 </th>
-                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
+                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
                   SubType
                 </th>
-                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
+                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
                   Status
                 </th>
-                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
+                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
                   Rejection Reason
                 </th>
-                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
-                  Actions
+                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
+                  Action
                 </th>
               </tr>
             </thead>
 
             <tbody className="bg-white divide-y divide-gray-200">
-              {products?.length > 0 ? (
-                products.map((product) => (
-                  <tr key={product.product_id} className="hover:bg-gray-50">
-                    {/* PRODUCT NAME */}
-                    <td className="px-4 py-4">
-                      <div className="flex items-start">
-                        {/* IMAGE OR FALLBACK ICON */}
-                        {product?.main_image ? (
-                          <div className="flex-shrink-0 w-12 h-12 mr-3 overflow-hidden bg-gray-100 rounded">
-                           <img
-                              src={product?.main_image ? `http://localhost:5000/uploads/${product.main_image}` : undefined}
-                              alt={product?.product_name || "Product Image"}
-                              className="object-cover w-full h-full" />
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 mr-3 bg-gray-100 rounded">
-                            <FaBox className="text-gray-400 text-lg" />
-                          </div>
-                        )}
+              {products.map((product) => (
+                <tr key={product.product_id} className="hover:bg-gray-50">
+                  {/* PRODUCT NAME */}
+                  <td className="px-4 py-4">
+                    <div className="flex items-start">
+                      {/* IMAGE OR FALLBACK ICON */}
+                      {product?.main_image ? (
+                        <div className="flex-shrink-0 w-12 h-12 mr-3 overflow-hidden bg-gray-100 rounded">
+                          <img
+                            src={
+                              product?.main_image
+                                ? `http://localhost:5000/uploads/${product.main_image}`
+                                : undefined
+                            }
+                            alt={product?.product_name || "Product Image"}
+                            className="object-cover w-full h-full"
+                          />
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center flex-shrink-0 w-12 h-12 mr-3 bg-gray-100 rounded">
+                          <FaBox className="text-gray-400 text-lg" />
+                        </div>
+                      )}
 
-                        {/* PRODUCT NAME */}
-                        <div className="flex-1">
-                          <div className="font-semibold text-gray-700">
-                            {product?.product_name || "Unnamed Product"}
-                          </div>
+                      {/* PRODUCT NAME */}
+                      <div className="flex-1">
+                        <div className="font-semibold text-gray-700">
+                          {product?.product_name || "Unnamed Product"}
                         </div>
                       </div>
-                    </td>
+                    </div>
+                  </td>
 
-                    {/*   Brand Name */}
-                    <td className="px-4 py-4">
-                      <div className="text-sm text-gray-900">
-                        {product?.brand_name || "N/A"}
-                      </div>
-                    </td>
+                  {/*   Brand Name */}
+                  <td className="px-4 py-4">
+                    <div className="text-sm text-gray-900">
+                      {product?.brand_name || "N/A"}
+                    </div>
+                  </td>
 
-                    {/* CATEGORY */}
-                    <td className="px-4 py-4">
-                      <div className="text-sm text-gray-900">
-                        {product?.category_name || "N/A"}
-                      </div>
-                    </td>
+                  {/* CATEGORY */}
+                  <td className="px-4 py-4">
+                    <div className="text-sm text-gray-900">
+                      {product?.category_name || "N/A"}
+                    </div>
+                  </td>
 
-                    {/* Subcategory Name */}
-                    <td className="px-4 py-4">
-                      <div className="text-sm text-gray-900">
-                        {product?.subcategory_name || "N/A"}
-                      </div>
-                    </td>
+                  {/* Subcategory Name */}
+                  <td className="px-4 py-4">
+                    <div className="text-sm text-gray-900">
+                      {product?.subcategory_name || "N/A"}
+                    </div>
+                  </td>
 
-                    {/* Sub sub category */}
-                    <td className="px-4 py-4">
-                      <div className="text-sm text-gray-900">
-                        {product?.sub_subcategory_name || "N/A"}
-                      </div>
-                    </td>
+                  {/* Sub sub category */}
+                  <td className="px-4 py-4">
+                    <div className="text-sm text-gray-900">
+                      {product?.sub_subcategory_name || "N/A"}
+                    </div>
+                  </td>
 
-                    {/* STATUS */}
-                    <td className="px-4 py-4">
-                      <StatusChip status={product?.status} />
-                    </td>
+                  {/* STATUS */}
+                  <td className="px-4 py-4">
+                    <StatusChip status={product?.status} />
+                  </td>
 
-                    {/* Rejection */}
-                    <td className="px-4 py-4">
-                      <div className="text-sm text-gray-900">
-                        {product?.rejection_reason || "N/A"}
-                      </div>
-                    </td>
+                  {/* Rejection */}
+                  <td className="px-4 py-4">
+                    <div className="text-sm text-gray-900">
+                      {product?.rejection_reason || "N/A"}
+                    </div>
+                  </td>
 
-                    {/* ACTIONS */}
-                    <td className="px-4 py-4">
-                      <div className="flex items-center space-x-2">
-                        {/* View Button */}
-                        <Link href={`/manager/products/${product.product_id}`}>
-                          <button className="p-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
-                            <FaEye />
+                  {/* ACTIONS */}
+                  <td className="px-4 py-4">
+                    <div className="flex items-center space-x-2">
+                      {/* View Button*/}
+                      <Link
+                        href={`/src/vendor/products/review/${product.product_id}`}
+                      >
+                        <button className="p-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
+                          <FaEye />
+                        </button>
+                      </Link>
+
+                      {/* Edit */}
+                      {!["approved", "rejected", "resubmission"].includes(
+                        product.status
+                      ) && (
+                        <Link
+                          href={`/src/vendor/products/edit/${product.product_id}`}
+                          target="_blank"
+                        >
+                          <button className="p-2 text-purple-700 bg-purple-100 rounded hover:bg-purple-200">
+                            <FaEdit />
                           </button>
                         </Link>
+                      )}
 
-                        {/* Edit Button */}
-                        {product.status !== "approved" && (
-                          <Link
-                            href={`/vendor/products/edit/${product.product_id}`}
-                            target="_blank"
-                          >
-                            <button className="p-2 text-purple-700 bg-purple-100 rounded hover:bg-purple-200">
-                              <FaEdit />
-                            </button>
-                          </Link>
-                        )}
+                      {/* Delete */}
+                      {!["approved", "rejected", "resubmission"].includes(
+                        product.status
+                      ) && (
+                        <button
+                          onClick={() => openActionModal(product, "delete")}
+                          className="p-2 text-red-700 bg-red-100 rounded hover:bg-red-200"
+                        >
+                          <FaTrash />
+                        </button>
+                      )}
 
-                        {/* Delete Button — hide when approved */}
-                        {product.status !== "approved" && (
-                          <button
-                            onClick={() => openActionModal(product, "delete")}
-                            className="p-2 text-red-700 bg-red-100 rounded hover:bg-red-200"
-                          >
-                            <FaTrash />
-                          </button>
-                        )}
-
-                        {/* Resubmission Button — only show when rejected or resubmission, NEVER approved */}
-                        {["rejected", "resubmission"].includes(
-                          product.status
-                        ) && (
-                          <button
-                            onClick={() =>
-                              openActionModal(product, "request_resubmission")
-                            }
-                            className="p-2 text-green-700 bg-green-100 rounded hover:bg-green-200"
-                          >
-                            <FaPaperPlane />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="text-center py-4 text-gray-500">
-                    No products found.
+                      {/* Request Resubmission*/}
+                      {product.status === "pending" && (
+                        <button
+                          onClick={() =>
+                            openActionModal(product, "request_resubmission")
+                          }
+                          className="p-2 text-green-700 bg-green-100 rounded hover:bg-green-200"
+                        >
+                          <FaPaperPlane />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
-              )}
+              ))}
             </tbody>
           </table>
         </div>

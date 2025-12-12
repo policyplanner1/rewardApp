@@ -41,7 +41,7 @@ interface DocumentType {
   document_id: number;
   document_name: string;
   status: number;
-  document_key?: string; // This might not come from your endpoint
+  document_key?: string;
 }
 
 interface RequiredDocument {
@@ -60,6 +60,7 @@ interface Variant {
   stock: string | number;
   sku: string;
   expiryDate: string;
+  manufacturingYear: string;
   materialType: string;
   images: File[];
 }
@@ -105,6 +106,7 @@ const initialProductData: ProductData = {
       stock: "",
       sku: "",
       expiryDate: "",
+      manufacturingYear: "",
       materialType: "",
       images: [],
     },
@@ -177,7 +179,7 @@ export default function ProductListingDynamic() {
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [isCustomSubcategory, setIsCustomSubcategory] = useState(false);
   const [isCustomSubSubcategory, setIsCustomSubSubcategory] = useState(false);
-
+  const [imageError, setImageError] = useState("");
   const [custom_category, setCustomCategory] = useState("");
   const [custom_subcategory, setCustomSubCategory] = useState("");
   const [custom_subsubcategory, setCustomSubSubCategory] = useState("");
@@ -202,6 +204,34 @@ export default function ProductListingDynamic() {
       setLoading(false);
     }
   };
+
+  const handleMainImages = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+
+    const files = Array.from(e.target.files);
+
+    if (files.length < 1) {
+      setImageError("Please select at least 1 image.");
+      return;
+    }
+
+    if (files.length > 5) {
+      setImageError("You can select a maximum of 5 images.");
+      return;
+    }
+
+    setImageError("");
+    setProduct((prev) => ({
+      ...prev,
+      productImages: files,
+    }));
+  };
+
+  useEffect(() => {
+    return () => {
+      product.productImages.forEach((file) => URL.revokeObjectURL(file));
+    };
+  }, [product.productImages]);
 
   // Fetch subcategories when category changes
   useEffect(() => {
@@ -320,14 +350,14 @@ export default function ProductListingDynamic() {
     }
   };
 
-  const handleMainImages = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setProduct((prev) => ({
-        ...prev,
-        productImages: Array.from(e.target.files || []),
-      }));
-    }
-  };
+  // const handleMainImages = (e: ChangeEvent<HTMLInputElement>) => {
+  //   if (e.target.files) {
+  //     setProduct((prev) => ({
+  //       ...prev,
+  //       productImages: Array.from(e.target.files || []),
+  //     }));
+  //   }
+  // };
 
   const handleVariantChange = (index: number, field: string, value: any) => {
     const updatedVariants = [...product.variants];
@@ -348,15 +378,40 @@ export default function ProductListingDynamic() {
     setProduct((prev) => ({ ...prev, variants: updatedVariants }));
   };
 
+  // const handleVariantImages = (
+  //   variantIndex: number,
+  //   e: ChangeEvent<HTMLInputElement>
+  // ) => {
+  //   if (!e.target.files) return;
+  //   const files = Array.from(e.target.files);
+  //   const updatedVariants = [...product.variants];
+  //   updatedVariants[variantIndex].images = files;
+  //   setProduct((prev) => ({ ...prev, variants: updatedVariants }));
+  // };
+
   const handleVariantImages = (
     variantIndex: number,
-    e: ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>
   ) => {
     if (!e.target.files) return;
+
     const files = Array.from(e.target.files);
-    const updatedVariants = [...product.variants];
-    updatedVariants[variantIndex].images = files;
-    setProduct((prev) => ({ ...prev, variants: updatedVariants }));
+
+    if (files.length < 1) {
+      alert("Please select at least 1 image for this variant.");
+      return;
+    }
+
+    if (files.length > 5) {
+      alert("You can select a maximum of 5 images.");
+      return;
+    }
+
+    setProduct((prev) => {
+      const updatedVariants = [...prev.variants];
+      updatedVariants[variantIndex].images = files;
+      return { ...prev, variants: updatedVariants };
+    });
   };
 
   const addVariant = () => {
@@ -373,6 +428,7 @@ export default function ProductListingDynamic() {
           salesPrice: "",
           stock: "",
           expiryDate: "",
+          manufacturingYear: "",
           materialType: "",
           sku: "",
           images: [],
@@ -475,7 +531,6 @@ export default function ProductListingDynamic() {
 
       const formData = new FormData();
 
-      // Basic product info (matching your backend model)
       formData.append("category_id", product.categoryId.toString());
       formData.append("brandName", product.brandName);
       formData.append("manufacturer", product.manufacturer);
@@ -484,6 +539,11 @@ export default function ProductListingDynamic() {
       formData.append("productName", product.productName);
       formData.append("description", product.description);
       formData.append("shortDescription", product.shortDescription);
+      if (isCustomCategory) formData.append("custom_category", custom_category);
+      if (isCustomSubcategory)
+        formData.append("custom_subcategory", custom_subcategory);
+      if (isCustomSubSubcategory)
+        formData.append("custom_sub_subcategory", custom_subsubcategory);
 
       if (product.subCategoryId) {
         formData.append("subcategory_id", product.subCategoryId.toString());
@@ -516,6 +576,10 @@ export default function ProductListingDynamic() {
           firstVariant.expiryDate?.toString() || ""
         );
         formData.append(
+          "manufacturingYear",
+          firstVariant.manufacturingYear?.toString() || ""
+        );
+        formData.append(
           "materialType",
           firstVariant.materialType?.toString() || ""
         );
@@ -529,16 +593,7 @@ export default function ProductListingDynamic() {
       // Add document files - map document_id to field names
       Object.entries(docFiles).forEach(([docId, file]) => {
         if (file) {
-          const doc = requiredDocs.find(
-            (d) => d.document_id === parseInt(docId)
-          );
-          if (doc) {
-            // Use document_name as field name (convert to lowercase with underscores)
-            const fieldName = doc.document_name
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, "_");
-            formData.append(fieldName, file);
-          }
+          formData.append(docId, file);
         }
       });
 
@@ -546,6 +601,7 @@ export default function ProductListingDynamic() {
       const variantsPayload = product.variants.map((variant, index) => ({
         // sku: variant.sku || generateSKU(index),
         expiryDate: variant.expiryDate,
+        manufacturingYear: variant.manufacturingYear,
         materialType: variant.materialType,
         size: variant.size,
         color: variant.color,
@@ -559,21 +615,14 @@ export default function ProductListingDynamic() {
       formData.append("variants", JSON.stringify(variantsPayload));
 
       // Add variant images
-      product.variants.forEach((variant, variantIndex) => {
-        variant.images.forEach((file, fileIndex) => {
-          formData.append(
-            `variants[${variantIndex}][images][${fileIndex}]`,
-            file
-          );
+      product.variants.forEach((variant, index) => {
+        variant.images.forEach((file, imgIndex) => {
+          formData.append(`variant_${index}_${imgIndex}`, file);
         });
       });
 
-      console.log("Submitting form with category ID:", product.categoryId);
-      console.log("Required documents:", requiredDocs);
-      console.log("Document files:", docFiles);
-
       // Submit to backend
-      const response = await fetch(`${API_BASE}/api/products/create`, {
+      const response = await fetch(`${API_BASE}/api/product/create-product`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -730,7 +779,7 @@ export default function ProductListingDynamic() {
                   type="text"
                   value={variant.materialType}
                   onChange={(e) =>
-                    handleVariantChange(index, "material", e.target.value)
+                    handleVariantChange(index, "materialType", e.target.value)
                   }
                   placeholder="Enter Material Type"
                   className="w-full p-2 border rounded-lg"
@@ -828,9 +877,28 @@ export default function ProductListingDynamic() {
                   type="text"
                   value={variant.expiryDate}
                   onChange={(e) =>
-                    handleVariantChange(index, "expiry", e.target.value)
+                    handleVariantChange(index, "expiryDate", e.target.value)
                   }
                   placeholder="Enter Expiry Date"
+                  className="w-full p-2 border rounded-lg"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Manufacturing Year
+                </label>
+                <input
+                  type="text"
+                  value={variant.manufacturingYear}
+                  onChange={(e) =>
+                    handleVariantChange(
+                      index,
+                      "manufacturingYear",
+                      e.target.value
+                    )
+                  }
+                  placeholder="Enter Manufacturing Year"
                   className="w-full p-2 border rounded-lg"
                 />
               </div>
@@ -869,6 +937,7 @@ export default function ProductListingDynamic() {
             )}
 
             {/* === VARIANT IMAGES === */}
+            {/* Variant Images */}
             <div className="mt-4">
               <label className="block mb-2 text-sm font-medium text-gray-700">
                 Variant Images
@@ -891,6 +960,27 @@ export default function ProductListingDynamic() {
                   />
                 </label>
               </div>
+
+              {/* Image Previews */}
+              {variant.images.length > 0 && (
+                <div className="mt-3 flex gap-2 flex-wrap">
+                  {variant.images.map((file, imgIndex) => {
+                    const url = URL.createObjectURL(file);
+                    return (
+                      <div
+                        key={imgIndex}
+                        className="w-20 h-20 border rounded overflow-hidden"
+                      >
+                        <img
+                          src={url}
+                          alt={`Variant ${index + 1} - Image ${imgIndex + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -1163,7 +1253,7 @@ export default function ProductListingDynamic() {
                 id="productName"
                 name="productName"
                 label="Product Name"
-                value={product.itemType}
+                value={product.productName}
                 onChange={handleFieldChange}
                 placeholder="Type of product (e.g., Shoes, TV)"
               />
@@ -1197,17 +1287,17 @@ export default function ProductListingDynamic() {
               />
 
               <FormInput
-                id="model/SKU"
-                name="model/SKU"
+                id="model"
+                name="model"
                 label="Model / SKU"
                 required
-                value={product.productName}
+                value={product.model}
                 onChange={handleFieldChange}
                 placeholder="Enter Model or SKU"
               />
 
               <FormInput
-                id="gst"
+                id="gstIn"
                 name="gstIn"
                 label="GST"
                 value={product.gstIn}
@@ -1291,9 +1381,35 @@ export default function ProductListingDynamic() {
                 />
               </label>
             </div>
+
             <p className="mt-2 text-xs text-gray-500">
-              Upload high-quality product images (max 10)
+              Upload high-quality product images (min 1, max 5)
             </p>
+
+            {imageError && (
+              <p className="mt-1 text-xs text-red-500">{imageError}</p>
+            )}
+
+            {/* Image Previews */}
+            {product.productImages.length > 0 && (
+              <div className="mt-3 flex gap-2 flex-wrap">
+                {product.productImages.map((file, index) => {
+                  const url = URL.createObjectURL(file);
+                  return (
+                    <div
+                      key={index}
+                      className="w-20 h-20 border rounded overflow-hidden"
+                    >
+                      <img
+                        src={url}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </section>
 
           {/* Documents */}

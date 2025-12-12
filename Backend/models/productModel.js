@@ -1,5 +1,4 @@
 const db = require("../config/database");
-const { getRelativeFilePath } = require("../middleware/productUpload");
 
 class ProductModel {
   // create a Product
@@ -41,20 +40,14 @@ class ProductModel {
   // insert product Images
   async insertProductImages(connection, productId, files) {
     for (const file of files) {
-      // Only insert if the field is meant for images
-      if (file.fieldname !== "images") continue;
-
-      const relativePath = getRelativeFilePath(file);
-
       await connection.execute(
         `INSERT INTO product_images (product_id, image_url)
        VALUES (?, ?)`,
-        [productId, relativePath]
+        [productId, file.finalPath]
       );
     }
   }
 
-  // store product Documents
   async insertProductDocuments(connection, productId, categoryId, files) {
     const [docTypes] = await connection.execute(
       `SELECT d.document_id
@@ -64,30 +57,28 @@ class ProductModel {
       [categoryId]
     );
 
-    if (!docTypes.length) return;
     const validDocumentIds = docTypes.map((d) => d.document_id);
 
     for (const file of files) {
       const docId = parseInt(file.fieldname);
       if (!validDocumentIds.includes(docId)) continue;
 
-      await db.execute(
-        `INSERT INTO product_documents
+      await connection.execute(
+        `INSERT INTO product_documents 
        (product_id, document_id, file_path, mime_type)
        VALUES (?, ?, ?, ?)`,
-        [productId, docId, file.path, file.mimetype]
+        [productId, docId, file.finalPath, file.mimetype]
       );
     }
   }
 
-  // Insert product variant
   async createProductVariant(connection, productId, variant) {
     const safe = (v) => (v === undefined || v === "" ? null : v);
 
     const [result] = await connection.execute(
       `INSERT INTO product_variants
-     (product_id, size, color, weight, custom_attributes, sku, mrp, vendor_price, sale_price, stock)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (product_id, size, color, weight, custom_attributes, sku, mrp, vendor_price, sale_price, stock)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         productId,
         safe(variant.size),
@@ -105,13 +96,12 @@ class ProductModel {
     return result.insertId;
   }
 
-  // Insert variant images
   async insertProductVariantImages(connection, variantId, files) {
     for (const file of files) {
       await connection.execute(
         `INSERT INTO product_variant_images (variant_id, image_url)
        VALUES (?, ?)`,
-        [variantId, file.path]
+        [variantId, file.finalPath]
       );
     }
   }
@@ -137,9 +127,21 @@ class ProductModel {
   // Get product by ID
   async getProductDetailsById(productId) {
     try {
-      // 1️⃣ Get main product info
       const [productRows] = await db.execute(
-        `SELECT * FROM products WHERE product_id = ?`,
+        `
+        SELECT
+          p.*,
+          v.full_name AS vendor_name,
+          c.category_name,
+          sc.subcategory_name,
+          ssc.name AS sub_subcategory_name
+        FROM products p
+        LEFT JOIN vendors v ON p.vendor_id = v.vendor_id
+        LEFT JOIN categories c ON p.category_id = c.category_id
+        LEFT JOIN sub_categories sc ON p.subcategory_id = sc.subcategory_id
+        LEFT JOIN sub_sub_categories ssc ON p.sub_subcategory_id = ssc.sub_subcategory_id
+        WHERE p.product_id = ?
+        `,
         [productId]
       );
 
@@ -331,39 +333,43 @@ class ProductModel {
   }
 
   // delete product
-  async deleteProduct(productId) {
+  async deleteProduct(connection, productId, vendorId) {
     try {
       // Delete product variant images
-      const [variants] = await db.execute(
+      const [variants] = await connection.execute(
         `SELECT variant_id FROM product_variants WHERE product_id = ?`,
         [productId]
       );
       for (const variant of variants) {
-        await db.execute(
+        await connection.execute(
           `DELETE FROM product_variant_images WHERE variant_id = ?`,
           [variant.variant_id]
         );
       }
 
       // Delete product variants
-      await db.execute(`DELETE FROM product_variants WHERE product_id = ?`, [
-        productId,
-      ]);
+      await connection.execute(
+        `DELETE FROM product_variants WHERE product_id = ?`,
+        [productId]
+      );
 
       // Delete product images
-      await db.execute(`DELETE FROM product_images WHERE product_id = ?`, [
-        productId,
-      ]);
+      await connection.execute(
+        `DELETE FROM product_images WHERE product_id = ?`,
+        [productId]
+      );
 
       // Delete product documents
-      await db.execute(`DELETE FROM product_documents WHERE product_id = ?`, [
-        productId,
-      ]);
+      await connection.execute(
+        `DELETE FROM product_documents WHERE product_id = ?`,
+        [productId]
+      );
 
       // Delete main product
-      await db.execute(`DELETE FROM products WHERE product_id = ?`, [
-        productId,
-      ]);
+      await connection.execute(
+        `DELETE FROM products WHERE product_id = ? AND vendor_id = ?`,
+        [productId, vendorId]
+      );
 
       return true;
     } catch (error) {
@@ -421,15 +427,13 @@ class ProductModel {
     { search, status, sortBy, sortOrder, limit, offset }
   ) {
     try {
-      // WHERE conditions
       let where = `WHERE p.vendor_id = ?`;
-      let params = [vendorId];
+      const params = [vendorId];
 
       if (status) {
         where += ` AND p.status = ?`;
         params.push(status);
       }
-
       if (search) {
         where += ` AND p.product_name LIKE ?`;
         params.push(`%${search}%`);
@@ -441,7 +445,6 @@ class ProductModel {
 
       const query = `
       SELECT 
-        SQL_CALC_FOUND_ROWS
         p.product_id,
         p.vendor_id,
         v.full_name AS vendor_name,
@@ -453,34 +456,29 @@ class ProductModel {
         p.status,
         p.rejection_reason,
         p.created_at,
-        COALESCE(
-        CONCAT(
-          '[',
-          GROUP_CONCAT(
-            DISTINCT
-            CASE 
-              WHEN pi.image_id IS NOT NULL THEN
-                JSON_OBJECT(
-                  'image_id', pi.image_id,
-                  'image_url', pi.image_url,
-                  'type', pi.type,
-                  'sort_order', pi.sort_order
-                )
-            END
-            ORDER BY pi.sort_order ASC SEPARATOR ','
+        IFNULL(
+          CONCAT(
+            '[', 
+            GROUP_CONCAT(
+              DISTINCT JSON_OBJECT(
+                'image_id', pi.image_id,
+                'image_url', pi.image_url,
+                'type', pi.type,
+                'sort_order', pi.sort_order
+              ) ORDER BY pi.sort_order ASC
+            ),
+            ']'
           ),
-          ']'
-        ),
-        '[]'
-      ) AS images
-
+          '[]'
+        ) AS images
       FROM products p
+      LEFT JOIN vendors v ON p.vendor_id = v.vendor_id
       LEFT JOIN categories c ON p.category_id = c.category_id
       LEFT JOIN sub_categories sc ON p.subcategory_id = sc.subcategory_id
       LEFT JOIN sub_sub_categories ssc ON p.sub_subcategory_id = ssc.sub_subcategory_id
-      LEFT JOIN vendors v ON p.vendor_id = v.vendor_id
       LEFT JOIN product_images pi ON p.product_id = pi.product_id
       ${where}
+      GROUP BY p.product_id
       ORDER BY p.${sortBy} ${sortOrder}
       LIMIT ? OFFSET ?
     `;
@@ -489,8 +487,11 @@ class ProductModel {
 
       const [rows] = await db.execute(query, params);
 
-      // Get total items for pagination
-      const [[{ total }]] = await db.execute(`SELECT FOUND_ROWS() AS total`);
+      // Total count for pagination
+      const [[{ total }]] = await db.execute(
+        `SELECT COUNT(*) AS total FROM products p ${where}`,
+        params.slice(0, -2) // remove limit & offset
+      );
 
       return { products: rows, totalItems: total };
     } catch (error) {

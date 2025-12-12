@@ -75,7 +75,7 @@ router.get(
 router.get(
   "/:id",
   authenticateToken,
-  authorizeRoles("vendor", "vendor_manager"),
+  authorizeRoles("vendor", "vendor_manager","admin"),
   ProductController.getProductDetailsById
 );
 
