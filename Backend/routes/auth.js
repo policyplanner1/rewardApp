@@ -20,7 +20,7 @@ router.post('/admin/register', (req, res) =>
   authController.register(req, res, 'admin')
 );
 
-router.post('/warehouse-manager/register', (req, res) => 
+router.post('/warehouse_manager/register', (req, res) => 
   authController.register(req, res, 'warehouse_manager')
 );
 
@@ -36,7 +36,7 @@ router.post('/manager/login', (req, res) =>
   authController.login(req, res, 'vendor_manager')
 );
 
-router.post('/warehouse-manager/login', (req, res) =>
+router.post('/warehouse_manager/login', (req, res) =>
   authController.login(req, res, 'warehouse_manager')
 );
 
