@@ -43,6 +43,9 @@ interface ProductView {
   categoryId?: number | null;
   subCategoryId?: number | null;
   subSubCategoryId?: number | null;
+  categoryName?: string | null;
+  subCategoryName?: string | null;
+  subSubCategoryName?: string | null;
   model?: string;
   gstIn?: string;
   variants?: VariantView[];
@@ -153,8 +156,8 @@ export default function ReviewProductPage({
       }
 
       const json = await res.json();
-      // adapt to backend shape — prefer json.data or json.product or json
       const raw = json.data ?? json.product ?? json;
+      console.log(raw, "raw");
 
       // Map backend shape to ProductView expected by this page
       const mapped: ProductView = {
@@ -163,13 +166,19 @@ export default function ReviewProductPage({
         brandName: raw.brandName ?? raw.brand_name ?? raw.brand,
         manufacturer: raw.manufacturer ?? raw.mfg ?? "",
         itemType: raw.itemType ?? "",
-        barCode: raw.barCode ?? raw.bar_code ?? "",
+        barCode: raw.barcode ?? raw.barCode ?? "",
         description: raw.description ?? "",
         shortDescription: raw.shortDescription ?? raw.short_description ?? "",
         categoryId: raw.category_id ?? raw.categoryId ?? null,
         subCategoryId: raw.subcategory_id ?? raw.subCategoryId ?? null,
         subSubCategoryId:
           raw.sub_subcategory_id ?? raw.subSubCategoryId ?? null,
+
+        categoryName: raw.category_name ?? raw.categoryName ?? null,
+        subCategoryName: raw.subcategory_name ?? raw.subCategoryName ?? null,
+        subSubCategoryName:
+          raw.sub_subcategory_name ?? raw.subSubCategoryName ?? null,
+
         model: raw.model ?? "",
         gstIn: raw.gstIn ?? raw.gst_in ?? "",
         // Expecting arrays of image URLs coming from backend:
@@ -277,7 +286,7 @@ export default function ReviewProductPage({
               </label>
               <input
                 readOnly
-                value={String(product.categoryId ?? "Not selected")}
+                value={String(product.categoryName?? "Not selected")}
                 className="w-full p-3 border rounded-lg bg-gray-50"
               />
             </div>
@@ -288,7 +297,7 @@ export default function ReviewProductPage({
               </label>
               <input
                 readOnly
-                value={String(product.subCategoryId ?? "Not selected")}
+                value={String(product.subCategoryName?? "Not selected")}
                 className="w-full p-3 border rounded-lg bg-gray-50"
               />
             </div>
@@ -299,7 +308,7 @@ export default function ReviewProductPage({
               </label>
               <input
                 readOnly
-                value={String(product.subSubCategoryId ?? "Not selected")}
+                value={String(product.subSubCategoryName ?? "Not selected")}
                 className="w-full p-3 border rounded-lg bg-gray-50"
               />
             </div>

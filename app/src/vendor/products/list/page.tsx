@@ -28,6 +28,9 @@ import {
 } from "react-icons/fa";
 import { FiPackage } from "react-icons/fi";
 
+const API_BASE = "http://localhost:5000";
+
+
 /* ================================
        TYPES
 ================================ */
@@ -390,7 +393,7 @@ export default function ProductManagerList() {
       });
 
       const response = await fetch(
-        `http://localhost:5000/api/product/my-listed-products?${params.toString()}`,
+        `${API_BASE}/api/product/my-listed-products?${params.toString()}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

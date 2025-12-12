@@ -127,9 +127,21 @@ class ProductModel {
   // Get product by ID
   async getProductDetailsById(productId) {
     try {
-      // 1️⃣ Get main product info
       const [productRows] = await db.execute(
-        `SELECT * FROM products WHERE product_id = ?`,
+        `
+        SELECT
+          p.*,
+          v.full_name AS vendor_name,
+          c.category_name,
+          sc.subcategory_name,
+          ssc.name AS sub_subcategory_name
+        FROM products p
+        LEFT JOIN vendors v ON p.vendor_id = v.vendor_id
+        LEFT JOIN categories c ON p.category_id = c.category_id
+        LEFT JOIN sub_categories sc ON p.subcategory_id = sc.subcategory_id
+        LEFT JOIN sub_sub_categories ssc ON p.sub_subcategory_id = ssc.sub_subcategory_id
+        WHERE p.product_id = ?
+        `,
         [productId]
       );
 
@@ -321,7 +333,7 @@ class ProductModel {
   }
 
   // delete product
-  async deleteProduct(connection,productId,vendorId) {
+  async deleteProduct(connection, productId, vendorId) {
     try {
       // Delete product variant images
       const [variants] = await connection.execute(
@@ -336,24 +348,28 @@ class ProductModel {
       }
 
       // Delete product variants
-      await connection.execute(`DELETE FROM product_variants WHERE product_id = ?`, [
-        productId,
-      ]);
+      await connection.execute(
+        `DELETE FROM product_variants WHERE product_id = ?`,
+        [productId]
+      );
 
       // Delete product images
-      await connection.execute(`DELETE FROM product_images WHERE product_id = ?`, [
-        productId,
-      ]);
+      await connection.execute(
+        `DELETE FROM product_images WHERE product_id = ?`,
+        [productId]
+      );
 
       // Delete product documents
-      await connection.execute(`DELETE FROM product_documents WHERE product_id = ?`, [
-        productId,
-      ]);
+      await connection.execute(
+        `DELETE FROM product_documents WHERE product_id = ?`,
+        [productId]
+      );
 
       // Delete main product
-      await connection.execute(`DELETE FROM products WHERE product_id = ? AND vendor_id = ?`, [
-        productId,vendorId
-      ]);
+      await connection.execute(
+        `DELETE FROM products WHERE product_id = ? AND vendor_id = ?`,
+        [productId, vendorId]
+      );
 
       return true;
     } catch (error) {
