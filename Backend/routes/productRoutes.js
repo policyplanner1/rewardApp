@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
 const ProductController = require("../controllers/productController");
-const upload = require("../middleware/productUpload");
 const { productUpload } = require("../middleware/productUpload");
 const { authenticateToken, authorizeRoles } = require("../middleware/auth");
 
