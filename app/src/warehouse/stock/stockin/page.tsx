@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 // Types
 interface StockEntry {
@@ -19,6 +20,8 @@ interface StockEntry {
 }
 
 export default function StockInPage() {
+  const router = useRouter();
+
   const [search, setSearch] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"Pending" | "Sent">("Pending");
 
@@ -98,9 +101,7 @@ export default function StockInPage() {
       <div className="flex space-x-4">
         <button
           className={`px-4 py-2 rounded-lg ${
-            activeTab === "Pending"
-              ? "bg-purple-600 text-white"
-              : "bg-gray-200"
+            activeTab === "Pending" ? "bg-purple-600 text-white" : "bg-gray-200"
           }`}
           onClick={() => setActiveTab("Pending")}
         >
@@ -167,8 +168,27 @@ export default function StockInPage() {
                     <td className="p-3 border">{row.expiryDate || "N/A"}</td>
                     <td className="p-3 border">{row.status}</td>
                     <td className="p-3 border whitespace-nowrap">
-                      <button className="text-purple-600 mr-2">View</button>
-                      <button className="text-green-600 mr-2">Edit</button>
+                      {/* View button */}
+                      <button
+                        className="text-purple-600 mr-2"
+                        onClick={() => {
+                          router.push(`/src/warehouse/stock/stockview?grn=${row.grn}`);
+                        }}
+                      >
+                        View
+                      </button>
+
+                      {/* Edit button */}
+                      <button
+                        className="text-green-600 mr-2"
+                        onClick={() => {
+                          router.push(`/src/warehouse/stock/stockedit?grn=${row.grn}`);
+                        }}
+                      >
+                        Edit
+                      </button>
+
+                      {/* Send to Inventory button*/}
                       {activeTab === "Pending" && (
                         <button
                           className="text-blue-600"
