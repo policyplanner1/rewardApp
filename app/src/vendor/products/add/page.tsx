@@ -531,7 +531,6 @@ export default function ProductListingDynamic() {
 
       const formData = new FormData();
 
-      // Basic product info (matching your backend model)
       formData.append("category_id", product.categoryId.toString());
       formData.append("brandName", product.brandName);
       formData.append("manufacturer", product.manufacturer);
@@ -1292,13 +1291,13 @@ export default function ProductListingDynamic() {
                 name="model"
                 label="Model / SKU"
                 required
-                value={product.productName}
+                value={product.model}
                 onChange={handleFieldChange}
                 placeholder="Enter Model or SKU"
               />
 
               <FormInput
-                id="gst"
+                id="gstIn"
                 name="gstIn"
                 label="GST"
                 value={product.gstIn}
