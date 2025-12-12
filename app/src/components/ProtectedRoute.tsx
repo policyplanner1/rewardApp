@@ -7,7 +7,7 @@ import { useAuth } from '../(auth)/context/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiredRole?: 'vendor' | 'vendor_manager' | 'admin';
+  requiredRole?: 'vendor' | 'vendor_manager' | 'admin' | 'warehouse_manager';
 }
 
 export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
@@ -28,8 +28,8 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="w-12 h-12 border-b-2 border-purple-600 rounded-full animate-spin"></div>
       </div>
     );
   }
