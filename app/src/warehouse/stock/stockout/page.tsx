@@ -64,7 +64,7 @@ export default function StockOutTable() {
   return (
     <div className="p-6 space-y-6">
 
-      <h1 className="text-3xl font-bold">Stock Out Records</h1>
+      <h1 className="text-3xl font-bold">Warehouse Stock Out</h1>
       <p className="text-gray-600">Track all outbound shipments from the warehouse.</p>
 
       {/* FILTER SECTION */}

@@ -190,7 +190,7 @@ export default function WarehouseNavbar() {
       Icon: FiShoppingCart,
       isDropdown: true,
       children: [
-        { href: "/warehouse/fulfilment/picking", label: "Pendin" },
+        { href: "/warehouse/fulfilment/picking", label: "Pending" },
         { href: "/warehouse/fulfilment/dispatch", label: "Dispatch" },
         { href: "/warehouse/fulfilment/awb", label: "Return" },
       ],

@@ -88,7 +88,7 @@ export default function StockInPage() {
   return (
     <div className="p-6 space-y-6">
 
-      <h1 className="text-3xl font-bold">Stock In (Receive Inventory)</h1>
+      <h1 className="text-3xl font-bold">Warehouse Stock In</h1>
       <p className="text-gray-600">Add new stock coming from vendors to warehouse.</p>
 
       {/* Search Section */}

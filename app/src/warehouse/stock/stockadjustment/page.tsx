@@ -95,7 +95,7 @@ export default function StockAdjustmentPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-3xl font-bold">Stock Adjustment</h1>
+      <h1 className="text-3xl font-bold">Warehouse Stock Adjustment</h1>
       <p className="text-gray-600">Record stock changes due to damage, returns, or lost items.</p>
 
       {/* ============================ */}
