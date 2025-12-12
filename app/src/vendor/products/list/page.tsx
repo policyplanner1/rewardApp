@@ -683,32 +683,32 @@ export default function ProductManagerList() {
 
         {/* TABLE */}
         <div className="overflow-x-auto border border-gray-200 rounded-lg">
-          <table className="min-w-max divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
+                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
                   Product
                 </th>
-                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
+                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
                   Brand
                 </th>
-                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
+                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
                   Category
                 </th>
-                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
+                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
                   Subcategory
                 </th>
-                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
+                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
                   SubType
                 </th>
-                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
+                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
                   Status
                 </th>
-                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
+                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
                   Rejection Reason
                 </th>
-                <th className="px-4 py-3 text-xs tracking-wider text-left text-gray-900 uppercase">
-                  Actions
+                <th className="px-4 py-3 text-xs font-semibold tracking-wider text-left text-gray-700 uppercase">
+                  Action
                 </th>
               </tr>
             </thead>
