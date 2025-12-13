@@ -11,6 +11,7 @@ const generateGRN = () => {
 };
 
 class wareHouseController {
+  // new entry
   async stockIn(req, res) {
     try {
       const wareHouseManagerId = req.user.user_id;
@@ -78,6 +79,7 @@ class wareHouseController {
     }
   }
 
+  // get all stock info
   async getDetails(req, res) {
     try {
       const status = req.query.status || "Pending";
@@ -97,7 +99,8 @@ class wareHouseController {
           p.product_name AS productName,
           p.sku,
           COALESCE(c.category_name, p.custom_category) AS categoryName,
-          v.full_name AS vendorName
+          v.full_name AS vendorName,
+          u.name as WarehousemanagerName
 
           FROM stock_in_entries s
           JOIN products p ON s.product_id = p.product_id
