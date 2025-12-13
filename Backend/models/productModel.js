@@ -534,10 +534,10 @@ class ProductModel {
   }
 
   // get list name
-  async getApprovedProductList() {
+  async getApprovedProductList(vendorId) {
     try {
       const [productRows] = await db.execute(
-        `SELECT product_id, product_name FROM products WHERE status = 'approved';`
+        `SELECT product_id, product_name FROM products WHERE status = 'approved' AND vendor_id = ?`,[vendorId]
       );
 
       return productRows;

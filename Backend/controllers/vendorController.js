@@ -491,6 +491,23 @@ class VendorController {
     }
   }
 
+  // Get approved Vendor Details
+  async approvedVendorList(req, res) {
+    try {
+      const vendors = await VendorModel.getApprovedVendorList();
+
+      return res.json({
+        success: true,
+        vendors,
+      });
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching approved Vendor List",
+      });
+    }
+  }
+
   // DELETE subSubCategory
   async deleteSubSubCategory(req, res) {
     try {

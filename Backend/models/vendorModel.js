@@ -4,7 +4,7 @@ class VendorModel {
   /* ============================================================
       CREATE VENDOR
   ============================================================ */
-  async createVendor(connection,data, userId) {
+  async createVendor(connection, data, userId) {
     const [result] = await connection.execute(
       `INSERT INTO vendors 
         (user_id, company_name, full_name, vendor_type, gstin, ipaddress, pan_number, status, created_at)
@@ -25,7 +25,7 @@ class VendorModel {
   /* ============================================================
       INSERT ADDRESS (business/billing/shipping)
   ============================================================ */
-  async insertAddress(connection,vendorId, type, d) {
+  async insertAddress(connection, vendorId, type, d) {
     const address = {
       line1: d[`${type}AddressLine1`] || d.addressLine1 || "",
       line2: d[`${type}AddressLine2`] || d.addressLine2 || "",
@@ -55,7 +55,7 @@ class VendorModel {
   /* ============================================================
       INSERT BANK DETAILS
   ============================================================ */
-  async insertBankDetails(connection,vendorId, d) {
+  async insertBankDetails(connection, vendorId, d) {
     await connection.execute(
       `INSERT INTO vendor_bank_details 
         (vendor_id, bank_name, account_number, branch, ifsc_code)
@@ -73,7 +73,7 @@ class VendorModel {
   /* ============================================================
       INSERT CONTACT DETAILS
   ============================================================ */
-  async insertContacts(connection,vendorId, d) {
+  async insertContacts(connection, vendorId, d) {
     await connection.execute(
       `INSERT INTO vendor_contacts
         (vendor_id, primary_contact, alternate_contact, email, payment_terms, comments)
@@ -89,11 +89,25 @@ class VendorModel {
     );
   }
 
+  // get list name
+  async getApprovedVendorList() {
+    try {
+      const [vendorRows] = await db.execute(
+        `SELECT vendor_id, full_name FROM vendors WHERE status = 'approved';`
+      );
+
+      return vendorRows;
+    } catch (error) {
+      console.error("Error fetching vendor List:", error);
+      throw error;
+    }
+  }
+
   /* ============================================================
       INSERT DOCUMENTS (DYNAMIC)
       Works with ANY file key from frontend
   ============================================================ */
-  async insertCommonDocuments(connection,vendorId, files) {
+  async insertCommonDocuments(connection, vendorId, files) {
     for (const key of Object.keys(files)) {
       const file = files[key][0];
 

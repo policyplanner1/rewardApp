@@ -27,20 +27,12 @@ router.post(
   VendorController.onboardVendor
 );
 
-// Get vendor by ID
+// get approved vendor List
 router.get(
-  "/:vendorId",
+  "/approved-list",
   authenticateToken,
-  authorizeRoles("admin", "vendor", "vendor_manager"),
-  VendorController.getVendor
-);
-
-// Get all vendors
-router.get(
-  "/",
-  authenticateToken,
-  authorizeRoles("admin", "vendor_manager"),
-  VendorController.getAllVendors
+  authorizeRoles("vendor_manager","admin","warehouse_manager"),
+  VendorController.approvedVendorList
 );
 
 // Update vendor status
@@ -176,5 +168,23 @@ router.delete(
   authorizeRoles("vendor_manager"),
   VendorController.deleteSubSubCategory
 );
+
+// Get all vendors
+router.get(
+  "/",
+  authenticateToken,
+  authorizeRoles("admin", "vendor_manager"),
+  VendorController.getAllVendors
+);
+
+// Get vendor by ID
+router.get(
+  "/:vendorId",
+  authenticateToken,
+  authorizeRoles("admin", "vendor", "vendor_manager"),
+  VendorController.getVendor
+);
+
+
 
 module.exports = router;

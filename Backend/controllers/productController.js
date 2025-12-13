@@ -408,8 +408,16 @@ class ProductController {
   // Get approved Products Details
   async approvedProductList(req, res) {
     try {
+      const vendorId = req.query.vendorId;
 
-      const products = await ProductModel.getApprovedProductList();
+      if (!vendorId) {
+        return res.status(400).json({
+          success: false,
+          message: "Vendor ID is required",
+        });
+      }
+
+      const products = await ProductModel.getApprovedProductList(vendorId);
 
       return res.json({
         success: true,

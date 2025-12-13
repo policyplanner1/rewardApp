@@ -5,18 +5,28 @@ const API_BASE = "http://localhost:5000";
 
 /* ================= TYPES ================= */
 
+interface Vendor {
+  id: number;
+  name: string;
+}
+
 interface Product {
   id: number;
   name: string;
-  sku: string;
   vendorId: number;
   vendorName: string;
   category: string;
   price: number;
 }
 
+interface Variant {
+  id: number;
+  name: string;
+}
+
 interface StockEntry {
   productId: number;
+  variantId: number;
   totalQuantity: number;
   passedQuantity: number;
   failedQuantity: number;
@@ -28,10 +38,13 @@ interface StockEntry {
 /* ================= COMPONENT ================= */
 
 export default function StockInCreatePage() {
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [variants, setVariants] = useState<Variant[]>([]);
 
+  const [selectedVendor, setSelectedVendor] = useState<number | "">("");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<number | "">("");
 
   const [totalQuantity, setTotalQuantity] = useState(0);
   const [passedQuantity, setPassedQuantity] = useState(0);
@@ -41,83 +54,93 @@ export default function StockInCreatePage() {
   const [location, setLocation] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
 
-  /* ================= FETCH APPROVED PRODUCTS ================= */
+  /* ================= FETCH VENDORS ================= */
 
   useEffect(() => {
-    fetchApprovedProducts();
+    fetchVendors();
   }, []);
 
-  const fetchApprovedProducts = async () => {
-    try {
-      setLoading(true);
+  const fetchVendors = async () => {
+    const token = localStorage.getItem("token");
 
-      const token = localStorage.getItem("token");
-      if (!token) {
-        console.error("No auth token found");
-        return;
-      }
+    const res = await fetch(`${API_BASE}/api/vendor/approved-list`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
-      const res = await fetch(`${API_BASE}/api/product/approved-list`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-      });
+    const data = await res.json();
 
-      const data = await res.json();
-
-      setProducts(
-        data.products.map((p: any) => ({
-          id: p.product_id,
-          name: p.product_name,
-          sku: p.sku,
-          vendorId: p.vendor_id,
-          vendorName: p.vendor_name,
-          category: p.category_name,
-          price: p.price,
-        }))
-      );
-    } catch (err) {
-      console.error("Failed to fetch products", err);
-    } finally {
-      setLoading(false);
-    }
+    setVendors(
+      data.vendors.map((v: any) => ({
+        id: v.vendor_id,
+        name: v.full_name,
+      }))
+    );
   };
 
-  /* ================= FETCH PRODUCT DETAILS ON SELECT ================= */
+  /* ================= FETCH PRODUCTS BY VENDOR ================= */
 
-  const handleProductSelect = async (productId: number) => {
-    try {
-      const token = localStorage.getItem("token");
+  const handleVendorSelect = async (vendorId: number) => {
+    setSelectedVendor(vendorId);
+    setSelectedProduct(null);
+    setVariants([]);
+    setSelectedVariant("");
 
-      const res = await fetch(
-        `${API_BASE}/api/product/approved-products/${productId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+    const token = localStorage.getItem("token");
 
-      const data = await res.json();
-      const p = data.products[0];
+    const res = await fetch(
+      `${API_BASE}/api/product/approved-list?vendorId=${vendorId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
 
-      setSelectedProduct({
+    const data = await res.json();
+
+    setProducts(
+      data.products.map((p: any) => ({
         id: p.product_id,
         name: p.product_name,
-        sku: p.sku,
         vendorId: p.vendor_id,
         vendorName: p.vendor_name,
         category: p.category_name,
         price: p.price,
-      });
-    } catch (err) {
-      console.error("Failed to fetch product details", err);
-    }
+      }))
+    );
   };
 
-  /* ================= AUTO CALCULATE FAILED QTY ================= */
+  /* ================= FETCH PRODUCT DETAILS + VARIANTS ================= */
+
+  const handleProductSelect = async (productId: number) => {
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(
+      `${API_BASE}/api/product/approved-products/${productId}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    const data = await res.json();
+    const p = data.products[0];
+
+    setSelectedProduct({
+      id: p.product_id,
+      name: p.product_name,
+      vendorId: p.vendor_id,
+      vendorName: p.vendor_name,
+      category: p.category_name,
+      price: p.price,
+    });
+
+    setVariants(
+      (p.variants || []).map((v: any) => ({
+        id: v.variant_id,
+        name: v.variant_name,
+      }))
+    );
+  };
+
+  /* ================= AUTO FAILED QTY ================= */
 
   useEffect(() => {
     if (totalQuantity >= passedQuantity) {
@@ -125,16 +148,17 @@ export default function StockInCreatePage() {
     }
   }, [totalQuantity, passedQuantity]);
 
-  /* ================= SUBMIT STOCK IN ================= */
+  /* ================= SUBMIT ================= */
 
   const submitStockIn = async () => {
-    if (!selectedProduct || totalQuantity <= 0) {
-      alert("Select product and enter valid quantity");
+    if (!selectedProduct || !selectedVariant) {
+      alert("Please select product and variant");
       return;
     }
 
     const stockEntry: StockEntry = {
       productId: selectedProduct.id,
+      variantId: selectedVariant,
       totalQuantity,
       passedQuantity,
       failedQuantity,
@@ -143,40 +167,18 @@ export default function StockInCreatePage() {
       expiryDate: expiryDate || undefined,
     };
 
-    try {
-      const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
 
-      const response = await fetch(`${API_BASE}/api/warehouse/stock-in`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(stockEntry),
-      });
+    await fetch(`${API_BASE}/api/warehouse/stock-in`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(stockEntry),
+    });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        /* Reset */
-        setSelectedProduct(null);
-        setTotalQuantity(0);
-        setPassedQuantity(0);
-        setFailedQuantity(0);
-        setStockInDate("");
-        setLocation("");
-        setExpiryDate("");
-
-        alert("Entry created");
-      }
-    } catch (err) {
-      console.error("Failed to submit stock-in", err);
-      alert("Failed to submit stock-in");
-    }
+    alert("Stock-In created successfully");
   };
 
   /* ================= UI ================= */
@@ -184,14 +186,27 @@ export default function StockInCreatePage() {
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-3xl font-bold">Create New Stock In</h1>
-      <p className="text-gray-600">
-        Add products received from vendor before final inventory entry.
-      </p>
 
       <div className="p-6 bg-white shadow rounded-xl space-y-4">
         <h2 className="text-xl font-semibold">Stock-In Details</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          {/* Vendor */}
+          <div>
+            <label className="font-medium">Vendor</label>
+            <select
+              value={selectedVendor}
+              onChange={(e) => handleVendorSelect(Number(e.target.value))}
+              className="w-full p-3 border rounded-lg mt-1"
+            >
+              <option value="">-- Select Vendor --</option>
+              {vendors.map(v => (
+                <option key={v.id} value={v.id}>{v.name}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Product */}
           <div>
             <label className="font-medium">Product</label>
@@ -201,42 +216,31 @@ export default function StockInCreatePage() {
               className="w-full p-3 border rounded-lg mt-1"
             >
               <option value="">-- Select Product --</option>
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
+              {products.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
           </div>
 
-          {/* SKU */}
+          {/* Product Variant */}
           <div>
-            <label className="font-medium">SKU / Barcode</label>
-            <input
-              value={selectedProduct?.sku || ""}
-              readOnly
-              className="w-full p-3 border rounded-lg mt-1 bg-gray-100"
-            />
-          </div>
-
-          {/* Vendor */}
-          <div>
-            <label className="font-medium">Vendor</label>
-            <input
-              value={selectedProduct?.vendorName || ""}
-              readOnly
-              className="w-full p-3 border rounded-lg mt-1 bg-gray-100"
-            />
+            <label className="font-medium">Product Variant</label>
+            <select
+              value={selectedVariant}
+              onChange={(e) => setSelectedVariant(Number(e.target.value))}
+              className="w-full p-3 border rounded-lg mt-1"
+            >
+              <option value="">-- Select Variant --</option>
+              {variants.map(v => (
+                <option key={v.id} value={v.id}>{v.name}</option>
+              ))}
+            </select>
           </div>
 
           {/* Category */}
           <div>
             <label className="font-medium">Category</label>
-            <input
-              value={selectedProduct?.category || ""}
-              readOnly
-              className="w-full p-3 border rounded-lg mt-1 bg-gray-100"
-            />
+            <input value={selectedProduct?.category || ""} readOnly className="w-full p-3 border bg-gray-100 rounded-lg mt-1" />
           </div>
 
           {/* Quantities */}
