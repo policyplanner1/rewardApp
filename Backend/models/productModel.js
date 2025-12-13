@@ -1,5 +1,29 @@
 const db = require("../config/database");
 
+function generateSKU(productId) {
+  const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
+
+  return `RP-${productId}-${randomPart}`;
+}
+
+async function generateUniqueSKU(connection, productId) {
+  let sku;
+  let exists = true;
+
+  while (exists) {
+    sku = generateSKU(productId);
+
+    const [[row]] = await connection.execute(
+      `SELECT 1 FROM product_variants WHERE sku = ? LIMIT 1`,
+      [sku]
+    );
+
+    exists = !!row;
+  }
+
+  return sku;
+}
+
 class ProductModel {
   // create a Product
   async createProduct(connection, vendorId, data) {
@@ -75,6 +99,8 @@ class ProductModel {
   async createProductVariant(connection, productId, variant) {
     const safe = (v) => (v === undefined || v === "" ? null : v);
 
+    const sku = await generateUniqueSKU(connection, productId);
+
     const [result] = await connection.execute(
       `INSERT INTO product_variants
       (product_id, size, color, weight, custom_attributes, sku, mrp, vendor_price, sale_price, stock)
@@ -85,7 +111,8 @@ class ProductModel {
         safe(variant.color),
         safe(variant.dimension),
         JSON.stringify(variant.customAttributes || {}),
-        safe(variant.sku),
+        // safe(variant.sku),
+        sku,
         safe(variant.MRP),
         safe(variant.vendorPrice || variant.salesPrice),
         safe(variant.salesPrice),
