@@ -54,6 +54,7 @@ interface Variant {
   size: string;
   color: string;
   dimension: string;
+  weight: string;
   customAttributes: Record<string, any>;
   MRP: string | number;
   salesPrice: string | number;
@@ -76,7 +77,6 @@ interface ProductData {
   categoryId: number | null;
   subCategoryId: number | null;
   subSubCategoryId: number | null;
-  model?: string;
   gstIn?: string;
   variants: Variant[];
   productImages: File[];
@@ -93,13 +93,13 @@ const initialProductData: ProductData = {
   categoryId: null,
   subCategoryId: null,
   subSubCategoryId: null,
-  model: "",
   gstIn: "",
   variants: [
     {
       size: "",
       color: "",
       dimension: "",
+      weight: "",
       customAttributes: {},
       MRP: "",
       salesPrice: "",
@@ -423,6 +423,7 @@ export default function ProductListingDynamic() {
           size: "",
           color: "",
           dimension: "",
+          weight: "",
           customAttributes: {},
           MRP: "",
           salesPrice: "",
@@ -556,7 +557,6 @@ export default function ProductListingDynamic() {
         );
       }
 
-      if (product.model) formData.append("model", product.model);
       if (product.gstIn) formData.append("gstIn", product.gstIn);
 
       // Add first variant data as main product data (for backward compatibility)
@@ -565,6 +565,7 @@ export default function ProductListingDynamic() {
         formData.append("size", firstVariant.size || "");
         formData.append("color", firstVariant.color || "");
         formData.append("dimension", firstVariant.dimension || "");
+        formData.append("weight", firstVariant.weight || "");
         formData.append("stock", firstVariant.stock?.toString() || "0");
         formData.append(
           "salesPrice",
@@ -606,6 +607,7 @@ export default function ProductListingDynamic() {
         size: variant.size,
         color: variant.color,
         dimension: variant.dimension,
+        weight: variant.weight,
         mrp: variant.MRP,
         salesPrice: variant.salesPrice,
         stock: variant.stock,
@@ -798,6 +800,22 @@ export default function ProductListingDynamic() {
                     handleVariantChange(index, "dimension", e.target.value)
                   }
                   placeholder="12x10x5 cm"
+                  className="w-full p-2 border rounded-lg"
+                />
+              </div>
+
+              {/* Weight */}
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Weight (In Grams)
+                </label>
+                <input
+                  type="text"
+                  value={variant.weight}
+                  onChange={(e) =>
+                    handleVariantChange(index, "weight", e.target.value)
+                  }
+                  placeholder="1000g"
                   className="w-full p-2 border rounded-lg"
                 />
               </div>
@@ -1284,16 +1302,6 @@ export default function ProductListingDynamic() {
                 value={product.barCode}
                 onChange={handleFieldChange}
                 placeholder="EAN/Code"
-              />
-
-              <FormInput
-                id="model"
-                name="model"
-                label="Model / SKU"
-                required
-                value={product.model}
-                onChange={handleFieldChange}
-                placeholder="Enter Model or SKU"
               />
 
               <FormInput
