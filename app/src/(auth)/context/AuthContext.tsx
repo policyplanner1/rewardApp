@@ -4,6 +4,7 @@ import { createContext, useState, useContext, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 interface User {
+  name:string,
   user_id: number;
   email: string;
   role: "vendor" | "vendor_manager" | "admin" | "warehouse_manager";
@@ -16,6 +17,7 @@ interface AuthContextType {
   error: string | null;
   login: (email: string, password: string, role: string) => Promise<void>;
   register: (
+    name:string,
     email: string,
     password: string,
     role: "vendor" | "vendor_manager" | "admin" | "warehouse_manager",
@@ -92,6 +94,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   /* ---------------- REGISTER ---------------- */
   const register = async (
+    name:string,
     email: string,
     password: string,
     role: "vendor" | "vendor_manager" | "admin" | "warehouse_manager",
@@ -106,7 +109,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await fetch(`${API_URL}/${route}/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, phone })
+        body: JSON.stringify({ name,email, password, phone })
       });
 
       const data = await response.json();
