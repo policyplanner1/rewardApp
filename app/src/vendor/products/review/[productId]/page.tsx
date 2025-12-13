@@ -157,7 +157,6 @@ export default function ReviewProductPage({
 
       const json = await res.json();
       const raw = json.data ?? json.product ?? json;
-      console.log(raw, "raw");
 
       // Map backend shape to ProductView expected by this page
       const mapped: ProductView = {

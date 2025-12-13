@@ -1,8 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+const API_BASE = "http://localhost:5000";
 
-// Types
+/* ================= TYPES ================= */
+
 interface Product {
   id: number;
   name: string;
@@ -23,31 +25,111 @@ interface StockEntry {
   expiryDate?: string;
 }
 
-// Dummy Data
-const DUMMY_PRODUCTS: Product[] = [
-  { id: 101, name: "Blue Widget", sku: "BW-455", vendorId: 1, vendorName: "Vendor A", category: "Widgets", price: 120 },
-  { id: 102, name: "Red Gadget", sku: "RG-228", vendorId: 2, vendorName: "Vendor B", category: "Gadgets", price: 180 },
-  { id: 103, name: "Green Component", sku: "GC-332", vendorId: 1, vendorName: "Vendor A", category: "Components", price: 95 },
-];
+/* ================= COMPONENT ================= */
 
 export default function StockInCreatePage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(false);
+
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [totalQuantity, setTotalQuantity] = useState<number>(0);
-  const [passedQuantity, setPassedQuantity] = useState<number>(0);
-  const [failedQuantity, setFailedQuantity] = useState<number>(0);
-  const [stockInDate, setStockInDate] = useState<string>("");
-  const [location, setLocation] = useState<string>("");
-  const [expiryDate, setExpiryDate] = useState<string>("");
 
-  // Submit stock-in (placeholder)
-  const submitStockIn = () => {
-    if (!selectedProduct || totalQuantity <= 0) {
-      alert("Select product and enter total quantity");
-      return;
+  const [totalQuantity, setTotalQuantity] = useState(0);
+  const [passedQuantity, setPassedQuantity] = useState(0);
+  const [failedQuantity, setFailedQuantity] = useState(0);
+
+  const [stockInDate, setStockInDate] = useState("");
+  const [location, setLocation] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+
+  /* ================= FETCH APPROVED PRODUCTS ================= */
+
+  useEffect(() => {
+    fetchApprovedProducts();
+  }, []);
+
+  const fetchApprovedProducts = async () => {
+    try {
+      setLoading(true);
+
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No auth token found");
+        return;
+      }
+
+      const res = await fetch(`${API_BASE}/api/product/approved-list`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+
+      const data = await res.json();
+
+      setProducts(
+        data.products.map((p: any) => ({
+          id: p.product_id,
+          name: p.product_name,
+          sku: p.sku,
+          vendorId: p.vendor_id,
+          vendorName: p.vendor_name,
+          category: p.category_name,
+          price: p.price,
+        }))
+      );
+    } catch (err) {
+      console.error("Failed to fetch products", err);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    if (passedQuantity + failedQuantity !== totalQuantity) {
-      alert("Total quantity must equal passed + failed quantity");
+  /* ================= FETCH PRODUCT DETAILS ON SELECT ================= */
+
+  const handleProductSelect = async (productId: number) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        `${API_BASE}/api/product/approved-products/${productId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await res.json();
+      const p = data.products[0];
+
+      setSelectedProduct({
+        id: p.product_id,
+        name: p.product_name,
+        sku: p.sku,
+        vendorId: p.vendor_id,
+        vendorName: p.vendor_name,
+        category: p.category_name,
+        price: p.price,
+      });
+    } catch (err) {
+      console.error("Failed to fetch product details", err);
+    }
+  };
+
+  /* ================= AUTO CALCULATE FAILED QTY ================= */
+
+  useEffect(() => {
+    if (totalQuantity >= passedQuantity) {
+      setFailedQuantity(totalQuantity - passedQuantity);
+    }
+  }, [totalQuantity, passedQuantity]);
+
+  /* ================= SUBMIT STOCK IN ================= */
+
+  const submitStockIn = async () => {
+    if (!selectedProduct || totalQuantity <= 0) {
+      alert("Select product and enter valid quantity");
       return;
     }
 
@@ -61,44 +143,65 @@ export default function StockInCreatePage() {
       expiryDate: expiryDate || undefined,
     };
 
-    console.log("Submitting Stock-In:", stockEntry);
-    alert("Stock-In submitted successfully!");
+    try {
+      const token = localStorage.getItem("token");
 
-    // Reset form
-    setSelectedProduct(null);
-    setTotalQuantity(0);
-    setPassedQuantity(0);
-    setFailedQuantity(0);
-    setStockInDate("");
-    setLocation("");
-    setExpiryDate("");
+      const response = await fetch(`${API_BASE}/api/warehouse/stock-in`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(stockEntry),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        /* Reset */
+        setSelectedProduct(null);
+        setTotalQuantity(0);
+        setPassedQuantity(0);
+        setFailedQuantity(0);
+        setStockInDate("");
+        setLocation("");
+        setExpiryDate("");
+
+        alert("Entry created");
+      }
+    } catch (err) {
+      console.error("Failed to submit stock-in", err);
+      alert("Failed to submit stock-in");
+    }
   };
+
+  /* ================= UI ================= */
 
   return (
     <div className="p-6 space-y-6">
-
       <h1 className="text-3xl font-bold">Create New Stock In</h1>
-      <p className="text-gray-600">Add products received from vendor before final stock-in.</p>
+      <p className="text-gray-600">
+        Add products received from vendor before final inventory entry.
+      </p>
 
-      {/* Product Selection */}
       <div className="p-6 bg-white shadow rounded-xl space-y-4">
         <h2 className="text-xl font-semibold">Stock-In Details</h2>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-
-          {/* Product Dropdown */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Product */}
           <div>
             <label className="font-medium">Product</label>
             <select
               value={selectedProduct?.id || ""}
-              onChange={(e) => {
-                const product = DUMMY_PRODUCTS.find(p => p.id === parseInt(e.target.value));
-                setSelectedProduct(product || null);
-              }}
+              onChange={(e) => handleProductSelect(Number(e.target.value))}
               className="w-full p-3 border rounded-lg mt-1"
             >
               <option value="">-- Select Product --</option>
-              {DUMMY_PRODUCTS.map(p => (
+              {products.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
                 </option>
@@ -106,11 +209,10 @@ export default function StockInCreatePage() {
             </select>
           </div>
 
-          {/* SKU / Barcode */}
+          {/* SKU */}
           <div>
             <label className="font-medium">SKU / Barcode</label>
             <input
-              type="text"
               value={selectedProduct?.sku || ""}
               readOnly
               className="w-full p-3 border rounded-lg mt-1 bg-gray-100"
@@ -121,7 +223,6 @@ export default function StockInCreatePage() {
           <div>
             <label className="font-medium">Vendor</label>
             <input
-              type="text"
               value={selectedProduct?.vendorName || ""}
               readOnly
               className="w-full p-3 border rounded-lg mt-1 bg-gray-100"
@@ -132,47 +233,44 @@ export default function StockInCreatePage() {
           <div>
             <label className="font-medium">Category</label>
             <input
-              type="text"
               value={selectedProduct?.category || ""}
               readOnly
               className="w-full p-3 border rounded-lg mt-1 bg-gray-100"
             />
           </div>
 
-          {/* Total Quantity */}
+          {/* Quantities */}
           <div>
             <label className="font-medium">Total Quantity</label>
             <input
               type="number"
               value={totalQuantity}
-              onChange={(e) => setTotalQuantity(parseInt(e.target.value))}
+              onChange={(e) => setTotalQuantity(+e.target.value)}
               className="w-full p-3 border rounded-lg mt-1"
             />
           </div>
 
-          {/* Passed Quantity */}
           <div>
             <label className="font-medium">Passed Quantity</label>
             <input
               type="number"
               value={passedQuantity}
-              onChange={(e) => setPassedQuantity(parseInt(e.target.value))}
+              onChange={(e) => setPassedQuantity(+e.target.value)}
               className="w-full p-3 border rounded-lg mt-1"
             />
           </div>
 
-          {/* Failed Quantity */}
           <div>
             <label className="font-medium">Failed Quantity</label>
             <input
               type="number"
               value={failedQuantity}
-              onChange={(e) => setFailedQuantity(parseInt(e.target.value))}
-              className="w-full p-3 border rounded-lg mt-1"
+              readOnly
+              className="w-full p-3 border rounded-lg mt-1 bg-gray-100"
             />
           </div>
 
-          {/* Stock-In Date */}
+          {/* Dates & Location */}
           <div>
             <label className="font-medium">Stock-In Date</label>
             <input
@@ -183,18 +281,15 @@ export default function StockInCreatePage() {
             />
           </div>
 
-          {/* Location */}
           <div>
             <label className="font-medium">Rack / Bin Location</label>
             <input
-              type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               className="w-full p-3 border rounded-lg mt-1"
             />
           </div>
 
-          {/* Expiry Date (Optional) */}
           <div>
             <label className="font-medium">Expiry Date (Optional)</label>
             <input
@@ -204,7 +299,6 @@ export default function StockInCreatePage() {
               className="w-full p-3 border rounded-lg mt-1"
             />
           </div>
-
         </div>
 
         <button

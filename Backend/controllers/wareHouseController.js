@@ -24,23 +24,23 @@ class wareHouseController {
       }
 
       const {
-        product_id,
-        total_quantity,
-        passed_quantity,
-        failed_quantity,
-        stock_in_date,
+        productId,
+        totalQuantity,
+        passedQuantity,
+        failedQuantity,
+        stockInDate,
         location,
-        expiry_date,
+        expiryDate,
       } = req.body;
 
-      if (!product_id || total_quantity <= 0) {
+      if (!productId || totalQuantity <= 0) {
         return res.status(500).json({
           success: false,
           message: "Product and total quantity required",
         });
       }
 
-      if (passed_quantity + failed_quantity !== total_quantity) {
+      if (passedQuantity + failedQuantity !== totalQuantity) {
         return res.status(400).json({
           success: false,
           message: "Total quantity must equal passed + failed quantity",
@@ -58,13 +58,13 @@ class wareHouseController {
         [
           grnNumber,
           wareHouseManagerId,
-          product_id,
-          total_quantity,
-          passed_quantity,
-          failed_quantity,
-          stock_in_date,
+          productId,
+          totalQuantity,
+          passedQuantity,
+          failedQuantity,
+          stockInDate,
           location,
-          expiry_date || null,
+          expiryDate || null,
         ]
       );
 
