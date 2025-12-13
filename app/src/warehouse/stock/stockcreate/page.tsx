@@ -24,6 +24,7 @@ interface Variant {
 
 interface StockEntry {
   productId: number;
+  vendorId: number;
   variantId: number;
   totalQuantity: number;
   passedQuantity: number;
@@ -145,12 +146,13 @@ export default function StockInCreatePage() {
   /* ================= SUBMIT ================= */
 
   const submitStockIn = async () => {
-    if (!selectedProduct || !selectedVariant) {
-      alert("Please select product and variant");
+    if (!selectedVendor || !selectedProduct || !selectedVariant) {
+      alert("Please select vendor, product and variant");
       return;
     }
 
     const stockEntry: StockEntry = {
+      vendorId: selectedVendor,
       productId: selectedProduct.id,
       variantId: selectedVariant,
       totalQuantity,
@@ -185,7 +187,6 @@ export default function StockInCreatePage() {
         <h2 className="text-xl font-semibold">Stock-In Details</h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
           {/* Vendor */}
           <div>
             <label className="font-medium">Vendor</label>
@@ -195,8 +196,10 @@ export default function StockInCreatePage() {
               className="w-full p-3 border rounded-lg mt-1"
             >
               <option value="">-- Select Vendor --</option>
-              {vendors.map(v => (
-                <option key={v.id} value={v.id}>{v.name}</option>
+              {vendors.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name}
+                </option>
               ))}
             </select>
           </div>
@@ -210,8 +213,10 @@ export default function StockInCreatePage() {
               className="w-full p-3 border rounded-lg mt-1"
             >
               <option value="">-- Select Product --</option>
-              {products.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
+              {products.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
               ))}
             </select>
           </div>
@@ -225,8 +230,10 @@ export default function StockInCreatePage() {
               className="w-full p-3 border rounded-lg mt-1"
             >
               <option value="">-- Select Variant --</option>
-              {variants.map(v => (
-                <option key={v.id} value={v.id}>{v.sku}</option>
+              {variants.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.sku}
+                </option>
               ))}
             </select>
           </div>
@@ -234,7 +241,11 @@ export default function StockInCreatePage() {
           {/* Category */}
           <div>
             <label className="font-medium">Category</label>
-            <input value={selectedProduct?.category || ""} readOnly className="w-full p-3 border bg-gray-100 rounded-lg mt-1" />
+            <input
+              value={selectedProduct?.category || ""}
+              readOnly
+              className="w-full p-3 border bg-gray-100 rounded-lg mt-1"
+            />
           </div>
 
           {/* Quantities */}
