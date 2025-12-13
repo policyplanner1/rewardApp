@@ -92,6 +92,9 @@ class wareHouseController {
         `SELECT 
           s.id,
           s.warehousemanager_id,
+          s.vendor_id,
+          s.variant_id,
+          s.product_id,
           s.grn,
           s.total_quantity,
           s.passed_quantity,

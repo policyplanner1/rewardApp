@@ -548,41 +548,54 @@ class ProductModel {
     }
   }
 
-  async getApprovedProducts(productId) {
+  async getDetails(req, res) {
     try {
-      const [productRows] = await db.execute(
-        `
-      SELECT
-        p.*,
-        c.category_name,
-        GROUP_CONCAT(
-          CONCAT(
-            '{"variant_id":', pv.variant_id,
-            ',"sku":"', pv.sku, 
-            '"}'
-          )
-          SEPARATOR ','
-        ) AS variants
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.category_id
-      LEFT JOIN product_variants pv ON p.product_id = pv.product_id
-      WHERE p.status = 'approved' AND p.product_id = ?
-      GROUP BY p.product_id
+      const status = req.query.status || "Pending";
+
+      const [rows] = await db.query(
+        `SELECT 
+              s.id,
+              s.warehousemanager_id,
+              s.vendor_id,
+              s.variant_id,
+              s.product_id,
+              s.grn,
+              s.total_quantity,
+              s.passed_quantity,
+              s.failed_quantity,
+              s.stock_in_date,
+              s.location,
+              s.expiry_date,
+              s.status,
+
+              p.product_name AS productName,
+              COALESCE(c.category_name, p.custom_category) AS categoryName,
+              v.full_name AS vendorName,
+              u.name AS WarehousemanagerName,
+
+              pv.sku AS variantSku
+
+          FROM stock_in_entries s
+          JOIN products p ON s.product_id = p.product_id
+          LEFT JOIN categories c ON p.category_id = c.category_id
+          LEFT JOIN sub_categories sc ON p.subcategory_id = sc.subcategory_id
+          LEFT JOIN sub_sub_categories ssc ON p.sub_subcategory_id = ssc.sub_subcategory_id
+          JOIN vendors v ON p.vendor_id = v.vendor_id
+          JOIN users u ON s.warehousemanager_id = u.user_id
+
+          LEFT JOIN product_variants pv 
+                ON s.variant_id = pv.variant_id
+
+          WHERE s.status = ?;
+
       `,
-        [productId]
+        [status]
       );
 
-      // After fetching the result, convert the `variants` string into an array
-      if (productRows.length > 0 && productRows[0].variants) {
-        productRows[0].variants = JSON.parse(
-          "[" + productRows[0].variants + "]"
-        );
-      }
-
-      return productRows;
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      throw error;
+      res.json({ success: true, data: rows });
+    } catch (err) {
+      console.error("Fetching stock record Error:", err);
+      return res.status(500).json({ success: false, message: err.message });
     }
   }
 }
