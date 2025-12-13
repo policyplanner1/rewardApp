@@ -34,10 +34,10 @@ class ProductModel {
 
     const [result] = await connection.execute(
       `INSERT INTO products 
-     (vendor_id, category_id, subcategory_id, sub_subcategory_id, brand_name, manufacturer, barcode, 
+     (vendor_id, category_id, subcategory_id, sub_subcategory_id, brand_name, manufacturer, barcode, gst,
       product_name, description, short_description,
       custom_category, custom_subcategory, custom_sub_subcategory, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
       [
         safe(vendorId),
         safe(data.category_id),
@@ -46,6 +46,7 @@ class ProductModel {
         safe(data.brandName),
         safe(data.manufacturer),
         safe(data.barCode),
+        safe(data.gstIn),
         safe(data.productName),
         safe(data.description),
         safe(data.shortDescription),
@@ -100,7 +101,7 @@ class ProductModel {
 
     const [result] = await connection.execute(
       `INSERT INTO product_variants
-      (product_id, size, color, dimension,weight, sku, mrp, sale_price, stock,manufacturing_date,expiry_date,material_type)
+      (product_id, size, color, dimension, weight, sku, mrp, sale_price, stock,manufacturing_date,expiry_date,material_type)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         productId,
@@ -114,7 +115,7 @@ class ProductModel {
         safe(variant.stock),
         safe(variant.manufacturingYear),
         safe(variant.expiryDate),
-        safe(variant.materialType)
+        safe(variant.materialType),
       ]
     );
 
@@ -231,13 +232,11 @@ class ProductModel {
       sub_subcategory_id = ?, 
       brand_name = ?, 
       manufacturer = ?, 
-      item_type = ?, 
       barcode = ?, 
+      gst = ?, 
       product_name = ?, 
       description = ?, 
       short_description = ?, 
-      tax_code = ?, 
-      expiry_date = ?, 
       custom_category = ?, 
       custom_subcategory = ?, 
       custom_sub_subcategory = ? 
@@ -248,13 +247,11 @@ class ProductModel {
         safe(data.sub_subcategory_id),
         safe(data.brandName),
         safe(data.manufacturer),
-        safe(data.itemType),
         safe(data.barCode),
+        safe(data.gstIn),
         safe(data.productName),
         safe(data.description),
         safe(data.shortDescription),
-        safe(data.taxCode),
-        safe(data.expiryDate),
         custom_category,
         custom_subcategory,
         custom_sub_subcategory,
@@ -302,24 +299,26 @@ class ProductModel {
             `UPDATE product_variants SET 
             size = ?, 
             color = ?, 
+            dimension = ?,
             weight = ?, 
-            custom_attributes = ?, 
-            sku = ?, 
             mrp = ?, 
-            vendor_price = ?, 
             sale_price = ?, 
-            stock = ? 
+            stock = ? ,
+            manufacturing_date = ? ,
+            expiry_date = ? ,
+            material_type = ? 
            WHERE variant_id = ?`,
             [
               safe(variant.size),
               safe(variant.color),
               safe(variant.dimension),
-              JSON.stringify(variant.customAttributes || {}),
-              safe(variant.sku),
-              safe(variant.MRP),
-              safe(variant.vendorPrice || variant.salesPrice),
+              safe(variant.weight),
+              safe(variant.mrp),
               safe(variant.salesPrice),
               safe(variant.stock),
+              safe(variant.manufacturingYear),
+              safe(variant.expiryDate),
+              safe(variant.materialType),
               variant.variant_id,
             ]
           );
@@ -419,13 +418,11 @@ class ProductModel {
          ssc.name AS sub_subcategory_name,
          p.brand_name,
          p.manufacturer,
-         p.item_type,
          p.barcode,
+         p.gst,
          p.product_name,
          p.description,
          p.short_description,
-         p.tax_code,
-         p.expiry_date,
          p.custom_category,
          p.custom_subcategory,
          p.custom_sub_subcategory,
