@@ -512,10 +512,10 @@ class ProductModel {
   }
 
   // get list name
-  async getApprovedProducts(productId) {
+  async getApprovedProductList() {
     try {
       const [productRows] = await db.execute(
-        `SELECT * from products where status = "approved";`
+        `SELECT product_id, product_name FROM products WHERE status = 'approved';`
       );
 
       return productRows;
@@ -540,7 +540,7 @@ class ProductModel {
         LEFT JOIN categories c ON p.category_id = c.category_id
         LEFT JOIN sub_categories sc ON p.subcategory_id = sc.subcategory_id
         LEFT JOIN sub_sub_categories ssc ON p.sub_subcategory_id = ssc.sub_subcategory_id
-        WHERE p.status='pending' and p.product_id= ?
+        WHERE p.status='approved' and p.product_id= ?
         `,
         [productId]
       );

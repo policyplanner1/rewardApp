@@ -62,7 +62,7 @@ router.get(
   ProductController.getMyListedProducts
 );
 
-// get all the approved products for stock-in
+// approved List
 router.get(
   "/approved-list",
   authenticateToken,
@@ -70,8 +70,9 @@ router.get(
   ProductController.approvedProductList
 );
 
+// get all the approved products for stock-in
 router.get(
-  "/approved-products",
+  "/approved-products/:productId",
   authenticateToken,
   authorizeRoles("vendor_manager","admin","warehouse_manager"),
   ProductController.approvedProducts
