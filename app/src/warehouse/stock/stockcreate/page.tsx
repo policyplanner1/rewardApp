@@ -14,14 +14,12 @@ interface Product {
   id: number;
   name: string;
   vendorId: number;
-  vendorName: string;
   category: string;
-  price: number;
 }
 
 interface Variant {
   id: number;
-  name: string;
+  sku: string;
 }
 
 interface StockEntry {
@@ -101,9 +99,7 @@ export default function StockInCreatePage() {
         id: p.product_id,
         name: p.product_name,
         vendorId: p.vendor_id,
-        vendorName: p.vendor_name,
         category: p.category_name,
-        price: p.price,
       }))
     );
   };
@@ -127,15 +123,13 @@ export default function StockInCreatePage() {
       id: p.product_id,
       name: p.product_name,
       vendorId: p.vendor_id,
-      vendorName: p.vendor_name,
       category: p.category_name,
-      price: p.price,
     });
 
     setVariants(
       (p.variants || []).map((v: any) => ({
         id: v.variant_id,
-        name: v.variant_name,
+        sku: v.sku,
       }))
     );
   };
@@ -232,7 +226,7 @@ export default function StockInCreatePage() {
             >
               <option value="">-- Select Variant --</option>
               {variants.map(v => (
-                <option key={v.id} value={v.id}>{v.name}</option>
+                <option key={v.id} value={v.id}>{v.sku}</option>
               ))}
             </select>
           </div>

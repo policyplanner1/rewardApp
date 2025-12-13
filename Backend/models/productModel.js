@@ -537,7 +537,8 @@ class ProductModel {
   async getApprovedProductList(vendorId) {
     try {
       const [productRows] = await db.execute(
-        `SELECT product_id, product_name FROM products WHERE status = 'approved' AND vendor_id = ?`,[vendorId]
+        `SELECT product_id, product_name FROM products WHERE status = 'approved' AND vendor_id = ?`,
+        [vendorId]
       );
 
       return productRows;
@@ -551,21 +552,32 @@ class ProductModel {
     try {
       const [productRows] = await db.execute(
         `
-        SELECT
-          p.*,
-          v.full_name AS vendor_name,
-          c.category_name,
-          sc.subcategory_name,
-          ssc.name AS sub_subcategory_name
-        FROM products p
-        LEFT JOIN vendors v ON p.vendor_id = v.vendor_id
-        LEFT JOIN categories c ON p.category_id = c.category_id
-        LEFT JOIN sub_categories sc ON p.subcategory_id = sc.subcategory_id
-        LEFT JOIN sub_sub_categories ssc ON p.sub_subcategory_id = ssc.sub_subcategory_id
-        WHERE p.status='approved' and p.product_id= ?
-        `,
+      SELECT
+        p.*,
+        c.category_name,
+        GROUP_CONCAT(
+          CONCAT(
+            '{"variant_id":', pv.variant_id,
+            ',"sku":"', pv.sku, 
+            '"}'
+          )
+          SEPARATOR ','
+        ) AS variants
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.category_id
+      LEFT JOIN product_variants pv ON p.product_id = pv.product_id
+      WHERE p.status = 'approved' AND p.product_id = ?
+      GROUP BY p.product_id
+      `,
         [productId]
       );
+
+      // After fetching the result, convert the `variants` string into an array
+      if (productRows.length > 0 && productRows[0].variants) {
+        productRows[0].variants = JSON.parse(
+          "[" + productRows[0].variants + "]"
+        );
+      }
 
       return productRows;
     } catch (error) {
