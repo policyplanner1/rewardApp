@@ -510,6 +510,47 @@ class ProductModel {
 
     return result.affectedRows > 0;
   }
+
+  // get list name
+  async getApprovedProducts(productId) {
+    try {
+      const [productRows] = await db.execute(
+        `SELECT * from products where status = "approved";`
+      );
+
+      return productRows;
+    } catch (error) {
+      console.error("Error fetching product List:", error);
+      throw error;
+    }
+  }
+
+  async getApprovedProducts(productId) {
+    try {
+      const [productRows] = await db.execute(
+        `
+        SELECT
+          p.*,
+          v.full_name AS vendor_name,
+          c.category_name,
+          sc.subcategory_name,
+          ssc.name AS sub_subcategory_name
+        FROM products p
+        LEFT JOIN vendors v ON p.vendor_id = v.vendor_id
+        LEFT JOIN categories c ON p.category_id = c.category_id
+        LEFT JOIN sub_categories sc ON p.subcategory_id = sc.subcategory_id
+        LEFT JOIN sub_sub_categories ssc ON p.sub_subcategory_id = ssc.sub_subcategory_id
+        WHERE p.status='pending' and p.product_id= ?
+        `,
+        [productId]
+      );
+
+      return productRows;
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new ProductModel();

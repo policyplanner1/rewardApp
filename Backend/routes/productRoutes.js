@@ -42,7 +42,7 @@ router.delete(
 router.get(
   "/all-products",
   authenticateToken,
-  authorizeRoles("vendor_manager","admin"),
+  authorizeRoles("vendor_manager", "admin"),
   ProductController.getAllProductDetails
 );
 
@@ -62,6 +62,21 @@ router.get(
   ProductController.getMyListedProducts
 );
 
+// get all the approved products for stock-in
+router.get(
+  "/approved-list",
+  authenticateToken,
+  authorizeRoles("vendor_manager","admin","warehouse_manager"),
+  ProductController.approvedProductList
+);
+
+router.get(
+  "/approved-products",
+  authenticateToken,
+  authorizeRoles("vendor_manager","admin","warehouse_manager"),
+  ProductController.approvedProducts
+);
+
 // get product Documents
 router.get(
   "/category/required_docs/:id",
@@ -74,10 +89,8 @@ router.get(
 router.get(
   "/:id",
   authenticateToken,
-  authorizeRoles("vendor", "vendor_manager","admin"),
+  authorizeRoles("vendor", "vendor_manager", "admin"),
   ProductController.getProductDetailsById
 );
-
-
 
 module.exports = router;

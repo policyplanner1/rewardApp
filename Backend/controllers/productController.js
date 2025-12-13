@@ -404,6 +404,50 @@ class ProductController {
       return res.status(500).json({ success: false, message: "Server error" });
     }
   }
+
+  // Get approved Products Details
+  async approvedProductList(req, res) {
+    try {
+
+      const products = await ProductModel.getApprovedProductList();
+
+      return res.json({
+        success: true,
+        products,
+      });
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching approved product List",
+      });
+    }
+  }
+
+  // fetch Details according to approved product selected
+  async approvedProducts(req, res) {
+    try {
+      const productId = req.params.productId;
+
+      if (!productId) {
+        return res.status(400).json({
+          success: false,
+          message: "Product ID is required",
+        });
+      }
+
+      const products = await ProductModel.getApprovedProducts(productId);
+
+      return res.json({
+        success: true,
+        products,
+      });
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching approved product Details",
+      });
+    }
+  }
 }
 
 module.exports = new ProductController();
