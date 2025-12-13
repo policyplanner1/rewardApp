@@ -34,10 +34,10 @@ class ProductModel {
 
     const [result] = await connection.execute(
       `INSERT INTO products 
-     (vendor_id, category_id, subcategory_id, sub_subcategory_id, brand_name, manufacturer, item_type, barcode, 
-      product_name, description, short_description,tax_code, expiry_date,
+     (vendor_id, category_id, subcategory_id, sub_subcategory_id, brand_name, manufacturer, barcode, 
+      product_name, description, short_description,
       custom_category, custom_subcategory, custom_sub_subcategory, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
       [
         safe(vendorId),
         safe(data.category_id),
@@ -45,13 +45,10 @@ class ProductModel {
         safe(data.sub_subcategory_id),
         safe(data.brandName),
         safe(data.manufacturer),
-        safe(data.itemType),
         safe(data.barCode),
         safe(data.productName),
         safe(data.description),
         safe(data.shortDescription),
-        safe(data.taxCode),
-        safe(data.expiryDate),
         custom_category,
         custom_subcategory,
         custom_sub_subcategory,
@@ -103,20 +100,21 @@ class ProductModel {
 
     const [result] = await connection.execute(
       `INSERT INTO product_variants
-      (product_id, size, color, weight, custom_attributes, sku, mrp, vendor_price, sale_price, stock)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (product_id, size, color, dimension,weight, sku, mrp, sale_price, stock,manufacturing_date,expiry_date,material_type)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         productId,
         safe(variant.size),
         safe(variant.color),
         safe(variant.dimension),
-        JSON.stringify(variant.customAttributes || {}),
-        // safe(variant.sku),
+        safe(variant.weight),
         sku,
         safe(variant.MRP),
-        safe(variant.vendorPrice || variant.salesPrice),
         safe(variant.salesPrice),
         safe(variant.stock),
+        safe(variant.manufacturingYear),
+        safe(variant.expiryDate),
+        safe(variant.materialType)
       ]
     );
 
