@@ -109,7 +109,7 @@ class ProductModel {
         safe(variant.dimension),
         safe(variant.weight),
         sku,
-        safe(variant.MRP),
+        safe(variant.mrp),
         safe(variant.salesPrice),
         safe(variant.stock),
         safe(variant.manufacturingYear),

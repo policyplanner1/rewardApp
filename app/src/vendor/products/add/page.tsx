@@ -70,7 +70,6 @@ interface ProductData {
   productName: string;
   brandName: string;
   manufacturer: string;
-  itemType: string;
   barCode: string;
   description: string;
   shortDescription: string;
@@ -85,7 +84,6 @@ interface ProductData {
 const initialProductData: ProductData = {
   brandName: "",
   manufacturer: "",
-  itemType: "",
   barCode: "",
   productName: "",
   description: "",
@@ -535,7 +533,6 @@ export default function ProductListingDynamic() {
       formData.append("category_id", product.categoryId.toString());
       formData.append("brandName", product.brandName);
       formData.append("manufacturer", product.manufacturer);
-      formData.append("itemType", product.itemType || "");
       formData.append("barCode", product.barCode || "");
       formData.append("productName", product.productName);
       formData.append("description", product.description);
@@ -633,7 +630,6 @@ export default function ProductListingDynamic() {
       });
 
       const data = await response.json();
-      console.log("Create product response:", data);
 
       if (!data.success) {
         throw new Error(data.message || "Failed to create product");
@@ -652,15 +648,6 @@ export default function ProductListingDynamic() {
       setIsSubmitting(false);
     }
   };
-
-  // const generateSKU = (index: number) => {
-  //   const brand = product.brandName.substring(0, 3).toUpperCase() || "PRD";
-  //   const size =
-  //     product.variants[index].size?.substring(0, 2).toUpperCase() || "NA";
-  //   const color =
-  //     product.variants[index].color?.substring(0, 3).toUpperCase() || "DEF";
-  //   return `${brand}-${size}-${color}-${index + 1}`;
-  // };
 
   // --- Render Components ---
   const renderDocUploads = () => {
@@ -892,7 +879,7 @@ export default function ProductListingDynamic() {
                   Expiry Date
                 </label>
                 <input
-                  type="text"
+                  type="date"
                   value={variant.expiryDate}
                   onChange={(e) =>
                     handleVariantChange(index, "expiryDate", e.target.value)
@@ -907,7 +894,7 @@ export default function ProductListingDynamic() {
                   Manufacturing Year
                 </label>
                 <input
-                  type="text"
+                  type="date"
                   value={variant.manufacturingYear}
                   onChange={(e) =>
                     handleVariantChange(
@@ -1343,27 +1330,7 @@ export default function ProductListingDynamic() {
             </div>
           </section>
 
-          {/* Additional Fields */}
-          {/* <section>
-            <SectionHeader
-              icon={FaDollarSign}
-              title="Additional Information"
-              description="Tax, expiry, and other details"
-            />
-
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-              <FormInput
-                id="expiryDate"
-                name="expiryDate"
-                label="Expiry Date"
-                type="date"
-                value={product.expiryDate}
-                onChange={handleFieldChange}
-              />
-              <div></div> 
-            </div>
-          </section> */}
-
+       
           {/* Main Product Images */}
           <section>
             <SectionHeader
