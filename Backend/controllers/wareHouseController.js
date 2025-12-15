@@ -354,7 +354,11 @@ class wareHouseController {
         i.quantity, 
         i.expiry_date, 
         i.location, 
-        i.status,
+        CASE
+          WHEN i.quantity > 10 THEN 'Available'
+          WHEN i.quantity > 0 AND i.quantity <= 10 THEN 'Reserved'
+          ELSE 'Out of Stock'
+        END AS status,
         v.full_name,  
         w.name,  
         p.product_name, 
@@ -382,7 +386,7 @@ class wareHouseController {
 
       return res.json({
         success: true,
-        data:rows
+        data: rows,
       });
     } catch (error) {
       console.error("Error fetching inventory records:", error);
