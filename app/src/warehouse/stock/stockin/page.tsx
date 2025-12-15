@@ -17,7 +17,6 @@ interface StockEntry {
   passedQuantity: number;
   failedQuantity: number;
   stockInDate: string;
-  location: string;
   expiryDate?: string;
   status: "Pending" | "Sent";
 }
@@ -37,7 +36,6 @@ interface ApiStockRow {
   passed_quantity: number;
   failed_quantity: number;
   stock_in_date: string;
-  location: string;
   expiry_date?: string;
   status: "Pending" | "Sent";
 }
@@ -144,7 +142,6 @@ export default function StockInPage() {
           passedQuantity: row.passed_quantity,
           failedQuantity: row.failed_quantity,
           stockInDate: new Date(row.stock_in_date).toLocaleDateString(),
-          location: row.location,
           expiryDate: row.expiry_date
             ? new Date(row.expiry_date).toLocaleDateString()
             : "N/A",
@@ -314,7 +311,6 @@ export default function StockInPage() {
                 <th className="p-3 border">Passed Qty</th>
                 <th className="p-3 border">Failed Qty</th>
                 <th className="p-3 border">Stock-In Date</th>
-                <th className="p-3 border">Location</th>
                 <th className="p-3 border">Expiry</th>
                 <th className="p-3 border">Status</th>
                 <th className="p-3 border">Action</th>
@@ -340,7 +336,6 @@ export default function StockInPage() {
                     <td className="p-3 border">{row.passedQuantity}</td>
                     <td className="p-3 border">{row.failedQuantity}</td>
                     <td className="p-3 border">{row.stockInDate}</td>
-                    <td className="p-3 border">{row.location}</td>
                     <td className="p-3 border">{row.expiryDate || "N/A"}</td>
                     <td className="p-3 border">{row.status}</td>
                     <td className="p-3 border whitespace-nowrap flex space-x-2">

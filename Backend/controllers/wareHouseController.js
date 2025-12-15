@@ -113,7 +113,6 @@ class wareHouseController {
         s.passed_quantity,
         s.failed_quantity,
         s.stock_in_date,
-        s.location,
         s.expiry_date,
         s.status,
         p.product_name AS productName,
@@ -174,7 +173,6 @@ class wareHouseController {
         s.passed_quantity,
         s.failed_quantity,
         s.stock_in_date,
-        s.location,
         s.expiry_date,
         p.product_name AS productName,
         pv.sku AS sku,
@@ -259,7 +257,6 @@ class wareHouseController {
         passed_quantity,
         failed_quantity,
         stock_in_date,
-        location,
         expiry_date,
       } = req.body;
 
@@ -278,7 +275,6 @@ class wareHouseController {
         passed_quantity = ?,
         failed_quantity = ?,
         stock_in_date = ?,
-        location = ?,
         expiry_date = ?
       WHERE grn = ?
       `,
@@ -287,7 +283,6 @@ class wareHouseController {
           passed_quantity,
           failed_quantity,
           stock_in_date,
-          location,
           expiry_date || null,
           grn,
         ]
