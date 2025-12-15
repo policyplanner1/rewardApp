@@ -120,15 +120,9 @@ export default function StockAdjustmentPage() {
 
       {/* FORM */}
       <div className="p-6 space-y-4 bg-white shadow rounded-xl">
-        <input
-          type="date"
-          className="w-full p-3 border rounded-lg"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-        />
-
         {/* Product Search */}
         <div>
+          <label className="block text-sm font-medium text-gray-700">Product</label>
           <input
             type="text"
             className="w-full p-3 border rounded-lg"
@@ -160,38 +154,64 @@ export default function StockAdjustmentPage() {
           )}
         </div>
 
-        <input
-          type="number"
-          className="w-full p-3 border rounded-lg"
-          placeholder="Quantity"
-          value={quantity}
-          onChange={(e) => setQuantity(e.target.value)}
-        />
+        {/* Quantity */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Quantity</label>
+          <input
+            type="number"
+            className="w-full p-3 border rounded-lg"
+            placeholder="Quantity"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+          />
+        </div>
 
-        <select
-          className="w-full p-3 border rounded-lg"
-          value={adjustType}
-          onChange={(e) => setAdjustType(e.target.value)}
-        >
-          <option value="">Select Type</option>
-          <option value="Damage">Damage</option>
-          <option value="Return">Return</option>
-          <option value="Lost Item">Lost Item</option>
-        </select>
+        {/* Adjustment Type */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Adjustment Type</label>
+          <select
+            className="w-full p-3 border rounded-lg"
+            value={adjustType}
+            onChange={(e) => setAdjustType(e.target.value)}
+          >
+            <option value="">Select Type</option>
+            <option value="Damage">Damage</option>
+            <option value="Return">Return</option>
+            <option value="Lost Item">Lost Item</option>
+          </select>
+        </div>
 
-        <textarea
-          className="w-full p-3 border rounded-lg"
-          placeholder="Reason"
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-        />
+        {/* Reason */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Reason</label>
+          <textarea
+            className="w-full p-3 border rounded-lg"
+            placeholder="Reason"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          />
+        </div>
 
-        <button
-          onClick={addAdjustment}
-          className="px-6 py-3 bg-purple-600 text-white rounded-lg"
-        >
-          Add Adjustment
-        </button>
+        {/* Date */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Date</label>
+          <input
+            type="date"
+            className="w-full p-3 border rounded-lg"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        </div>
+
+        {/* Submit Button */}
+        <div>
+          <button
+            onClick={addAdjustment}
+            className="px-6 py-3 bg-purple-600 text-white rounded-lg"
+          >
+            Add Adjustment
+          </button>
+        </div>
       </div>
 
       {/* TABLE */}
@@ -224,3 +244,4 @@ export default function StockAdjustmentPage() {
     </div>
   );
 }
+  
