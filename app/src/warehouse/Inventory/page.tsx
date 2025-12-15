@@ -28,9 +28,8 @@ export default function InventoryMasterPage() {
           expiry: String(expiryFilter),
         });
 
-
         const res = await fetch(
-            `${API_BASE}/warehouse/inventory-record?${params.toString()}`,
+          `${API_BASE}/warehouse/inventory-record?${params.toString()}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -63,39 +62,45 @@ export default function InventoryMasterPage() {
   // CSV EXPORT FUNCTION
   // ===============================
   const exportCSV = () => {
+    if (inventoryData.length === 0) {
+      alert("No data to export");
+      return;
+    }
+
     const headers = [
       "Product",
       "SKU",
       "Vendor",
       "Warehouse",
-      "Stock",
+      "Quantity",
       "Location",
-      "Expiry",
+      "Expiry Date",
       "Status",
     ];
 
     const rows = inventoryData.map((item) => [
-      item.product,
+      item.product_name,
       item.sku,
-      item.vendor,
-      item.warehouse,
-      item.stock,
+      item.full_name,
+      item.name,
+      item.quantity,
       item.location,
-      item.expiry,
+      item.expiry_date
+        ? new Date(item.expiry_date).toLocaleDateString("en-GB")
+        : "N/A",
       item.status,
     ]);
 
     let csvContent = "data:text/csv;charset=utf-8,";
-
     csvContent += headers.join(",") + "\n";
+
     rows.forEach((row) => {
-      csvContent += row.join(",") + "\n";
+      csvContent += row.map((v) => `"${v ?? ""}"`).join(",") + "\n";
     });
 
-    const encodedURI = encodeURI(csvContent);
     const link = document.createElement("a");
-    link.href = encodedURI;
-    link.download = "inventory_export.csv";
+    link.href = encodeURI(csvContent);
+    link.download = `inventory_${Date.now()}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
