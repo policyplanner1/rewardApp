@@ -34,6 +34,14 @@ router.put(
   wareHouseController.updateStockIn
 );
 
+// stock adjustment record update
+router.post(
+  "/stock-adjustments",
+  authenticateToken,
+  authorizeRoles("warehouse_manager"),
+  wareHouseController.stockAdjustment
+);
+
 
 /**************************************warehouses****************************************************/
 // get all created ware Houses

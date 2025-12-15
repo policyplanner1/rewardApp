@@ -94,11 +94,16 @@ export default function StockAdjustmentPage() {
       reason,
     };
 
+    const token = localStorage.getItem("token");
+
     try {
-      const res = await fetch(`${API_BASE}/api/stock-adjustments`, {
+      const res = await fetch(`${API_BASE}/api/warehouse/stock-adjustments`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),  
       });
 
       const result = await res.json();

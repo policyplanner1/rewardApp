@@ -1,5 +1,6 @@
 const db = require("../config/database");
 
+// generate random grn number
 const generateGRN = () => {
   const date = new Date();
 
@@ -81,6 +82,7 @@ class wareHouseController {
     }
   }
 
+  // fetch all warehouse List
   async allWareHouses(req, res) {
     try {
       const [rows] = await db.execute(` SELECT * from warehouses;`);
@@ -342,6 +344,7 @@ class wareHouseController {
     }
   }
 
+  // fetch all the inventory record
   async getInventoryRecord(req, res) {
     try {
       const { search = "", lowStock = "false", expiry = "false" } = req.query;
@@ -349,7 +352,7 @@ class wareHouseController {
       let whereClauses = [];
       let params = [];
 
-      // 🔍 Search filter
+      // Search filter
       if (search) {
         whereClauses.push(`
         (
@@ -361,12 +364,12 @@ class wareHouseController {
         params.push(`%${search}%`, `%${search}%`, `%${search}%`);
       }
 
-      // 📉 Low stock filter
+      // Low stock filter
       if (lowStock === "true") {
         whereClauses.push(`i.quantity < 10`);
       }
 
-      // ⏰ Expiry filter (next 30 days)
+      // Expiry filter (next 30 days)
       if (expiry === "true") {
         whereClauses.push(`
         i.expiry_date IS NOT NULL
@@ -418,11 +421,12 @@ class wareHouseController {
     }
   }
 
+  // search listed product item by name in Inventory
   async searchInventory(req, res) {
     try {
       const { query } = req.query;
 
-      console.log(query,"query")
+      console.log(query, "query");
 
       if (!query) {
         return res.json({ success: true, data: [] });
@@ -457,6 +461,94 @@ class wareHouseController {
     } catch (err) {
       console.error("Error searching products:", err);
       res.status(500).json({ success: false, message: err.message });
+    }
+  }
+
+  // create stock adjustment record
+  async stockAdjustment(req, res) {
+    let connection;
+    try {
+      connection = await db.getConnection();
+      await connection.beginTransaction();
+
+      const { inventory_id, quantity, adjustment_type, reason, date } =
+        req.body;
+
+      // Validate the input data
+      if (!inventory_id || !quantity || !adjustment_type || !reason || !date) {
+        return res
+          .status(400)
+          .json({ success: false, message: "All fields are required" });
+      }
+
+      if (quantity <= 0) {
+        return res
+          .status(400)
+          .json({
+            success: false,
+            message: "Quantity must be a positive number",
+          });
+      }
+
+      // Get current stock and lock row for update
+      const [inventoryRows] = await connection.query(
+        "SELECT quantity FROM inventory WHERE inventory_id = ? FOR UPDATE",
+        [inventory_id]
+      );
+
+      if (inventoryRows.length === 0) {
+        await connection.rollback();
+        return res
+          .status(404)
+          .json({ success: false, message: "Inventory not found" });
+      }
+
+      let currentQty = inventoryRows[0].quantity;
+      let newQty = currentQty;
+
+      // Adjust the quantity based on the adjustment type
+      if (adjustment_type === "OUT") {
+        newQty -= quantity;
+        if (newQty < 0) {
+          await connection.rollback();
+          return res
+            .status(400)
+            .json({ success: false, message: "Insufficient stock" });
+        }
+      } else if (adjustment_type === "IN") {
+        newQty += quantity;
+      } else {
+        // Invalid adjustment type
+        await connection.rollback();
+        return res
+          .status(400)
+          .json({ success: false, message: "Invalid adjustment type" });
+      }
+
+      // Update the inventory quantity
+      await connection.query(
+        "UPDATE inventory SET quantity = ? WHERE inventory_id = ?",
+        [newQty, inventory_id]
+      );
+
+      // Insert the stock adjustment record
+      await connection.query(
+        "INSERT INTO stock_adjustments (inventory_id, quantity, adjustment_type, reason, adjusted_date) VALUES (?, ?, ?, ?, ?)",
+        [inventory_id, quantity, adjustment_type, reason, date]
+      );
+
+      // Commit transaction
+      await connection.commit();
+      return res.json({
+        success: true,
+        message: "Stock adjusted successfully",
+      });
+    } catch (err) {
+      if (connection) await connection.rollback(); 
+      console.error("stock adjustment Error:", err);
+      return res.status(500).json({ success: false, message: err.message });
+    } finally {
+      if (connection) connection.release(); 
     }
   }
 }
