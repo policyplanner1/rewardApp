@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FaEye, FaEdit, FaPaperPlane } from "react-icons/fa";
+
+const API_BASE = "http://localhost:5000";
 
 // Types
 interface StockEntry {
@@ -20,6 +22,21 @@ interface StockEntry {
   status: "Pending" | "Sent";
 }
 
+interface ApiStockRow {
+  grn: string;
+  sku: string;
+  productName: string;
+  vendorName: string;
+  categoryName: string;
+  total_quantity: number;
+  passed_quantity: number;
+  failed_quantity: number;
+  stock_in_date: string;
+  location: string;
+  expiry_date?: string;
+  status: "Pending" | "Sent";
+}
+
 export default function StockInPage() {
   const router = useRouter();
 
@@ -28,57 +45,108 @@ export default function StockInPage() {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const itemsPerPage = 5; // Adjust items per page
 
-  const [tableData, setTableData] = useState<StockEntry[]>([
-    {
-      grn: "GRN-2025-001",
-      sku: "BW-455",
-      vendorName: "Vendor A",
-      productName: "Blue Widget",
-      category: "Widgets",
-      totalQuantity: 50,
-      passedQuantity: 45,
-      failedQuantity: 5,
-      stockInDate: "10/12/2025",
-      location: "Rack-4",
-      expiryDate: "2026-12-01",
-      status: "Pending",
-    },
-    {
-      grn: "GRN-2025-002",
-      sku: "RG-228",
-      vendorName: "Vendor B",
-      productName: "Red Gadget",
-      category: "Gadgets",
-      totalQuantity: 30,
-      passedQuantity: 30,
-      failedQuantity: 0,
-      stockInDate: "11/12/2025",
-      location: "Rack-2",
-      expiryDate: "2026-11-15",
-      status: "Sent",
-    },
-    // Add more dummy entries for testing pagination
-  ]);
+  const [tableData, setTableData] = useState<StockEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // fetch table Data
+  useEffect(() => {
+    fetchStockInList();
+  }, [activeTab]);
+
+  const fetchStockInList = async () => {
+    try {
+      setLoading(true);
+
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(
+        `${API_BASE}/api/warehouse/stock-in?status=${activeTab}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const data = await res.json();
+      
+      setTableData(
+        data.data.map((row: ApiStockRow) => ({
+          grn: row.grn,
+          sku: row.sku,
+          vendorName: row.vendorName,
+          productName: row.productName,
+          category: row.categoryName,
+          totalQuantity: row.total_quantity,
+          passedQuantity: row.passed_quantity,
+          failedQuantity: row.failed_quantity,
+          stockInDate: new Date(row.stock_in_date).toLocaleDateString(),
+          location: row.location,
+          expiryDate: row.expiry_date
+            ? new Date(row.expiry_date).toLocaleDateString()
+            : "N/A",
+          status: row.status,
+        }))
+      );
+    } catch (err) {
+      console.error("Failed to fetch stock-in list", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter based on search and active tab
-  const filteredData = tableData.filter(
-    (row) =>
+  const filteredData = tableData.filter((row) => {
+    const q = search.toLowerCase();
+
+    return (
       row.status === activeTab &&
-      (row.productName.toLowerCase().includes(search.toLowerCase()) ||
-        row.vendorName.toLowerCase().includes(search.toLowerCase()) ||
-        row.grn.toLowerCase().includes(search.toLowerCase()) ||
-        row.sku.toLowerCase().includes(search.toLowerCase()))
-  );
+      (row.productName?.toLowerCase().includes(q) ||
+        row.vendorName?.toLowerCase().includes(q) ||
+        row.grn?.toLowerCase().includes(q) ||
+        row.sku?.toLowerCase().includes(q))
+    );
+  });
 
   // Pagination logic
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedData = filteredData.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
-  const sendToInventory = (grn: string) => {
-    setTableData((prev) =>
-      prev.map((row) => (row.grn === grn ? { ...row, status: "Sent" } : row))
-    );
+  const sendToInventory = async (grn: string) => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(`${API_BASE}/api/warehouse/send-to-inventory`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ grn }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || "Failed to send to inventory");
+      }
+
+      // setTableData((prev) =>
+      //   prev.map((row) => (row.grn === grn ? { ...row, status: "Sent" } : row))
+      // );
+    } catch (error) {
+      console.error("Send to inventory failed:", error);
+      alert("Failed to send stock to inventory. Please try again.");
+    }
+  };
+
+  const handleSendToInventory = async (grn: string) => {
+    await sendToInventory(grn);
+    await fetchStockInList();
   };
 
   return (
@@ -138,7 +206,8 @@ export default function StockInPage() {
       {/* Table container */}
       <div className="bg-white shadow rounded-xl mt-4">
         <h2 className="p-6 text-xl font-semibold">
-          {activeTab === "Pending" ? "Pending Inventory" : "Sent to Inventory"} Records
+          {activeTab === "Pending" ? "Pending Inventory" : "Sent to Inventory"}{" "}
+          Records
         </h2>
 
         {/* Scrollable table ONLY */}
@@ -158,14 +227,14 @@ export default function StockInPage() {
                 <th className="p-3 border">Location</th>
                 <th className="p-3 border">Expiry</th>
                 <th className="p-3 border">Status</th>
-                <th className="p-3 border">Actions</th>
+                <th className="p-3 border">Action</th>
               </tr>
             </thead>
 
             <tbody>
               {paginatedData.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="p-4 text-center text-gray-500">
+                  <td colSpan={14} className="p-4 text-center text-gray-500">
                     No records found.
                   </td>
                 </tr>
@@ -188,7 +257,9 @@ export default function StockInPage() {
                       <button
                         className="text-purple-600 hover:text-purple-800"
                         onClick={() =>
-                          router.push(`/src/warehouse/stock/stockview?grn=${row.grn}`)
+                          router.push(
+                            `/src/warehouse/stock/stockview?grn=${row.grn}`
+                          )
                         }
                       >
                         <FaEye className="h-5 w-5" />
@@ -196,7 +267,9 @@ export default function StockInPage() {
                       <button
                         className="text-green-600 hover:text-green-800"
                         onClick={() =>
-                          router.push(`/src/warehouse/stock/stockedit?grn=${row.grn}`)
+                          router.push(
+                            `/src/warehouse/stock/stockedit?grn=${row.grn}`
+                          )
                         }
                       >
                         <FaEdit className="h-5 w-5" />
@@ -204,7 +277,7 @@ export default function StockInPage() {
                       {activeTab === "Pending" && (
                         <button
                           className="text-blue-600 hover:text-blue-800"
-                          onClick={() => sendToInventory(row.grn)}
+                          onClick={() => handleSendToInventory(row.grn)}
                         >
                           <FaPaperPlane className="h-5 w-5" />
                         </button>

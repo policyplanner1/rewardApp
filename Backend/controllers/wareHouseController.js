@@ -104,10 +104,10 @@ class wareHouseController {
           s.expiry_date,
           s.status,
           p.product_name AS productName,
-          p.sku,
           COALESCE(c.category_name, p.custom_category) AS categoryName,
           v.full_name AS vendorName,
-          u.name as WarehousemanagerName
+          u.name as WarehousemanagerName,
+          pv.sku as sku
 
           FROM stock_in_entries s
           JOIN products p ON s.product_id = p.product_id
@@ -115,7 +115,7 @@ class wareHouseController {
           LEFT JOIN categories c ON p.category_id = c.category_id
           LEFT JOIN sub_categories sc ON p.subcategory_id = sc.subcategory_id
           LEFT JOIN sub_sub_categories ssc ON p.sub_subcategory_id = ssc.sub_subcategory_id
-
+          LEFT JOIN product_variants pv on s.variant_id = pv.variant_id
           JOIN vendors v ON p.vendor_id = v.vendor_id
           JOIN users u ON s.warehousemanager_id = u.user_id
 
@@ -128,6 +128,45 @@ class wareHouseController {
     } catch (err) {
       console.error("Fetching stock record Error:", err);
       return res.status(500).json({ success: false, message: err.message });
+    }
+  }
+
+  // send to Inventory
+  async sendToInventory(req, res) {
+    const { grn } = req.body;
+
+    if (!grn) {
+      return res.status(400).json({
+        success: false,
+        message: "GRN is required",
+      });
+    }
+
+    try {
+      const [result] = await db.query(
+        `UPDATE stock_in
+        SET status = 'Sent'
+        WHERE grn = ? AND status = 'Pending'`,
+        [grn]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Stock not found or already sent",
+        });
+      }
+
+      return res.json({
+        success: true,
+        message: "Stock sent to inventory successfully",
+      });
+    } catch (error) {
+      console.error("Send to inventory error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
     }
   }
 }
