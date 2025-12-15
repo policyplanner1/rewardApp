@@ -42,7 +42,7 @@ interface ApiStockRow {
 
 interface Props {
   onClose: () => void;
-  onSubmit: (warehouseId: number) => void;
+  onSubmit: (warehouseId: number, location: string) => void;
 }
 
 function SendToInventoryModal({ onClose, onSubmit }: Props) {
@@ -50,6 +50,7 @@ function SendToInventoryModal({ onClose, onSubmit }: Props) {
   const [selectedWarehouse, setSelectedWarehouse] = useState<number | null>(
     null
   );
+  const [location, setLocation] = useState<string>("");
 
   useEffect(() => {
     const fetchWarehouses = async () => {
@@ -81,12 +82,25 @@ function SendToInventoryModal({ onClose, onSubmit }: Props) {
           ))}
         </select>
 
+        <div>
+          <label className="font-medium">Location</label>
+          <input
+            type="text"
+            className="w-full p-3 border rounded mt-1"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="Enter location"
+          />
+        </div>
+
         <div className="flex justify-end space-x-2">
           <button onClick={onClose} className="px-4 py-2 border rounded">
             Cancel
           </button>
           <button
-            onClick={() => selectedWarehouse && onSubmit(selectedWarehouse)}
+            onClick={() =>
+              selectedWarehouse && onSubmit(selectedWarehouse, location)
+            }
             className="px-4 py-2 bg-purple-600 text-white rounded"
           >
             Send
@@ -176,30 +190,6 @@ export default function StockInPage() {
     startIndex + itemsPerPage
   );
 
-  const sendToInventory = async (grn: string) => {
-    try {
-      const token = localStorage.getItem("token");
-
-      const res = await fetch(`${API_BASE}/api/warehouse/send-to-inventory`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ grn }),
-      });
-
-      const result = await res.json();
-
-      if (!res.ok || !result.success) {
-        throw new Error(result.message || "Failed to send to inventory");
-      }
-    } catch (error) {
-      console.error("Send to inventory failed:", error);
-      alert("Failed to send stock to inventory. Please try again.");
-    }
-  };
-
   const handleOpenModal = (grn: string) => {
     setSelectedGRN(grn);
     setIsModalOpen(true);
@@ -217,7 +207,11 @@ export default function StockInPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ grn: selectedGRN, warehouse_id: warehouseId }),
+        body: JSON.stringify({
+          grn: selectedGRN,
+          warehouse_id: warehouseId,
+          location,
+        }),
       });
 
       const result = await res.json();
@@ -339,7 +333,6 @@ export default function StockInPage() {
                     <td className="p-3 border">{row.expiryDate || "N/A"}</td>
                     <td className="p-3 border">{row.status}</td>
                     <td className="p-3 border whitespace-nowrap flex space-x-2">
-
                       {/* view */}
                       <button
                         className="text-purple-600 hover:text-purple-800"
@@ -352,7 +345,7 @@ export default function StockInPage() {
                         <FaEye className="h-5 w-5" />
                       </button>
 
-                        {/* Edit */}
+                      {/* Edit */}
                       {activeTab === "Pending" && (
                         <button
                           className="text-green-600 hover:text-green-800"
