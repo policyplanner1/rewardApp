@@ -54,7 +54,7 @@ function SendToInventoryModal({ onClose, onSubmit }: Props) {
   useEffect(() => {
     const fetchWarehouses = async () => {
       const token = localStorage.getItem("token");
-      const res = await fetch( `${API_BASE}/api/warehouse/all-warehouses`, {
+      const res = await fetch(`${API_BASE}/api/warehouse/all-warehouses`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -339,6 +339,8 @@ export default function StockInPage() {
                     <td className="p-3 border">{row.expiryDate || "N/A"}</td>
                     <td className="p-3 border">{row.status}</td>
                     <td className="p-3 border whitespace-nowrap flex space-x-2">
+
+                      {/* view */}
                       <button
                         className="text-purple-600 hover:text-purple-800"
                         onClick={() =>
@@ -349,16 +351,22 @@ export default function StockInPage() {
                       >
                         <FaEye className="h-5 w-5" />
                       </button>
-                      <button
-                        className="text-green-600 hover:text-green-800"
-                        onClick={() =>
-                          router.push(
-                            `/src/warehouse/stock/stockedit?grn=${row.grn}`
-                          )
-                        }
-                      >
-                        <FaEdit className="h-5 w-5" />
-                      </button>
+
+                        {/* Edit */}
+                      {activeTab === "Pending" && (
+                        <button
+                          className="text-green-600 hover:text-green-800"
+                          onClick={() =>
+                            router.push(
+                              `/src/warehouse/stock/stockedit?grn=${row.grn}`
+                            )
+                          }
+                        >
+                          <FaEdit className="h-5 w-5" />
+                        </button>
+                      )}
+
+                      {/* send to inventory */}
                       {activeTab === "Pending" && (
                         <button
                           className="text-blue-600 hover:text-blue-800"
