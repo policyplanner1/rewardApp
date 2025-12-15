@@ -341,6 +341,54 @@ class wareHouseController {
       res.status(500).json({ success: false, message: err.message });
     }
   }
+
+  async getInventoryRecord(req, res) {
+    try {
+      const sqlQuery = `
+      SELECT 
+        i.inventory_id, 
+        i.product_id, 
+        i.vendor_id, 
+        i.variant_id, 
+        i.warehouse_id, 
+        i.quantity, 
+        i.expiry_date, 
+        i.location, 
+        i.status,
+        v.full_name,  
+        w.name,  
+        p.product_name, 
+        pv.sku 
+      FROM 
+        inventory i
+      JOIN 
+        vendors v ON i.vendor_id = v.vendor_id
+      JOIN 
+        warehouses w ON i.warehouse_id = w.warehouse_id
+      JOIN 
+        products p ON i.product_id = p.product_id
+      LEFT JOIN 
+        product_variants pv ON i.variant_id = pv.variant_id
+      ORDER BY 
+        i.inventory_id;
+    `;
+
+      // Execute the query
+      const [rows] = await db.query(sqlQuery);
+
+      if (rows.length === 0) {
+        return res.status(404).json({ message: "No inventory records found." });
+      }
+
+      return res.json({
+        success: true,
+        data:rows
+      });
+    } catch (error) {
+      console.error("Error fetching inventory records:", error);
+      res.status(500).json({ message: "Error fetching inventory records" });
+    }
+  }
 }
 
 module.exports = new wareHouseController();

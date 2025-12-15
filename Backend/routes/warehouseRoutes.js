@@ -12,7 +12,12 @@ router.post(
 );
 
 // get all created ware Houses
-router.get('/all-warehouses',authenticateToken,authorizeRoles('warehouse_manager'),wareHouseController.allWareHouses)
+router.get(
+  "/all-warehouses",
+  authenticateToken,
+  authorizeRoles("warehouse_manager"),
+  wareHouseController.allWareHouses
+);
 
 // get all the record data
 router.get(
@@ -28,6 +33,14 @@ router.put(
   authenticateToken,
   authorizeRoles("warehouse_manager"),
   wareHouseController.sendToInventory
+);
+
+// fetch inventory record
+router.get(
+  "/inventory-record",
+  authenticateToken,
+  authorizeRoles("warehouse_manager"),
+  wareHouseController.getInventoryRecord
 );
 
 // get single stock detail
