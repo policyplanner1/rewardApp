@@ -21,8 +21,16 @@ export default function InventoryMasterPage() {
       setLoading(true);
       try {
         const token = localStorage.getItem("token");
+
+        const params = new URLSearchParams({
+          search,
+          lowStock: String(lowStockFilter),
+          expiry: String(expiryFilter),
+        });
+
+
         const res = await fetch(
-          `${API_BASE}/warehouse/inventory-record?search=${search}&lowStock=${lowStockFilter}&expiry=${expiryFilter}`,
+            `${API_BASE}/warehouse/inventory-record?${params.toString()}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }

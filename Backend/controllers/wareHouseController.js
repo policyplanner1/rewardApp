@@ -344,45 +344,66 @@ class wareHouseController {
 
   async getInventoryRecord(req, res) {
     try {
+      const { search = "", lowStock = "false", expiry = "false" } = req.query;
+
+      let whereClauses = [];
+      let params = [];
+
+      // 🔍 Search filter
+      if (search) {
+        whereClauses.push(`
+        (
+          p.product_name LIKE ?
+          OR v.full_name LIKE ?
+          OR pv.sku LIKE ?
+        )
+      `);
+        params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      }
+
+      // 📉 Low stock filter
+      if (lowStock === "true") {
+        whereClauses.push(`i.quantity < 10`);
+      }
+
+      // ⏰ Expiry filter (next 30 days)
+      if (expiry === "true") {
+        whereClauses.push(`
+        i.expiry_date IS NOT NULL
+        AND i.expiry_date <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+      `);
+      }
+
+      const whereSQL =
+        whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
+
       const sqlQuery = `
       SELECT 
-        i.inventory_id, 
-        i.product_id, 
-        i.vendor_id, 
-        i.variant_id, 
-        i.warehouse_id, 
-        i.quantity, 
-        i.expiry_date, 
-        i.location, 
+        i.inventory_id,
+        i.quantity,
+        i.expiry_date,
+        i.location,
+
         CASE
           WHEN i.quantity > 10 THEN 'Available'
-          WHEN i.quantity > 0 AND i.quantity <= 10 THEN 'Reserved'
+          WHEN i.quantity > 0 THEN 'Reserved'
           ELSE 'Out of Stock'
         END AS status,
-        v.full_name,  
-        w.name,  
-        p.product_name, 
-        pv.sku 
-      FROM 
-        inventory i
-      JOIN 
-        vendors v ON i.vendor_id = v.vendor_id
-      JOIN 
-        warehouses w ON i.warehouse_id = w.warehouse_id
-      JOIN 
-        products p ON i.product_id = p.product_id
-      LEFT JOIN 
-        product_variants pv ON i.variant_id = pv.variant_id
-      ORDER BY 
-        i.inventory_id;
+
+        p.product_name,
+        pv.sku,
+        v.full_name,
+        w.name
+      FROM inventory i
+      JOIN products p ON i.product_id = p.product_id
+      JOIN vendors v ON i.vendor_id = v.vendor_id
+      JOIN warehouses w ON i.warehouse_id = w.warehouse_id
+      LEFT JOIN product_variants pv ON i.variant_id = pv.variant_id
+      ${whereSQL}
+      ORDER BY i.inventory_id DESC;
     `;
 
-      // Execute the query
-      const [rows] = await db.query(sqlQuery);
-
-      if (rows.length === 0) {
-        return res.status(404).json({ message: "No inventory records found." });
-      }
+      const [rows] = await db.query(sqlQuery, params);
 
       return res.json({
         success: true,
@@ -390,7 +411,10 @@ class wareHouseController {
       });
     } catch (error) {
       console.error("Error fetching inventory records:", error);
-      res.status(500).json({ message: "Error fetching inventory records" });
+      res.status(500).json({
+        success: false,
+        message: "Error fetching inventory records",
+      });
     }
   }
 }
