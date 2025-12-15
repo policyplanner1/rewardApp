@@ -205,7 +205,7 @@ class wareHouseController {
 
     try {
       const [result] = await db.query(
-        `UPDATE stock_in
+        `UPDATE stock_in_entries
         SET status = 'Sent'
         WHERE grn = ? AND status = 'Pending'`,
         [grn]
