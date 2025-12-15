@@ -42,7 +42,7 @@ interface ApiStockRow {
 
 interface Props {
   onClose: () => void;
-  onSubmit: (warehouseId: number, location: string) => void;
+  onSubmit: (warehouseId: number, warehouseLocation: string) => void;
 }
 
 function SendToInventoryModal({ onClose, onSubmit }: Props) {
@@ -50,7 +50,7 @@ function SendToInventoryModal({ onClose, onSubmit }: Props) {
   const [selectedWarehouse, setSelectedWarehouse] = useState<number | null>(
     null
   );
-  const [location, setLocation] = useState<string>("");
+  const [warehouseLocation, setWarehouseLocation] = useState<string>("");
 
   useEffect(() => {
     const fetchWarehouses = async () => {
@@ -87,8 +87,8 @@ function SendToInventoryModal({ onClose, onSubmit }: Props) {
           <input
             type="text"
             className="w-full p-3 border rounded mt-1"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
+            value={warehouseLocation}
+            onChange={(e) => setWarehouseLocation(e.target.value)}
             placeholder="Enter location"
           />
         </div>
@@ -99,7 +99,8 @@ function SendToInventoryModal({ onClose, onSubmit }: Props) {
           </button>
           <button
             onClick={() =>
-              selectedWarehouse && onSubmit(selectedWarehouse, location)
+              selectedWarehouse &&
+              onSubmit(selectedWarehouse, warehouseLocation)
             }
             className="px-4 py-2 bg-purple-600 text-white rounded"
           >
@@ -195,7 +196,7 @@ export default function StockInPage() {
     setIsModalOpen(true);
   };
 
-  const handleSendToInventory = async (warehouseId: number) => {
+  const handleSendToInventory = async (warehouseId: number, warehouseLocation: string) => {
     if (!selectedGRN) return;
 
     try {
@@ -210,7 +211,7 @@ export default function StockInPage() {
         body: JSON.stringify({
           grn: selectedGRN,
           warehouse_id: warehouseId,
-          location,
+          warehouseLocation: warehouseLocation,
         }),
       });
 
