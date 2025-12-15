@@ -22,6 +22,11 @@ interface StockEntry {
   status: "Pending" | "Sent";
 }
 
+interface Warehouse {
+  warehouse_id: number;
+  name: string;
+}
+
 interface ApiStockRow {
   grn: string;
   sku: string;
@@ -37,13 +42,71 @@ interface ApiStockRow {
   status: "Pending" | "Sent";
 }
 
+interface Props {
+  onClose: () => void;
+  onSubmit: (warehouseId: number) => void;
+}
+
+function SendToInventoryModal({ onClose, onSubmit }: Props) {
+  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [selectedWarehouse, setSelectedWarehouse] = useState<number | null>(
+    null
+  );
+
+  useEffect(() => {
+    const fetchWarehouses = async () => {
+      const token = localStorage.getItem("token");
+      const res = await fetch( `${API_BASE}/api/warehouse/all-warehouses`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+
+      setWarehouses(data.rows || []);
+    };
+    fetchWarehouses();
+  }, []);
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+      <div className="bg-white p-6 rounded-lg w-96 space-y-4">
+        <h2 className="text-xl font-semibold">Select Warehouse</h2>
+        <select
+          className="w-full p-3 border rounded"
+          value={selectedWarehouse || ""}
+          onChange={(e) => setSelectedWarehouse(Number(e.target.value))}
+        >
+          <option value="">Select Warehouse</option>
+          {warehouses.map((wh) => (
+            <option key={wh.warehouse_id} value={wh.warehouse_id}>
+              {wh.name}
+            </option>
+          ))}
+        </select>
+
+        <div className="flex justify-end space-x-2">
+          <button onClick={onClose} className="px-4 py-2 border rounded">
+            Cancel
+          </button>
+          <button
+            onClick={() => selectedWarehouse && onSubmit(selectedWarehouse)}
+            className="px-4 py-2 bg-purple-600 text-white rounded"
+          >
+            Send
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function StockInPage() {
   const router = useRouter();
-
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedGRN, setSelectedGRN] = useState<string | null>(null);
   const [search, setSearch] = useState<string>("");
   const [activeTab, setActiveTab] = useState<"Pending" | "Sent">("Pending");
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const itemsPerPage = 5; // Adjust items per page
+  const itemsPerPage = 5;
 
   const [tableData, setTableData] = useState<StockEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -134,19 +197,46 @@ export default function StockInPage() {
       if (!res.ok || !result.success) {
         throw new Error(result.message || "Failed to send to inventory");
       }
-
-      // setTableData((prev) =>
-      //   prev.map((row) => (row.grn === grn ? { ...row, status: "Sent" } : row))
-      // );
     } catch (error) {
       console.error("Send to inventory failed:", error);
       alert("Failed to send stock to inventory. Please try again.");
     }
   };
 
-  const handleSendToInventory = async (grn: string) => {
-    await sendToInventory(grn);
-    await fetchStockInList();
+  const handleOpenModal = (grn: string) => {
+    setSelectedGRN(grn);
+    setIsModalOpen(true);
+  };
+
+  const handleSendToInventory = async (warehouseId: number) => {
+    if (!selectedGRN) return;
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(`${API_BASE}/api/warehouse/send-to-inventory`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ grn: selectedGRN, warehouse_id: warehouseId }),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.message || "Failed to send stock");
+      }
+
+      alert("Stock sent to inventory successfully!");
+      setIsModalOpen(false);
+      setSelectedGRN(null);
+      await fetchStockInList();
+    } catch (error) {
+      console.error(error);
+      alert("Failed to send stock to inventory. Please try again.");
+    }
   };
 
   return (
@@ -277,7 +367,7 @@ export default function StockInPage() {
                       {activeTab === "Pending" && (
                         <button
                           className="text-blue-600 hover:text-blue-800"
-                          onClick={() => handleSendToInventory(row.grn)}
+                          onClick={() => handleOpenModal(row.grn)}
                         >
                           <FaPaperPlane className="h-5 w-5" />
                         </button>
@@ -323,6 +413,13 @@ export default function StockInPage() {
           </div>
         )}
       </div>
+
+      {isModalOpen && (
+        <SendToInventoryModal
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleSendToInventory}
+        />
+      )}
     </div>
   );
 }
