@@ -15,7 +15,6 @@ interface StockEntry {
   passedQuantity: number;
   failedQuantity: number;
   stockInDate: string;
-  location: string;
   expiryDate?: string;
 }
 
@@ -58,7 +57,6 @@ export default function StockInViewPage() {
           passedQuantity: result.data.passed_quantity,
           failedQuantity: result.data.failed_quantity,
           stockInDate: formatDateForInput(result.data.stock_in_date),
-          location: result.data.location,
           expiryDate: formatDateForInput(result.data.expiry_date)
         });
       } catch (err) {
@@ -92,12 +90,6 @@ export default function StockInViewPage() {
           <Input
             label="Stock-In Date"
             value={stockEntry.stockInDate}
-            type="date"
-          />
-          <Input label="Rack / Bin Location" value={stockEntry.location} />
-          <Input
-            label="Expiry Date"
-            value={stockEntry.expiryDate || ""}
             type="date"
           />
         </div>

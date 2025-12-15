@@ -15,7 +15,6 @@ interface StockEntry {
   passed_quantity: number;
   failed_quantity: number;
   stock_in_date: string;
-  location: string;
   expiry_date?: string;
 }
 
@@ -34,7 +33,6 @@ export default function StockInEditPage() {
   const [passedQuantity, setPassedQuantity] = useState(0);
   const [failedQuantity, setFailedQuantity] = useState(0);
   const [stockInDate, setStockInDate] = useState("");
-  const [location, setLocation] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
 
   // 🔹 Fetch stock by GRN
@@ -59,7 +57,6 @@ export default function StockInEditPage() {
         setPassedQuantity(Number(data.passed_quantity));
         setFailedQuantity(Number(data.failed_quantity));
         setStockInDate(formatDate(data.stock_in_date));
-        setLocation(data.location);
         setExpiryDate(formatDate(data.expiry_date));
       } catch (err) {
         console.error("Fetch stock failed:", err);
@@ -99,7 +96,6 @@ export default function StockInEditPage() {
           passed_quantity: passed,
           failed_quantity: failed,
           stock_in_date: stockInDate,
-          location,
           expiry_date: expiryDate || null,
         }),
       });
@@ -135,7 +131,6 @@ export default function StockInEditPage() {
           <Editable label="Failed Quantity" value={failedQuantity} set={setFailedQuantity} type="number" />
 
           <Editable label="Stock-In Date" value={stockInDate} set={setStockInDate} type="date" />
-          <Editable label="Rack / Bin Location" value={location} set={setLocation} />
           <Editable label="Expiry Date" value={expiryDate} set={setExpiryDate} type="date" />
         </div>
 
