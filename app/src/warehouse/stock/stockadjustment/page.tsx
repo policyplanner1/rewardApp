@@ -101,9 +101,9 @@ export default function StockAdjustmentPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(payload),  
+        body: JSON.stringify(payload),
       });
 
       const result = await res.json();
@@ -135,6 +135,7 @@ export default function StockAdjustmentPage() {
       setQuantity("");
       setAdjustType("");
       setReason("");
+      alert("Stock count updated");
     } catch (err) {
       console.error("Failed to add adjustment", err);
       alert("Failed to add adjustment. Please try again.");
