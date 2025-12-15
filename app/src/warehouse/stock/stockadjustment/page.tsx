@@ -34,8 +34,7 @@ export default function StockAdjustmentPage() {
   const [date, setDate] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [inventoryList, setInventoryList] = useState<InventoryItem[]>([]);
-  const [selectedInventory, setSelectedInventory] =
-    useState<InventoryItem | null>(null);
+  const [selectedInventory, setSelectedInventory] = useState<InventoryItem | null>(null);
   const [quantity, setQuantity] = useState("");
   const [adjustType, setAdjustType] = useState("");
   const [reason, setReason] = useState("");
@@ -55,12 +54,9 @@ export default function StockAdjustmentPage() {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(
-        `${API_BASE}/api/warehouse/search?query=${search}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await fetch(`${API_BASE}/api/warehouse/search?query=${search}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const data = await res.json();
 
       if (data.success) {
@@ -68,6 +64,26 @@ export default function StockAdjustmentPage() {
       }
     } catch (err) {
       console.error("Failed to fetch inventory", err);
+    }
+  };
+
+  // ============================
+  // Fetch Existing Adjustments
+  // ============================
+  const fetchAdjustments = async () => {
+    const token = localStorage.getItem("token");
+
+    try {
+      const res = await fetch(`${API_BASE}/api/warehouse/stock-adjustments`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        setTableData(data.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch adjustments", err);
     }
   };
 
@@ -142,6 +158,11 @@ export default function StockAdjustmentPage() {
     }
   };
 
+  // Fetch existing adjustments when the component mounts
+  useEffect(() => {
+    fetchAdjustments();
+  }, []);
+
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-3xl font-bold">Warehouse Stock Adjustment</h1>
@@ -183,7 +204,7 @@ export default function StockAdjustmentPage() {
                     Vendor: {item.vendor_name} | WH: {item.warehouse_name}
                   </div>
                   <div className="text-sm text-gray-400">
-                    Qty: {item.quantity} | {item.location}
+                    Quantity: {item.quantity} | {item.location}
                   </div>
                 </div>
               ))}
@@ -267,7 +288,7 @@ export default function StockAdjustmentPage() {
               <th className="p-3 border">Date</th>
               <th className="p-3 border">Product</th>
               <th className="p-3 border">SKU</th>
-              <th className="p-3 border">Qty</th>
+              <th className="p-3 border">Quantity</th>
               <th className="p-3 border">Type</th>
               <th className="p-3 border">Reason</th>
             </tr>

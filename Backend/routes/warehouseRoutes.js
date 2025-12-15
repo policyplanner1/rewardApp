@@ -42,6 +42,13 @@ router.post(
   wareHouseController.stockAdjustment
 );
 
+// fetch adjusted record
+router.get(
+  "/stock-adjustments",
+  authenticateToken,
+  authorizeRoles("warehouse_manager"),
+  wareHouseController.adjustedRecord
+);
 
 /**************************************warehouses****************************************************/
 // get all created ware Houses
@@ -51,7 +58,6 @@ router.get(
   authorizeRoles("warehouse_manager"),
   wareHouseController.allWareHouses
 );
-
 
 /*************************************Inventory related********************************/
 // fetch inventory record

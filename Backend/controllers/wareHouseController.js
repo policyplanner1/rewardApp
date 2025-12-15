@@ -482,12 +482,10 @@ class wareHouseController {
       }
 
       if (quantity <= 0) {
-        return res
-          .status(400)
-          .json({
-            success: false,
-            message: "Quantity must be a positive number",
-          });
+        return res.status(400).json({
+          success: false,
+          message: "Quantity must be a positive number",
+        });
       }
 
       // Get current stock and lock row for update
@@ -544,11 +542,63 @@ class wareHouseController {
         message: "Stock adjusted successfully",
       });
     } catch (err) {
-      if (connection) await connection.rollback(); 
+      if (connection) await connection.rollback();
       console.error("stock adjustment Error:", err);
       return res.status(500).json({ success: false, message: err.message });
     } finally {
-      if (connection) connection.release(); 
+      if (connection) connection.release();
+    }
+  }
+
+  // Fetch Adjusted Record
+  async getStockAdjustments(req, res) {
+    let connection;
+    try {
+      connection = await db.getConnection();
+
+      // Query to fetch stock adjustments from the database
+      const query = `
+        SELECT sa.adjustment_id, 
+        sa.inventory_id, 
+        sa.quantity, 
+        sa.adjustment_type, 
+        sa.reason, 
+        sa.adjusted_date, 
+        sa.created_at,
+        p.product_name, 
+        pv.sku, 
+        v.full_name, 
+        w.name,
+        iv.location,
+        iv.expiry_date
+        FROM stock_adjustments sa
+        JOIN inventory iv ON sa.inventory_id = iv.inventory_id
+        JOIN products p ON iv.product_id = p.product_id
+        JOIN product_variants pv ON iv.variant_id = pv.variant_id
+        JOIN vendors v ON iv.vendor_id = v.vendor_id
+        JOIN warehouses w ON iv.warehouse_id = w.warehouse_id
+        ORDER BY sa.created_at DESC;
+    `;
+
+      const [rows] = await connection.query(query);
+
+      if (rows.length === 0) {
+        return res
+          .status(404)
+          .json({ success: false, message: "No adjustments found" });
+      }
+
+      return res.json({
+        success: true,
+        data: rows,
+      });
+    } catch (err) {
+      console.error("Error fetching stock adjustments:", err);
+      return res.status(500).json({ success: false, message: err.message });
+    } finally {
+      if (connection) {
+        connection.release();
+      }
     }
   }
 }
