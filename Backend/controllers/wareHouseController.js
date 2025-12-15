@@ -83,6 +83,20 @@ class wareHouseController {
     }
   }
 
+  async allWareHouses(req, res) {
+    try {
+      const [rows] = await db.execute(` SELECT * from warehouses;`);
+
+      return res.json({
+        success: true,
+        rows,
+      });
+    } catch (error) {
+      console.error("Fetching warehouse error:", err);
+      return res.status(500).json({ success: false, message: err.message });
+    }
+  }
+
   // get all stock info
   async getDetails(req, res) {
     try {

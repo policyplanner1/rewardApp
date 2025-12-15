@@ -11,6 +11,9 @@ router.post(
   wareHouseController.stockIn
 );
 
+// get all created ware Houses
+router.get('/all-warehouses',authenticateToken,authorizeRoles('warehouse_manager'),wareHouseController.allWareHouses)
+
 // get all the record data
 router.get(
   "/stock-in",
