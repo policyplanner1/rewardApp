@@ -9,29 +9,33 @@ export default function InventoryMasterPage() {
   const [search, setSearch] = useState("");
   const [lowStockFilter, setLowStockFilter] = useState(false);
   const [expiryFilter, setExpiryFilter] = useState(false);
-  const [inventoryData, setInventoryData] = useState<any[]>([]); 
+  const [inventoryData, setInventoryData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   const LOW_STOCK_LIMIT = 10;
   const EXPIRY_DAYS_LIMIT = 30;
 
-  // Fetch the inventory data 
+  // Fetch the inventory data
   useEffect(() => {
     const fetchInventoryData = async () => {
       setLoading(true);
       try {
+        const token = localStorage.getItem("token");
         const res = await fetch(
-          `${API_BASE}/inventory?search=${search}&lowStock=${lowStockFilter}&expiry=${expiryFilter}`
+          `${API_BASE}/warehouse/inventory-record?search=${search}&lowStock=${lowStockFilter}&expiry=${expiryFilter}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
         );
-        
+
         const data = await res.json();
-        
+
         const inventoryArray = Array.isArray(data) ? data : data.data || [];
-        
-        setInventoryData(inventoryArray); 
+
+        setInventoryData(inventoryArray);
       } catch (error) {
         console.error("Error fetching inventory data:", error);
-        setInventoryData([]); 
+        setInventoryData([]);
       } finally {
         setLoading(false);
       }
@@ -55,7 +59,7 @@ export default function InventoryMasterPage() {
       "Product",
       "SKU",
       "Vendor",
-      "Warehouse",  // Added the new column for warehouse
+      "Warehouse",
       "Stock",
       "Location",
       "Expiry",
@@ -66,7 +70,7 @@ export default function InventoryMasterPage() {
       item.product,
       item.sku,
       item.vendor,
-      item.warehouse,  // Added the new field for warehouse
+      item.warehouse,
       item.stock,
       item.location,
       item.expiry,
@@ -147,7 +151,8 @@ export default function InventoryMasterPage() {
                 <th className="p-3 border">SKU</th>
                 <th className="p-3 border">Vendor</th>
                 <th className="p-3 border">Stock</th>
-                <th className="p-3 border">Warehouse</th> {/* Added Warehouse column */}
+                <th className="p-3 border">Warehouse</th>{" "}
+                {/* Added Warehouse column */}
                 <th className="p-3 border">Location</th>
                 <th className="p-3 border">Expiry</th>
                 <th className="p-3 border">Status</th>
@@ -164,20 +169,28 @@ export default function InventoryMasterPage() {
               ) : (
                 inventoryData.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="p-3 border">{item.product}</td>
+                    <td className="p-3 border">{item.product_name}</td>
                     <td className="p-3 border">{item.sku}</td>
-                    <td className="p-3 border">{item.vendor}</td>
-                    <td className={`p-3 border ${item.stock < 10 ? "text-red-600 font-bold" : ""}`}>
-                      {item.stock}
+                    <td className="p-3 border">{item.full_name}</td>
+                    <td
+                      className={`p-3 border ${
+                        item.quantity < 10 ? "text-red-600 font-bold" : ""
+                      }`}
+                    >
+                      {item.quantity}
                     </td>
-                    <td className="p-3 border">{item.warehouse}</td> 
+                    <td className="p-3 border">{item.name}</td>
 
                     <td className="p-3 border">{item.location}</td>
 
-                    <td className={`p-3 border ${
-                      daysToExpiry(item.expiry) <= 30 ? "text-orange-600 font-semibold" : ""
-                    }`}>
-                      {item.expiry}
+                    <td
+                      className={`p-3 border ${
+                        daysToExpiry(item.expiry_date) <= 30
+                          ? "text-orange-600 font-semibold"
+                          : ""
+                      }`}
+                    >
+                      {new Date(item.expiry_date).toLocaleDateString("en-US")}
                     </td>
 
                     <td className="p-3 border">
