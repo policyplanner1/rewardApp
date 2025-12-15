@@ -11,7 +11,7 @@ router.post(
   wareHouseController.stockIn
 );
 
-// get the record data
+// get all the record data
 router.get(
   "/stock-in",
   authenticateToken,
@@ -26,5 +26,13 @@ router.put(
   authorizeRoles("warehouse_manager"),
   wareHouseController.sendToInventory
 );
+
+// get single stock detail
+router.get(
+  "/stock-in/:grn",
+  authenticateToken,
+  wareHouseController.getStockInByGrn
+);
+
 
 module.exports = router;

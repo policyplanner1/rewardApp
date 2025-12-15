@@ -142,6 +142,56 @@ class wareHouseController {
     }
   }
 
+  // get details by ID
+  async getStockInByGrn(req, res) {
+    try {
+      const { grn } = req.params;
+
+      if (!grn) {
+        return res.status(400).json({
+          success: false,
+          message: "GRN is required",
+        });
+      }
+
+      const [rows] = await db.query(
+        `
+      SELECT 
+        s.grn,
+        s.total_quantity,
+        s.passed_quantity,
+        s.failed_quantity,
+        s.stock_in_date,
+        s.location,
+        s.expiry_date,
+        p.product_name AS productName,
+        pv.sku AS sku,
+        v.full_name AS vendorName,
+        COALESCE(c.category_name, p.custom_category) AS category
+      FROM stock_in_entries s
+      JOIN products p ON s.product_id = p.product_id
+      LEFT JOIN categories c ON p.category_id = c.category_id
+      LEFT JOIN product_variants pv ON s.variant_id = pv.variant_id
+      JOIN vendors v ON p.vendor_id = v.vendor_id
+      WHERE s.grn = ?
+      `,
+        [grn]
+      );
+
+      if (!rows.length) {
+        return res.status(404).json({
+          success: false,
+          message: "Stock entry not found",
+        });
+      }
+
+      res.json({ success: true, data: rows[0] });
+    } catch (err) {
+      console.error("Fetch stock-in by GRN error:", err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  }
+
   // send to Inventory
   async sendToInventory(req, res) {
     const { grn } = req.body;
