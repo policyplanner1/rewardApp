@@ -1,19 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
+const API_BASE = "http://localhost:5000";
 
 // ============================
 // Type Definitions
 // ============================
-interface Product {
-  id: number;
-  name: string;
+interface InventoryItem {
+  inventory_id: number;
+  product_id: number;
+  product_name: string;
   sku: string;
+  vendor_name: string;
+  warehouse_name: string;
+  location: string;
+  quantity: number;
 }
 
 interface AdjustmentEntry {
   date: string;
-  productId: number;
+  inventoryId: number;
   product: string;
   sku: string;
   quantity: number;
@@ -27,8 +33,9 @@ export default function StockAdjustmentPage() {
   // Form States
   const [date, setDate] = useState("");
   const [productSearch, setProductSearch] = useState("");
-  const [products, setProducts] = useState<Product[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [inventoryList, setInventoryList] = useState<InventoryItem[]>([]);
+  const [selectedInventory, setSelectedInventory] =
+    useState<InventoryItem | null>(null);
   const [quantity, setQuantity] = useState("");
   const [adjustType, setAdjustType] = useState("");
   const [reason, setReason] = useState("");
@@ -37,19 +44,30 @@ export default function StockAdjustmentPage() {
   const [tableData, setTableData] = useState<AdjustmentEntry[]>([]);
 
   // ============================
-  // Fetch Products API
+  // Fetch Inventory API
   // ============================
-  const fetchProducts = async (search: string) => {
+  const fetchInventory = async (search: string) => {
     if (!search.trim()) {
-      setProducts([]);
+      setInventoryList([]);
       return;
     }
 
-    const res = await fetch(`/api/products?search=${search}`);
-    const data = await res.json();
+    const token = localStorage.getItem("token");
 
-    if (data.success) {
-      setProducts(data.data);
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/warehouse/search?query=${search}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const data = await res.json();
+
+      if (data.success) {
+        setInventoryList(data.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch inventory", err);
     }
   };
 
@@ -57,7 +75,7 @@ export default function StockAdjustmentPage() {
   // Add Adjustment
   // ============================
   const addAdjustment = async () => {
-    if (!date || !selectedProduct || !quantity || !adjustType || !reason) {
+    if (!date || !selectedInventory || !quantity || !adjustType || !reason) {
       alert("Please fill all fields");
       return;
     }
@@ -70,48 +88,52 @@ export default function StockAdjustmentPage() {
 
     const payload = {
       date,
-      product_id: selectedProduct.id,
+      inventory_id: selectedInventory.inventory_id,
       quantity: Number(quantity),
       adjustment_type: adjustmentTypeMap[adjustType],
       reason,
     };
 
-    // Submit to backend
-    const res = await fetch("/api/stock-adjustments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    try {
+      const res = await fetch(`${API_BASE}/api/stock-adjustments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
-    const result = await res.json();
+      const result = await res.json();
 
-    if (!result.success) {
-      alert(result.message);
-      return;
+      if (!result.success) {
+        alert(result.message);
+        return;
+      }
+
+      // Update table UI
+      setTableData((prev) => [
+        ...prev,
+        {
+          date,
+          inventoryId: selectedInventory.inventory_id,
+          product: selectedInventory.product_name,
+          sku: selectedInventory.sku,
+          quantity: Number(quantity),
+          adjustmentType: adjustmentTypeMap[adjustType],
+          reason,
+        },
+      ]);
+
+      // Reset form
+      setDate("");
+      setProductSearch("");
+      setInventoryList([]);
+      setSelectedInventory(null);
+      setQuantity("");
+      setAdjustType("");
+      setReason("");
+    } catch (err) {
+      console.error("Failed to add adjustment", err);
+      alert("Failed to add adjustment. Please try again.");
     }
-
-    // Update table UI
-    setTableData((prev) => [
-      ...prev,
-      {
-        date,
-        productId: selectedProduct.id,
-        product: selectedProduct.name,
-        sku: selectedProduct.sku,
-        quantity: Number(quantity),
-        adjustmentType: adjustmentTypeMap[adjustType],
-        reason,
-      },
-    ]);
-
-    // Reset
-    setDate("");
-    setProductSearch("");
-    setProducts([]);
-    setSelectedProduct(null);
-    setQuantity("");
-    setAdjustType("");
-    setReason("");
   };
 
   return (
@@ -120,34 +142,43 @@ export default function StockAdjustmentPage() {
 
       {/* FORM */}
       <div className="p-6 space-y-4 bg-white shadow rounded-xl">
-        {/* Product Search */}
+        {/* Inventory Search */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">Product</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Product / SKU / Vendor
+          </label>
           <input
             type="text"
             className="w-full p-3 border rounded-lg"
-            placeholder="Search product"
+            placeholder="Search product or SKU"
             value={productSearch}
             onChange={(e) => {
               setProductSearch(e.target.value);
-              fetchProducts(e.target.value);
+              fetchInventory(e.target.value);
             }}
           />
 
-          {products.length > 0 && (
-            <div className="mt-1 max-h-40 overflow-y-auto border rounded-lg">
-              {products.map((p) => (
+          {inventoryList.length > 0 && (
+            <div className="mt-1 max-h-56 overflow-y-auto border rounded-lg bg-white">
+              {inventoryList.map((item) => (
                 <div
-                  key={p.id}
+                  key={item.inventory_id}
                   onClick={() => {
-                    setSelectedProduct(p);
-                    setProductSearch(p.name);
-                    setProducts([]);
+                    setSelectedInventory(item);
+                    setProductSearch(`${item.product_name} (${item.sku})`);
+                    setInventoryList([]);
                   }}
-                  className="p-3 cursor-pointer hover:bg-gray-100 flex justify-between"
+                  className="p-3 cursor-pointer hover:bg-gray-100"
                 >
-                  <span>{p.name}</span>
-                  <span className="text-gray-500">{p.sku}</span>
+                  <div className="font-medium">
+                    {item.product_name} ({item.sku})
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    Vendor: {item.vendor_name} | WH: {item.warehouse_name}
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    Qty: {item.quantity} | {item.location}
+                  </div>
                 </div>
               ))}
             </div>
@@ -156,7 +187,9 @@ export default function StockAdjustmentPage() {
 
         {/* Quantity */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">Quantity</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Quantity
+          </label>
           <input
             type="number"
             className="w-full p-3 border rounded-lg"
@@ -168,7 +201,9 @@ export default function StockAdjustmentPage() {
 
         {/* Adjustment Type */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">Adjustment Type</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Adjustment Type
+          </label>
           <select
             className="w-full p-3 border rounded-lg"
             value={adjustType}
@@ -183,7 +218,9 @@ export default function StockAdjustmentPage() {
 
         {/* Reason */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">Reason</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Reason
+          </label>
           <textarea
             className="w-full p-3 border rounded-lg"
             placeholder="Reason"
@@ -194,7 +231,9 @@ export default function StockAdjustmentPage() {
 
         {/* Date */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">Date</label>
+          <label className="block text-sm font-medium text-gray-700">
+            Date
+          </label>
           <input
             type="date"
             className="w-full p-3 border rounded-lg"
@@ -244,4 +283,3 @@ export default function StockAdjustmentPage() {
     </div>
   );
 }
-  

@@ -417,6 +417,48 @@ class wareHouseController {
       });
     }
   }
+
+  async searchInventory(req, res) {
+    try {
+      const { query } = req.query;
+
+      console.log(query,"query")
+
+      if (!query) {
+        return res.json({ success: true, data: [] });
+      }
+
+      const [rows] = await db.query(
+        `
+      SELECT
+        i.inventory_id,
+        i.quantity,
+        i.location,
+        i.expiry_date,
+        i.product_id,
+        p.product_name,
+        i.vendor_id,
+        v.full_name,
+        i.warehouse_id,
+        pv.sku,
+        w.name AS warehouse_name
+        FROM inventory i
+        JOIN products p ON p.product_id = i.product_id
+        LEFT JOIN vendors v ON v.vendor_id = i.vendor_id
+        LEFT JOIN warehouses w ON w.warehouse_id = i.warehouse_id
+        LEFT JOIN product_variants pv ON pv.variant_id = i.variant_id
+        WHERE p.product_name LIKE ? OR pv.sku LIKE ?
+        ORDER BY p.product_name
+        `,
+        [`%${query}%`, `%${query}%`]
+      );
+
+      res.json({ success: true, data: rows });
+    } catch (err) {
+      console.error("Error searching products:", err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  }
 }
 
 module.exports = new wareHouseController();

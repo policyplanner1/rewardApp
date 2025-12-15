@@ -3,6 +3,7 @@ const router = express.Router();
 const { authenticateToken, authorizeRoles } = require("../middleware/auth");
 const wareHouseController = require("../controllers/wareHouseController");
 
+/***********************************************Stock module*************************************/
 // create new entry
 router.post(
   "/stock-in",
@@ -11,36 +12,12 @@ router.post(
   wareHouseController.stockIn
 );
 
-// get all created ware Houses
-router.get(
-  "/all-warehouses",
-  authenticateToken,
-  authorizeRoles("warehouse_manager"),
-  wareHouseController.allWareHouses
-);
-
 // get all the record data
 router.get(
   "/stock-in",
   authenticateToken,
   authorizeRoles("warehouse_manager"),
   wareHouseController.getDetails
-);
-
-// send to Inventory
-router.put(
-  "/send-to-inventory",
-  authenticateToken,
-  authorizeRoles("warehouse_manager"),
-  wareHouseController.sendToInventory
-);
-
-// fetch inventory record
-router.get(
-  "/inventory-record",
-  authenticateToken,
-  authorizeRoles("warehouse_manager"),
-  wareHouseController.getInventoryRecord
 );
 
 // get single stock detail
@@ -55,6 +32,42 @@ router.put(
   "/stock-in/:grn",
   authenticateToken,
   wareHouseController.updateStockIn
+);
+
+
+/**************************************warehouses****************************************************/
+// get all created ware Houses
+router.get(
+  "/all-warehouses",
+  authenticateToken,
+  authorizeRoles("warehouse_manager"),
+  wareHouseController.allWareHouses
+);
+
+
+/*************************************Inventory related********************************/
+// fetch inventory record
+router.get(
+  "/inventory-record",
+  authenticateToken,
+  authorizeRoles("warehouse_manager"),
+  wareHouseController.getInventoryRecord
+);
+
+// Search inventory Products
+router.get(
+  "/search",
+  authenticateToken,
+  authorizeRoles("warehouse_manager"),
+  wareHouseController.searchInventory
+);
+
+// send to Inventory
+router.put(
+  "/send-to-inventory",
+  authenticateToken,
+  authorizeRoles("warehouse_manager"),
+  wareHouseController.sendToInventory
 );
 
 module.exports = router;
