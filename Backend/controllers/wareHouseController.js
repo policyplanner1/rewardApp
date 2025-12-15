@@ -230,6 +230,63 @@ class wareHouseController {
       });
     }
   }
+
+  // update a stock in record
+  async updateStockIn(req, res) {
+    try {
+      const { grn } = req.params;
+      if (!grn) {
+        return res.status(400).json({
+          success: false,
+          message: "GRN is required",
+        });
+      }
+
+      const {
+        total_quantity,
+        passed_quantity,
+        failed_quantity,
+        stock_in_date,
+        location,
+        expiry_date,
+      } = req.body;
+
+      if (passed_quantity + failed_quantity !== total_quantity) {
+        return res.status(400).json({
+          success: false,
+          message: "Total quantity must equal passed + failed quantity",
+        });
+      }
+
+      await db.query(
+        `
+      UPDATE stock_in_entries
+      SET
+        total_quantity = ?,
+        passed_quantity = ?,
+        failed_quantity = ?,
+        stock_in_date = ?,
+        location = ?,
+        expiry_date = ?
+      WHERE grn = ?
+      `,
+        [
+          total_quantity,
+          passed_quantity,
+          failed_quantity,
+          stock_in_date,
+          location,
+          expiry_date || null,
+          grn,
+        ]
+      );
+
+      res.json({ success: true, message: "Stock-In updated successfully" });
+    } catch (err) {
+      console.error("Update stock-in error:", err);
+      res.status(500).json({ success: false, message: err.message });
+    }
+  }
 }
 
 module.exports = new wareHouseController();

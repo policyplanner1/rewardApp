@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
 const API_BASE = "http://localhost:5000";
 
 /* ================= TYPES ================= */
@@ -37,6 +39,7 @@ interface StockEntry {
 /* ================= COMPONENT ================= */
 
 export default function StockInCreatePage() {
+  const router = useRouter();
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [variants, setVariants] = useState<Variant[]>([]);
@@ -175,6 +178,7 @@ export default function StockInCreatePage() {
     });
 
     alert("Stock-In created successfully");
+    router.push("/src/warehouse/stock/stockin");
   };
 
   /* ================= UI ================= */

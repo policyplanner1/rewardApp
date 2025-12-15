@@ -34,5 +34,11 @@ router.get(
   wareHouseController.getStockInByGrn
 );
 
+// update a stock in record
+router.put(
+  "/stock-in/:grn",
+  authenticateToken,
+  wareHouseController.updateStockIn
+);
 
 module.exports = router;
