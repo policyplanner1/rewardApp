@@ -87,42 +87,53 @@ class wareHouseController {
   async getDetails(req, res) {
     try {
       const status = req.query.status || "Pending";
+      const search = req.query.search || "";
 
-      const [rows] = await db.query(
-        `SELECT 
-          s.id,
-          s.warehousemanager_id,
-          s.vendor_id,
-          s.variant_id,
-          s.product_id,
-          s.grn,
-          s.total_quantity,
-          s.passed_quantity,
-          s.failed_quantity,
-          s.stock_in_date,
-          s.location,
-          s.expiry_date,
-          s.status,
-          p.product_name AS productName,
-          COALESCE(c.category_name, p.custom_category) AS categoryName,
-          v.full_name AS vendorName,
-          u.name as WarehousemanagerName,
-          pv.sku as sku
+      let query = `
+      SELECT 
+        s.id,
+        s.warehousemanager_id,
+        s.vendor_id,
+        s.variant_id,
+        s.product_id,
+        s.grn,
+        s.total_quantity,
+        s.passed_quantity,
+        s.failed_quantity,
+        s.stock_in_date,
+        s.location,
+        s.expiry_date,
+        s.status,
+        p.product_name AS productName,
+        COALESCE(c.category_name, p.custom_category) AS categoryName,
+        v.full_name AS vendorName,
+        u.name AS WarehousemanagerName,
+        pv.sku AS sku
+      FROM stock_in_entries s
+      JOIN products p ON s.product_id = p.product_id
+      LEFT JOIN categories c ON p.category_id = c.category_id
+      LEFT JOIN product_variants pv ON s.variant_id = pv.variant_id
+      JOIN vendors v ON p.vendor_id = v.vendor_id
+      JOIN users u ON s.warehousemanager_id = u.user_id
+      WHERE s.status = ?
+    `;
 
-          FROM stock_in_entries s
-          JOIN products p ON s.product_id = p.product_id
+      const params = [status];
 
-          LEFT JOIN categories c ON p.category_id = c.category_id
-          LEFT JOIN sub_categories sc ON p.subcategory_id = sc.subcategory_id
-          LEFT JOIN sub_sub_categories ssc ON p.sub_subcategory_id = ssc.sub_subcategory_id
-          LEFT JOIN product_variants pv on s.variant_id = pv.variant_id
-          JOIN vendors v ON p.vendor_id = v.vendor_id
-          JOIN users u ON s.warehousemanager_id = u.user_id
+      if (search) {
+        query += `
+        AND (
+          s.grn LIKE ?
+          OR pv.sku LIKE ?
+          OR p.product_name LIKE ?
+          OR v.full_name LIKE ?
+        )
+      `;
+        const like = `%${search}%`;
+        params.push(like, like, like, like);
+      }
 
-          WHERE s.status = ? ;
-        `,
-        [status]
-      );
+      const [rows] = await db.query(query, params);
 
       res.json({ success: true, data: rows });
     } catch (err) {

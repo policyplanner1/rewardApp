@@ -60,7 +60,7 @@ export default function StockInPage() {
       const token = localStorage.getItem("token");
 
       const res = await fetch(
-        `${API_BASE}/api/warehouse/stock-in?status=${activeTab}`,
+        `${API_BASE}/api/warehouse/stock-in?status=${activeTab}&search=${search}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -69,7 +69,7 @@ export default function StockInPage() {
       );
 
       const data = await res.json();
-      
+
       setTableData(
         data.data.map((row: ApiStockRow) => ({
           grn: row.grn,
