@@ -32,7 +32,6 @@ interface StockEntry {
   passedQuantity: number;
   failedQuantity: number;
   stockInDate: string;
-  location: string;
   expiryDate?: string;
 }
 
@@ -53,7 +52,6 @@ export default function StockInCreatePage() {
   const [failedQuantity, setFailedQuantity] = useState(0);
 
   const [stockInDate, setStockInDate] = useState("");
-  const [location, setLocation] = useState("");
   const [expiryDate, setExpiryDate] = useState("");
 
   /* ================= FETCH VENDORS ================= */
@@ -162,7 +160,6 @@ export default function StockInCreatePage() {
       passedQuantity,
       failedQuantity,
       stockInDate: stockInDate || new Date().toISOString().split("T")[0],
-      location,
       expiryDate: expiryDate || undefined,
     };
 
@@ -283,22 +280,13 @@ export default function StockInCreatePage() {
             />
           </div>
 
-          {/* Dates & Location */}
+          {/* Date*/}
           <div>
             <label className="font-medium">Stock-In Date</label>
             <input
               type="date"
               value={stockInDate}
               onChange={(e) => setStockInDate(e.target.value)}
-              className="w-full p-3 border rounded-lg mt-1"
-            />
-          </div>
-
-          <div>
-            <label className="font-medium">Rack / Bin Location</label>
-            <input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
               className="w-full p-3 border rounded-lg mt-1"
             />
           </div>

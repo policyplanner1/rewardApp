@@ -31,7 +31,6 @@ class wareHouseController {
         passedQuantity,
         failedQuantity,
         stockInDate,
-        location,
         expiryDate,
       } = req.body;
 
@@ -55,8 +54,8 @@ class wareHouseController {
       // Insert
       await db.query(
         `INSERT INTO stock_in_entries
-            (grn,warehousemanager_id, product_id, vendor_id, variant_id, total_quantity, passed_quantity, failed_quantity, stock_in_date, location, expiry_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            (grn,warehousemanager_id, product_id, vendor_id, variant_id, total_quantity, passed_quantity, failed_quantity, stock_in_date, expiry_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           grnNumber,
           wareHouseManagerId,
@@ -67,7 +66,6 @@ class wareHouseController {
           passedQuantity,
           failedQuantity,
           stockInDate,
-          location,
           expiryDate || null,
         ]
       );
