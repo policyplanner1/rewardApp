@@ -339,6 +339,9 @@ export default function EditProductPage() {
       if (!json.success) throw new Error(json.message);
 
       const p = json.data;
+      if (!p) {
+        throw new Error("Product not found");
+      }
 
       // preload dropdowns
       if (p.category_id) {
@@ -562,6 +565,9 @@ export default function EditProductPage() {
       }
 
       const formData = new FormData();
+      if (!product.categoryId) {
+        throw new Error("Category is required");
+      }
 
       formData.append("category_id", product.categoryId.toString());
       formData.append("brandName", product.brandName);
