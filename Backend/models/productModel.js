@@ -183,7 +183,7 @@ class ProductModel {
 
       // 3️⃣ Get product documents
       const [documents] = await db.execute(
-        `SELECT pd.id, pd.file_path, pd.mime_type, d.document_name
+        `SELECT pd.id, pd.file_path, pd.mime_type,pd.status, d.document_name
        FROM product_documents pd
        JOIN documents d ON pd.document_id = d.document_id
        WHERE pd.product_id = ?`,

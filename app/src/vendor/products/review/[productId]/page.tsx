@@ -46,16 +46,17 @@ interface ProductView {
   subSubCategoryName?: string | null;
   gstIn?: string;
   variants?: VariantView[];
-  productImages?: string[]; // URLs
+  productImages?: string[];
   requiredDocs?: Array<{
-    document_id: number;
+    id: number;
     document_name: string;
-    status: number;
+    status: string;
     url?: string;
+    mime_type: string;
+    file_path: string;
   }>;
 }
 
-// Small UI helpers (same visual as add page)
 const FormInput = ({
   id,
   label,
@@ -133,6 +134,11 @@ export default function ReviewProductPage({
     return `${API_BASE}/uploads/${path.replace(/^\/+/, "")}`;
   };
 
+  const isValidDate = (date: any): boolean => {
+    const parsedDate = new Date(date);
+    return !isNaN(parsedDate.getTime());
+  };
+
   const fetchProduct = async (id: string) => {
     setLoading(true);
     setError(null);
@@ -153,7 +159,6 @@ export default function ReviewProductPage({
       }
 
       const json = await res.json();
-      console.log(json, "json");
       const raw = json.data ?? json.product ?? json;
 
       // Map backend shape to ProductView expected by this page
@@ -176,7 +181,6 @@ export default function ReviewProductPage({
           raw.sub_subcategory_name ?? raw.custom_sub_subcategory ?? null,
 
         gstIn: raw.gst ?? "",
-        // Expecting arrays of image URLs coming from backend:
         productImages: Array.isArray(raw.productImages)
           ? raw.productImages
           : raw.images ?? [],
@@ -189,14 +193,19 @@ export default function ReviewProductPage({
               MRP: v.mrp ?? "",
               salesPrice: v.sale_price ?? "",
               stock: v.stock ?? v.qty ?? "",
-              expiryDate: new Date(v.expiry_date).toLocaleDateString() ?? "",
+              expiryDate:
+                v.expiry_date && isValidDate(v.expiry_date)
+                  ? new Date(v.expiry_date).toLocaleDateString()
+                  : "",
               manufacturingYear:
-                new Date(v.manufacturing_date).toLocaleDateString() ?? "",
+                v.manufacturing_date && isValidDate(v.manufacturing_date)
+                  ? new Date(v.manufacturing_date).toLocaleDateString()
+                  : "",
               materialType: v.material_type ?? "",
               images: Array.isArray(v.images) ? v.images : v.imageUrls ?? [],
             }))
           : [],
-        requiredDocs: raw.requiredDocs ?? [],
+        requiredDocs: raw.documents ?? [],
       };
 
       setProduct(mapped);
@@ -563,7 +572,7 @@ export default function ReviewProductPage({
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {product.requiredDocs.map((doc) => (
                 <div
-                  key={doc.document_id}
+                  key={doc.id}
                   className="p-4 bg-white border rounded-lg shadow-sm"
                 >
                   <div className="flex items-center justify-between">
@@ -572,10 +581,18 @@ export default function ReviewProductPage({
                         {doc.document_name}
                       </div>
                       <div className="text-xs text-gray-500">
-                        {doc.status === 1 ? "Required" : "Optional"}
+                        {doc.status == "1" ? "Required" : "Optional"}
                       </div>
                     </div>
-                    {doc.url ? (
+
+                    {/* Check if the document is an image */}
+                    {doc.mime_type && doc.mime_type.startsWith("image/") ? (
+                      <img
+                        src={resolveImageUrl(doc.file_path)}
+                        alt={doc.document_name}
+                        className="w-20 h-20 object-cover rounded"
+                      />
+                    ) : doc.url ? (
                       <a
                         href={resolveImageUrl(doc.url)}
                         target="_blank"
