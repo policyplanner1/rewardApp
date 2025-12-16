@@ -1,324 +1,357 @@
 "use client";
 
-import React, { ChangeEvent, FormEvent, useEffect, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useState, ChangeEvent, FormEvent } from "react";
+import { useParams, useRouter } from "next/navigation";
 import {
-  FaSpinner,
-  FaArrowLeft,
-  FaTrash,
-  FaPlus,
-  FaImages,
-  FaFileUpload,
   FaTag,
   FaBox,
-  FaDollarSign,
-  FaEdit,
+  FaImages,
+  FaFileUpload,
+  FaPlus,
+  FaTrash,
+  FaSpinner,
 } from "react-icons/fa";
 
 const API_BASE = "http://localhost:5000";
 
-type Variant = {
-  size?: string;
-  color?: string;
-  dimension?: string;
-  customAttributes?: Record<string, any>;
-  MRP?: string | number;
-  salesPrice?: string | number;
-  stock?: string | number;
-  expiryDate?: string;
-  manufacturingYear?: string;
-  materialType?: string;
-  images?: (string | File)[];
-};
-
-type ProductForm = {
-  productId?: number | string;
-  productName?: string;
-  brandName?: string;
-  manufacturer?: string;
-  barCode?: string;
-  model?: string;
-  gstIn?: string;
-  description?: string;
-  shortDescription?: string;
-  categoryId?: number | null;
-  subCategoryId?: number | null;
-  subSubCategoryId?: number | null;
-  productImages?: (string | File)[];
-  variants?: Variant[];
-  requiredDocs?: Array<{
-    document_id: number;
-    document_name: string;
-    url?: string;
-  }>;
-};
-
-function resolveImageUrl(p?: string) {
-  if (!p) return "";
-  try {
-    const u = new URL(p);
-    return u.toString();
-  } catch {
-    return `${API_BASE}/${p.replace(/^\/+/, "")}`;
-  }
+/* =====================
+   Interfaces (MATCH ADD PAGE)
+===================== */
+interface Category {
+  category_id: number;
+  category_name: string;
 }
 
-/* SectionHeader helper — shows icon, title and subtitle like Add page */
-function SectionHeader({
-  icon: Icon,
-  title,
-  subtitle,
-}: {
-  icon: any;
-  title: string;
-  subtitle?: string;
-}) {
-  return (
-    <div className="flex items-center pb-2 mb-4 space-x-3 border-b">
-      <Icon className="text-2xl" style={{ color: "#852BAF" }} />
-      <div>
-        <h3 className="text-lg font-medium text-gray-800">{title}</h3>
-        {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
-      </div>
+interface SubCategory {
+  subcategory_id: number;
+  category_id: number;
+  subcategory_name: string;
+}
+
+interface SubSubCategory {
+  sub_subcategory_id: number;
+  subcategory_id: number;
+  name: string;
+  attributes?: any;
+}
+
+interface RequiredDocument {
+  document_id: number;
+  document_name: string;
+  status: number;
+}
+
+interface Variant {
+  size: string;
+  color: string;
+  dimension: string;
+  weight: string;
+  customAttributes: Record<string, any>;
+  MRP: string | number;
+  salesPrice: string | number;
+  stock: string | number;
+  expiryDate: string;
+  manufacturingYear: string;
+  materialType: string;
+  images: File[];
+  existingImages: string[];
+}
+
+interface ProductData {
+  productName: string;
+  brandName: string;
+  manufacturer: string;
+  barCode: string;
+  gstIn: string;
+  description: string;
+  shortDescription: string;
+  categoryId: number | null;
+  subCategoryId: number | null;
+  subSubCategoryId: number | null;
+  variants: Variant[];
+  productImages: File[];
+  existingImages: string[];
+}
+
+const emptyVariant: Variant = {
+  size: "",
+  color: "",
+  dimension: "",
+  weight: "",
+  customAttributes: {},
+  MRP: "",
+  salesPrice: "",
+  stock: "",
+  expiryDate: "",
+  manufacturingYear: "",
+  materialType: "",
+  images: [],
+  existingImages: [],
+};
+
+const initialState: ProductData = {
+  productName: "",
+  brandName: "",
+  manufacturer: "",
+  barCode: "",
+  gstIn: "",
+  description: "",
+  shortDescription: "",
+  categoryId: null,
+  subCategoryId: null,
+  subSubCategoryId: null,
+  variants: [emptyVariant],
+  productImages: [],
+  existingImages: [],
+};
+
+/* =====================
+   UI HELPERS
+===================== */
+const SectionHeader = ({ icon: Icon, title, description }: any) => (
+  <div className="flex items-center pb-2 mb-4 space-x-3 border-b">
+    <Icon className="text-2xl text-[#852BAF]" />
+    <div>
+      <h2 className="text-xl font-semibold">{title}</h2>
+      <p className="text-sm text-gray-500">{description}</p>
     </div>
-  );
-}
+  </div>
+);
 
-export default function EditProductPage({
-  params,
-}: {
-  params: { productId: string };
-}) {
-  const { productId } = params;
+const Input = ({ label, ...props }: any) => (
+  <div className="flex flex-col space-y-1">
+    <label className="text-sm font-medium text-gray-700">{label}</label>
+    <input {...props} className="p-3 border rounded-lg bg-gray-50" />
+  </div>
+);
+
+/* =====================
+   PAGE
+===================== */
+export default function EditProductPage() {
+  const { productId } = useParams();
   const router = useRouter();
 
-  const [form, setForm] = useState<ProductForm>({
-    productImages: [],
-    variants: [{ images: [] }],
-    requiredDocs: [],
-  });
-  const [loading, setLoading] = useState<boolean>(true);
-  const [saving, setSaving] = useState<boolean>(false);
+  const [product, setProduct] = useState<ProductData>(initialState);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  const [subSubCategories, setSubSubCategories] = useState<SubSubCategory[]>([]);
+  const [requiredDocs, setRequiredDocs] = useState<RequiredDocument[]>([]);
+  const [docFiles, setDocFiles] = useState<Record<number, File | null>>({});
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /* =====================
+     INITIAL LOAD
+  ===================== */
   useEffect(() => {
-    if (!productId) {
-      setError("Missing productId in route.");
-      setLoading(false);
-      return;
-    }
-    fetchProduct(productId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [productId]);
+    fetchCategories();
+    fetchProduct();
+  }, []);
 
-  const fetchProduct = async (id: string) => {
-    setLoading(true);
-    setError(null);
+  /* =====================
+     FETCH MASTER DATA
+  ===================== */
+  const fetchCategories = async () => {
+    const res = await fetch(`${API_BASE}/api/category`);
+    const json = await res.json();
+    if (json.success) setCategories(json.data);
+  };
+
+  const fetchSubCategories = async (categoryId: number) => {
+    const res = await fetch(`${API_BASE}/api/subcategory/${categoryId}`);
+    const json = await res.json();
+    if (json.success) setSubCategories(json.data);
+  };
+
+  const fetchSubSubCategories = async (subcategoryId: number) => {
+    const res = await fetch(`${API_BASE}/api/subsubcategory/${subcategoryId}`);
+    const json = await res.json();
+    if (json.success) setSubSubCategories(json.data);
+  };
+
+  const fetchRequiredDocuments = async (categoryId: number) => {
+    const res = await fetch(
+      `${API_BASE}/api/product/category/required_docs/${categoryId}`,
+      { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
+    );
+    const json = await res.json();
+    if (json.success) setRequiredDocs(json.data || []);
+  };
+
+  /* =====================
+     FETCH PRODUCT
+  ===================== */
+  const fetchProduct = async () => {
     try {
-      const res = await fetch(
-        `${API_BASE}/api/product/${encodeURIComponent(id)}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(`Failed to fetch product: ${res.status} ${txt}`);
-      }
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API_BASE}/api/product/${productId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       const json = await res.json();
-      const raw = json.data ?? json.product ?? json;
+      if (!json.success) throw new Error(json.message);
 
-      const mapped: ProductForm = {
-        productId: raw.productId ?? raw.product_id ?? raw.id,
-        productName: raw.productName ?? raw.product_name ?? raw.title ?? "",
-        brandName: raw.brandName ?? raw.brand_name ?? raw.brand ?? "",
-        manufacturer: raw.manufacturer ?? "",
-        barCode: raw.barCode ?? raw.bar_code ?? "",
-        model: raw.model ?? "",
-        gstIn: raw.gstIn ?? raw.gst_in ?? "",
-        description: raw.description ?? "",
-        shortDescription: raw.shortDescription ?? raw.short_description ?? "",
-        categoryId: raw.category_id ?? raw.categoryId ?? null,
-        subCategoryId: raw.subcategory_id ?? raw.subCategoryId ?? null,
-        subSubCategoryId:
-          raw.sub_subcategory_id ?? raw.subSubCategoryId ?? null,
-        productImages: Array.isArray(raw.productImages)
-          ? raw.productImages
-          : raw.images ?? [],
-        variants: Array.isArray(raw.variants)
-          ? raw.variants.map((v: any) => ({
-              size: v.size ?? "",
-              color: v.color ?? "",
-              dimension: v.dimension ?? "",
-              customAttributes: v.customAttributes ?? v.attributes ?? {},
-              MRP: v.MRP ?? v.mrp ?? "",
-              salesPrice: v.salesPrice ?? v.sales_price ?? v.price ?? "",
-              stock: v.stock ?? v.qty ?? "",
-              expiryDate: v.expiryDate ?? "",
-              manufacturingYear: v.manufacturingYear ?? "",
-              materialType: v.materialType ?? "",
-              images: Array.isArray(v.images) ? v.images : v.imageUrls ?? [],
-            }))
-          : [{ images: [] }],
-        requiredDocs: raw.requiredDocs ?? [],
-      };
+      const p = json.data;
 
-      setForm(mapped);
+      if (p.category_id) {
+        await fetchSubCategories(p.category_id);
+        await fetchRequiredDocuments(p.category_id);
+      }
+      if (p.subcategory_id) await fetchSubSubCategories(p.subcategory_id);
+
+      setProduct({
+        productName: p.product_name || "",
+        brandName: p.brand_name || "",
+        manufacturer: p.manufacturer || "",
+        barCode: p.barcode || "",
+        gstIn: p.gst_in || "",
+        description: p.description || "",
+        shortDescription: p.short_description || "",
+        categoryId: p.category_id || null,
+        subCategoryId: p.subcategory_id || null,
+        subSubCategoryId: p.sub_subcategory_id || null,
+        existingImages: p.images || [],
+        productImages: [],
+        variants:
+          p.variants && p.variants.length > 0
+            ? p.variants.map((v: any) => ({
+                size: v.size || "",
+                color: v.color || "",
+                dimension: v.dimension || "",
+                weight: v.weight || "",
+                MRP: v.mrp || "",
+                salesPrice: v.sales_price || "",
+                stock: v.stock || "",
+                expiryDate: v.expiry_date || "",
+                manufacturingYear: v.manufacturing_year || "",
+                materialType: v.material_type || "",
+                customAttributes: v.custom_attributes || {},
+                existingImages: v.images || [],
+                images: [],
+              }))
+            : [emptyVariant],
+      });
     } catch (err: any) {
-      console.error(err);
-      setError(err?.message ?? "Failed to load product");
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // Generic field handler
-  const handleField = (
+  /* =====================
+     HANDLERS
+  ===================== */
+  const handleFieldChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
-    setForm((s) => ({ ...s, [name as keyof ProductForm]: value }));
+
+    if (name === "categoryId") {
+      setProduct((p) => ({ ...p, categoryId: Number(value), subCategoryId: null, subSubCategoryId: null }));
+      fetchSubCategories(Number(value));
+      fetchRequiredDocuments(Number(value));
+    } else if (name === "subCategoryId") {
+      setProduct((p) => ({ ...p, subCategoryId: Number(value), subSubCategoryId: null }));
+      fetchSubSubCategories(Number(value));
+    } else {
+      setProduct((p) => ({ ...p, [name]: value }));
+    }
   };
 
-  // Main images handlers
-  const handleMainImages = (e: ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
+  const handleVariantChange = (i: number, field: string, value: any) => {
+    const updated = [...product.variants];
+    updated[i] = { ...updated[i], [field]: value };
+    setProduct((p) => ({ ...p, variants: updated }));
+  };
+
+  const handleVariantImages = (i: number, files: FileList | null) => {
     if (!files) return;
-    const arr = Array.from(files);
-    setForm((s) => ({
-      ...s,
-      productImages: [...(s.productImages ?? []), ...arr],
-    }));
+    const updated = [...product.variants];
+    updated[i].images = Array.from(files);
+    setProduct((p) => ({ ...p, variants: updated }));
   };
 
-  const removeMainImage = (index: number) => {
-    setForm((s) => {
-      const imgs = Array.from(s.productImages ?? []);
-      imgs.splice(index, 1);
-      return { ...s, productImages: imgs };
-    });
-  };
-
-  // Variants
   const addVariant = () => {
-    setForm((s) => ({
-      ...s,
-      variants: [...(s.variants ?? []), { images: [] }],
-    }));
+    setProduct((p) => ({ ...p, variants: [...p.variants, emptyVariant] }));
   };
 
   const removeVariant = (i: number) => {
-    setForm((s) => {
-      const variants = Array.from(s.variants ?? []);
-      if (variants.length <= 1) return s; // keep at least one variant
-      variants.splice(i, 1);
-      return { ...s, variants };
-    });
+    if (product.variants.length === 1) return;
+    setProduct((p) => ({ ...p, variants: p.variants.filter((_, idx) => idx !== i) }));
   };
 
-  const handleVariantField = (i: number, key: keyof Variant, value: any) => {
-    setForm((s) => {
-      const variants = Array.from(s.variants ?? []);
-      variants[i] = { ...(variants[i] ?? {}), [key]: value };
-      return { ...s, variants };
-    });
+  const handleDocChange = (docId: number, file: File | null) => {
+    setDocFiles((prev) => ({ ...prev, [docId]: file }));
   };
 
-  const handleVariantImages = (i: number, e: ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files) return;
-    const arr = Array.from(files);
-    setForm((s) => {
-      const variants = Array.from(s.variants ?? []);
-      variants[i] = {
-        ...(variants[i] ?? {}),
-        images: [...(variants[i]?.images ?? []), ...arr],
-      };
-      return { ...s, variants };
-    });
-  };
-
-  const removeVariantImage = (vi: number, idx: number) => {
-    setForm((s) => {
-      const variants = Array.from(s.variants ?? []);
-      const imgs = Array.from(variants[vi].images ?? []);
-      imgs.splice(idx, 1);
-      variants[vi] = { ...(variants[vi] ?? {}), images: imgs };
-      return { ...s, variants };
-    });
-  };
-
-  const handleSave = async (e: FormEvent) => {
+  /* =====================
+     SUBMIT
+  ===================== */
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setError(null);
 
     try {
-      const fd = new FormData();
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
 
-      fd.append("productName", String(form.productName ?? ""));
-      fd.append("brandName", String(form.brandName ?? ""));
-      fd.append("manufacturer", String(form.manufacturer ?? ""));
-      fd.append("barCode", String(form.barCode ?? ""));
-      fd.append("model", String(form.model ?? ""));
-      fd.append("gstIn", String(form.gstIn ?? ""));
-      fd.append("description", String(form.description ?? ""));
-      fd.append("shortDescription", String(form.shortDescription ?? ""));
-      if (form.categoryId != null)
-        fd.append("categoryId", String(form.categoryId));
-      if (form.subCategoryId != null)
-        fd.append("subCategoryId", String(form.subCategoryId));
-      if (form.subSubCategoryId != null)
-        fd.append("subSubCategoryId", String(form.subSubCategoryId));
+      formData.append("productName", product.productName);
+      formData.append("brandName", product.brandName);
+      formData.append("manufacturer", product.manufacturer);
+      formData.append("barCode", product.barCode);
+      formData.append("gstIn", product.gstIn);
+      formData.append("description", product.description);
+      formData.append("shortDescription", product.shortDescription);
+      formData.append("category_id", String(product.categoryId));
 
-      (form.productImages ?? []).forEach((img) => {
-        if (img instanceof File)
-          fd.append("productImages", img, (img as File).name);
-        else fd.append("existingProductImages[]", String(img));
+      if (product.subCategoryId)
+        formData.append("subcategory_id", String(product.subCategoryId));
+      if (product.subSubCategoryId)
+        formData.append("sub_subcategory_id", String(product.subSubCategoryId));
+
+      product.productImages.forEach((f) => formData.append("images", f));
+
+      Object.entries(docFiles).forEach(([id, file]) => {
+        if (file) formData.append(id, file);
       });
 
-      const variantsMeta: any[] = [];
-      (form.variants ?? []).forEach((v) => {
-        const meta = { ...v };
-        meta.images = []; // replaced by file uploads / existing urls fields
-        variantsMeta.push(meta);
-      });
-      fd.append("variants", JSON.stringify(variantsMeta));
-
-      (form.variants ?? []).forEach((v, vi) => {
-        (v.images ?? []).forEach((img) => {
-          if (img instanceof File)
-            fd.append(`variantFiles_${vi}`, img, (img as File).name);
-          else fd.append(`existingVariantImages[${vi}][]`, String(img));
-        });
-      });
-
-      const res = await fetch(
-        `${API_BASE}/api/product/${encodeURIComponent(
-          String(form.productId ?? productId)
-        )}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
-          },
-          body: fd,
-        }
+      formData.append(
+        "variants",
+        JSON.stringify(
+          product.variants.map((v) => ({
+            size: v.size,
+            color: v.color,
+            dimension: v.dimension,
+            weight: v.weight,
+            mrp: v.MRP,
+            salesPrice: v.salesPrice,
+            stock: v.stock,
+            expiryDate: v.expiryDate,
+            manufacturingYear: v.manufacturingYear,
+            materialType: v.materialType,
+            customAttributes: v.customAttributes,
+          }))
+        )
       );
 
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(`Save failed: ${res.status} ${txt}`);
-      }
+      product.variants.forEach((v, i) =>
+        v.images.forEach((img, idx) => formData.append(`variant_${i}_${idx}`, img))
+      );
 
-      router.push(`/manager/products/review/${form.productId ?? productId}`);
+      const res = await fetch(`${API_BASE}/api/product/update/${productId}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const json = await res.json();
+      if (!json.success) throw new Error(json.message);
+
+      router.push("/manager/products");
     } catch (err: any) {
-      console.error(err);
-      setError(err?.message ?? "Failed to save product");
+      setError(err.message);
     } finally {
       setSaving(false);
     }
@@ -326,523 +359,137 @@ export default function EditProductPage({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <FaSpinner className="animate-spin text-4xl text-[#852BAF]" />
-        <span className="ml-4 text-gray-600">Loading product...</span>
+      <div className="flex items-center justify-center min-h-screen">
+        <FaSpinner className="animate-spin text-3xl text-[#852BAF]" />
       </div>
     );
   }
 
+  /* =====================
+     RENDER
+  ===================== */
   return (
-    <div className="p-6" style={{ backgroundColor: "#FFFAFB" }}>
-      <div className="p-6 mx-auto bg-white border border-gray-100 shadow-xl rounded-2xl max-w-7xl">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="mb-1 text-2xl font-bold text-gray-900">
-              Edit Product
-            </h1>
-            <div className="text-sm text-gray-600">
-              Editing product ID: {form.productId ?? productId}
-            </div>
-          </div>
+    <div className="p-6 max-w-7xl mx-auto">
+      <h1 className="text-3xl font-bold mb-6">Edit Product</h1>
 
+      {error && <div className="mb-4 p-3 bg-red-50 text-red-700">{error}</div>}
+
+      <form onSubmit={handleSubmit} className="space-y-10">
+        {/* CATEGORY */}
+        <section>
+          <SectionHeader icon={FaTag} title="Category" description="Same as add product" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <select name="categoryId" value={product.categoryId || ""} onChange={handleFieldChange} className="p-3 border rounded">
+              <option value="">Select Category</option>
+              {categories.map((c) => (
+                <option key={c.category_id} value={c.category_id}>{c.category_name}</option>
+              ))}
+            </select>
+            <select name="subCategoryId" value={product.subCategoryId || ""} onChange={handleFieldChange} disabled={!product.categoryId} className="p-3 border rounded">
+              <option value="">Select Sub Category</option>
+              {subCategories.map((s) => (
+                <option key={s.subcategory_id} value={s.subcategory_id}>{s.subcategory_name}</option>
+              ))}
+            </select>
+            <select name="subSubCategoryId" value={product.subSubCategoryId || ""} onChange={handleFieldChange} disabled={!product.subCategoryId} className="p-3 border rounded">
+              <option value="">Select Type</option>
+              {subSubCategories.map((ss) => (
+                <option key={ss.sub_subcategory_id} value={ss.sub_subcategory_id}>{ss.name}</option>
+              ))}
+            </select>
+          </div>
+        </section>
+
+        {/* BASIC INFO */}
+        <section>
+          <SectionHeader icon={FaTag} title="Product Info" description="Identification details" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Input label="Product Name" name="productName" value={product.productName} onChange={handleFieldChange} />
+            <Input label="Brand" name="brandName" value={product.brandName} onChange={handleFieldChange} />
+            <Input label="Manufacturer" name="manufacturer" value={product.manufacturer} onChange={handleFieldChange} />
+            <Input label="Barcode" name="barCode" value={product.barCode} onChange={handleFieldChange} />
+            <Input label="GST" name="gstIn" value={product.gstIn} onChange={handleFieldChange} />
+          </div>
+        </section>
+
+        {/* VARIANTS */}
+        <section>
+          <SectionHeader icon={FaBox} title="Variants" description="At least one variant always present" />
+          {product.variants.map((v, i) => (
+            <div key={i} className="p-4 border rounded mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <Input label="Size" value={v.size} onChange={(e:any)=>handleVariantChange(i,"size",e.target.value)} />
+                <Input label="Color" value={v.color} onChange={(e:any)=>handleVariantChange(i,"color",e.target.value)} />
+                <Input label="Dimension" value={v.dimension} onChange={(e:any)=>handleVariantChange(i,"dimension",e.target.value)} />
+                <Input label="Weight" value={v.weight} onChange={(e:any)=>handleVariantChange(i,"weight",e.target.value)} />
+                <Input label="MRP" value={v.MRP} onChange={(e:any)=>handleVariantChange(i,"MRP",e.target.value)} />
+                <Input label="Sales Price" value={v.salesPrice} onChange={(e:any)=>handleVariantChange(i,"salesPrice",e.target.value)} />
+                <Input label="Stock" value={v.stock} onChange={(e:any)=>handleVariantChange(i,"stock",e.target.value)} />
+                <Input label="Expiry Date" type="date" value={v.expiryDate} onChange={(e:any)=>handleVariantChange(i,"expiryDate",e.target.value)} />
+                <Input label="Manufacturing Year" type="date" value={v.manufacturingYear} onChange={(e:any)=>handleVariantChange(i,"manufacturingYear",e.target.value)} />
+                <Input label="Material Type" value={v.materialType} onChange={(e:any)=>handleVariantChange(i,"materialType",e.target.value)} />
+              </div>
+
+              {v.existingImages.length > 0 && (
+                <div className="flex gap-2 mt-3">
+                  {v.existingImages.map((img, idx) => (
+                    <img key={idx} src={img} className="w-16 h-16 object-cover border" />
+                  ))}
+                </div>
+              )}
+
+              <input type="file" multiple className="mt-3" onChange={(e)=>handleVariantImages(i,e.target.files)} />
+
+              {product.variants.length > 1 && (
+                <button type="button" onClick={()=>removeVariant(i)} className="mt-2 text-sm text-red-600 flex items-center">
+                  <FaTrash className="mr-1" /> Remove Variant
+                </button>
+              )}
+            </div>
+          ))}
+
+          <button type="button" onClick={addVariant} className="text-[#852BAF] flex items-center">
+            <FaPlus className="mr-1" /> Add Variant
+          </button>
+        </section>
+
+        {/* DESCRIPTION */}
+        <section>
+          <SectionHeader icon={FaTag} title="Description" description="Same as add product" />
+          <textarea name="description" value={product.description} onChange={handleFieldChange} className="w-full p-3 border rounded" rows={4} />
+          <textarea name="shortDescription" value={product.shortDescription} onChange={handleFieldChange} className="w-full p-3 border rounded mt-3" rows={2} />
+        </section>
+
+        {/* PRODUCT IMAGES */}
+        <section>
+          <SectionHeader icon={FaImages} title="Product Images" description="Existing + new" />
           <div className="flex gap-2">
-            <button
-              onClick={() => router.push(`/src/vendor/products/list`)}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium border rounded-lg bg-white hover:bg-gray-50"
-            >
-              <FaArrowLeft /> Back
-            </button>
-
-            <Link
-              href={`/manager/products/review/${form.productId ?? productId}`}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium border rounded-lg bg-white hover:bg-gray-50"
-            >
-              <FaEdit /> Review
-            </Link>
+            {product.existingImages.map((img, i) => (
+              <img key={i} src={img} className="w-20 h-20 object-cover border" />
+            ))}
           </div>
-        </div>
+          <input type="file" multiple className="mt-3" onChange={(e)=>setProduct(p=>({...p,productImages:Array.from(e.target.files||[])}))} />
+        </section>
 
-        {error && (
-          <div className="mb-4 p-3 border rounded bg-red-50 text-red-700">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSave} className="space-y-6">
-          {/* === Category Selection === */}
-          <div>
-            <SectionHeader
-              icon={FaTag}
-              title="Category Selection"
-              subtitle="Category, sub-category and type"
-            />
-
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-              <div>
-                <label className="block mb-2 text-sm font-medium text-gray-700">
-                  Category
-                </label>
-                <input
-                  name="categoryId"
-                  value={String(form.categoryId ?? "")}
-                  onChange={handleField}
-                  className="w-full p-3 border rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-2 text-sm font-medium text-gray-700">
-                  Sub Category
-                </label>
-                <input
-                  name="subCategoryId"
-                  value={String(form.subCategoryId ?? "")}
-                  onChange={handleField}
-                  className="w-full p-3 border rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-2 text-sm font-medium text-gray-700">
-                  Sub Sub Category
-                </label>
-                <input
-                  name="subSubCategoryId"
-                  value={String(form.subSubCategoryId ?? "")}
-                  onChange={handleField}
-                  className="w-full p-3 border rounded-lg"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* === Product Identification === */}
-          <div>
-            <SectionHeader
-              icon={FaTag}
-              title="Product Identification"
-              subtitle="Basic product information"
-            />
-
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-              <div>
-                <label className="block mb-2 text-sm font-medium text-gray-700">
-                  Product Name
-                </label>
-                <input
-                  name="productName"
-                  value={form.productName ?? ""}
-                  onChange={handleField}
-                  className="w-full p-3 border rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-2 text-sm font-medium text-gray-700">
-                  Brand Name
-                </label>
-                <input
-                  name="brandName"
-                  value={form.brandName ?? ""}
-                  onChange={handleField}
-                  className="w-full p-3 border rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-2 text-sm font-medium text-gray-700">
-                  Manufacturer
-                </label>
-                <input
-                  name="manufacturer"
-                  value={form.manufacturer ?? ""}
-                  onChange={handleField}
-                  className="w-full p-3 border rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-2 text-sm font-medium text-gray-700">
-                  Barcode
-                </label>
-                <input
-                  name="barCode"
-                  value={form.barCode ?? ""}
-                  onChange={handleField}
-                  className="w-full p-3 border rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-2 text-sm font-medium text-gray-700">
-                  GST
-                </label>
-                <input
-                  name="gstIn"
-                  value={form.gstIn ?? ""}
-                  onChange={handleField}
-                  className="w-full p-3 border rounded-lg"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* === Additional Fields (Variants) === */}
-          <div>
-            <SectionHeader
-              icon={FaBox}
-              title="Additional Fields"
-              subtitle="Variants, prices, stock, attributes"
-            />
-
-            <div className="space-y-4">
-              {(form.variants ?? []).map((v, idx) => (
-                <div key={idx} className="p-4 border rounded-lg bg-gray-50">
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                    <div>
-                      <label className="block mb-1 text-sm font-medium text-gray-700">
-                        Size
-                      </label>
-                      <input
-                        value={v.size ?? ""}
-                        onChange={(e) =>
-                          handleVariantField(idx, "size", e.target.value)
-                        }
-                        className="w-full p-2 border rounded-lg"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block mb-1 text-sm font-medium text-gray-700">
-                        Color
-                      </label>
-                      <input
-                        value={v.color ?? ""}
-                        onChange={(e) =>
-                          handleVariantField(idx, "color", e.target.value)
-                        }
-                        className="w-full p-2 border rounded-lg"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block mb-1 text-sm font-medium text-gray-700">
-                        Material Type
-                      </label>
-                      <input
-                        value={v.materialType ?? ""}
-                        onChange={(e) =>
-                          handleVariantField(
-                            idx,
-                            "materialType",
-                            e.target.value
-                          )
-                        }
-                        className="w-full p-2 border rounded-lg"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block mb-1 text-sm font-medium text-gray-700">
-                        Dimension
-                      </label>
-                      <input
-                        value={v.dimension ?? ""}
-                        onChange={(e) =>
-                          handleVariantField(idx, "dimension", e.target.value)
-                        }
-                        className="w-full p-2 border rounded-lg"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block mb-1 text-sm font-medium text-gray-700">
-                        MRP
-                      </label>
-                      <input
-                        value={String(v.MRP ?? "")}
-                        onChange={(e) =>
-                          handleVariantField(idx, "MRP", e.target.value)
-                        }
-                        className="w-full p-2 border rounded-lg"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block mb-1 text-sm font-medium text-gray-700">
-                        Sales Price
-                      </label>
-                      <input
-                        value={String(v.salesPrice ?? "")}
-                        onChange={(e) =>
-                          handleVariantField(idx, "salesPrice", e.target.value)
-                        }
-                        className="w-full p-2 border rounded-lg"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block mb-1 text-sm font-medium text-gray-700">
-                        Stock
-                      </label>
-                      <input
-                        value={String(v.stock ?? "")}
-                        onChange={(e) =>
-                          handleVariantField(idx, "stock", e.target.value)
-                        }
-                        className="w-full p-2 border rounded-lg"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block mb-1 text-sm font-medium text-gray-700">
-                        Expiry Date
-                      </label>
-                      <input
-                        value={v.expiryDate ?? ""}
-                        onChange={(e) =>
-                          handleVariantField(idx, "expiryDate", e.target.value)
-                        }
-                        className="w-full p-2 border rounded-lg"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block mb-1 text-sm font-medium text-gray-700">
-                        Manufacturing Year
-                      </label>
-                      <input
-                        value={v.manufacturingYear ?? ""}
-                        onChange={(e) =>
-                          handleVariantField(
-                            idx,
-                            "manufacturingYear",
-                            e.target.value
-                          )
-                        }
-                        className="w-full p-2 border rounded-lg"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Variant images */}
-                  <div className="mt-3">
-                    <label className="block mb-2 text-sm font-medium text-gray-700">
-                      Variant Images
-                    </label>
-                    <div className="flex gap-2 flex-wrap mb-2">
-                      {(v.images ?? []).map((img, j) => {
-                        const url =
-                          typeof img === "string"
-                            ? resolveImageUrl(img)
-                            : URL.createObjectURL(img as File);
-                        return (
-                          <div
-                            key={j}
-                            className="relative w-20 h-20 border rounded overflow-hidden"
-                          >
-                            <img
-                              src={url}
-                              alt={`v-${idx}-img-${j}`}
-                              className="w-full h-full object-cover"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => removeVariantImage(idx, j)}
-                              className="absolute top-1 right-1 p-1 text-xs bg-white rounded shadow"
-                            >
-                              <FaTrash />
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    <div>
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={(e) => handleVariantImages(idx, e)}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-3 flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => removeVariant(idx)}
-                      className="px-3 py-1 text-sm border rounded-lg bg-white"
-                    >
-                      <FaTrash /> Remove Variant
-                    </button>
-                  </div>
+        {/* DOCUMENTS */}
+        {requiredDocs.length > 0 && (
+          <section>
+            <SectionHeader icon={FaFileUpload} title="Required Documents" description="Upload if needed" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {requiredDocs.map((doc) => (
+                <div key={doc.document_id} className="border p-3 rounded">
+                  <label className="text-sm font-medium">{doc.document_name}</label>
+                  <input type="file" className="mt-2" onChange={(e)=>handleDocChange(doc.document_id,e.target.files?.[0]||null)} />
                 </div>
               ))}
             </div>
+          </section>
+        )}
 
-            <div className="mt-3">
-              <button
-                type="button"
-                onClick={addVariant}
-                className="px-3 py-1 text-sm border rounded-lg bg-white"
-              >
-                <FaPlus /> Add Variant
-              </button>
-            </div>
-          </div>
-
-          {/* === Product Description === */}
-          <div>
-            <SectionHeader
-              icon={FaDollarSign}
-              title="Product Description"
-              subtitle="Detailed and short descriptions"
-            />
-
-            <div>
-              <label className="block mb-2 text-sm font-medium text-gray-700">
-                Short Description
-              </label>
-              <input
-                name="shortDescription"
-                value={form.shortDescription ?? ""}
-                onChange={handleField}
-                className="w-full p-3 border rounded-lg"
-              />
-            </div>
-
-            <div className="mt-3">
-              <label className="block mb-2 text-sm font-medium text-gray-700">
-                Detailed Description
-              </label>
-              <textarea
-                name="description"
-                value={form.description ?? ""}
-                onChange={handleField}
-                rows={6}
-                className="w-full p-3 border rounded-lg"
-              />
-            </div>
-          </div>
-
-          {/* === Main Product Images === */}
-          <div>
-            <SectionHeader
-              icon={FaImages}
-              title="Main Product Images"
-              subtitle="Upload primary images for the product listing"
-            />
-
-            <div className="flex gap-2 flex-wrap mb-3">
-              {(form.productImages ?? []).map((img, i) => {
-                const url =
-                  typeof img === "string"
-                    ? resolveImageUrl(img)
-                    : URL.createObjectURL(img as File);
-                return (
-                  <div
-                    key={i}
-                    className="relative w-20 h-20 border rounded overflow-hidden"
-                  >
-                    <img
-                      src={url}
-                      alt={`main-${i}`}
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeMainImage(i)}
-                      className="absolute top-1 right-1 p-1 text-xs bg-white rounded shadow"
-                    >
-                      <FaTrash />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div>
-              <input
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handleMainImages}
-              />
-            </div>
-          </div>
-
-          {/* === Documents === */}
-          {form.requiredDocs && form.requiredDocs.length > 0 && (
-            <div>
-              <SectionHeader
-                icon={FaFileUpload}
-                title="Documents"
-                subtitle="Uploaded / required documents"
-              />
-
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                {form.requiredDocs.map((doc) => (
-                  <div
-                    key={doc.document_id}
-                    className="p-4 bg-white border rounded-lg shadow-sm"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <div className="font-medium text-gray-800">
-                          {doc.document_name}
-                        </div>
-                        <div className="text-xs text-gray-500">Existing</div>
-                      </div>
-                      {doc.url ? (
-                        <a
-                          href={resolveImageUrl(doc.url)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-sm text-blue-600 underline"
-                        >
-                          View
-                        </a>
-                      ) : (
-                        <div className="text-xs text-gray-500">
-                          Not uploaded
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Submit Button */}
-          <div className="pt-4 flex items-center gap-3">
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-[#852BAF] text-white hover:opacity-90 disabled:opacity-60"
-            >
-              {saving ? (
-                <>
-                  <FaSpinner className="animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                "Submit Product"
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => router.push(`/src/vendor/products/list`)}
-              className="px-4 py-2 text-sm font-medium border rounded-lg bg-white"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
-      </div>
+        <button disabled={saving} className="w-full py-3 rounded-full text-white font-bold" style={{background:"linear-gradient(to right,#852BAF,#FC3F78)"}}>
+          {saving ? "Updating..." : "Update Product"}
+        </button>
+      </form>
     </div>
   );
 }
