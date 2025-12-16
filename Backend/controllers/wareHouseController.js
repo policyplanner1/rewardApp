@@ -206,6 +206,7 @@ class wareHouseController {
 
   // send to Inventory
   async sendToInventory(req, res) {
+    let connection;
     const { grn, warehouse_id, warehouseLocation } = req.body;
 
     if (!grn || !warehouse_id || !warehouseLocation) {
@@ -215,9 +216,12 @@ class wareHouseController {
       });
     }
 
-    try {
+    try {g
       //  Fetch the stock entry
-      const [stockRows] = await db.query(
+      connection = await db.getConnection();
+      await connection.beginTransaction();
+
+      const [stockRows] = await connection.query(
         `SELECT * FROM stock_in_entries WHERE grn = ? AND status = 'Pending'`,
         [grn]
       );
@@ -232,7 +236,7 @@ class wareHouseController {
       const stock = stockRows[0];
 
       // Check if the product+variant+warehouse already exists in inventory
-      const [inventoryRows] = await db.query(
+      const [inventoryRows] = await connection.query(
         `SELECT * FROM inventory WHERE product_id = ? AND variant_id = ? AND warehouse_id = ?`,
         [stock.product_id, stock.variant_id, warehouse_id]
       );
@@ -240,7 +244,7 @@ class wareHouseController {
       if (inventoryRows.length > 0) {
         //  Already exists → update quantity and location
         const existingInventory = inventoryRows[0];
-        await db.query(
+        await connection.query(
           `UPDATE inventory
          SET quantity = quantity + ?, location = ?, expiry_date = ?
          WHERE inventory_id = ?`,
@@ -253,7 +257,7 @@ class wareHouseController {
         );
       } else {
         //  Does not exist → insert new inventory record
-        await db.query(
+        await connection.query(
           `INSERT INTO inventory
          (product_id, variant_id, warehouse_id, quantity, location, expiry_date, vendor_id)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -270,23 +274,28 @@ class wareHouseController {
       }
 
       //  Mark the stock_in_entries as sent
-      await db.query(
+      await connection.query(
         `UPDATE stock_in_entries
        SET status = 'Sent'
        WHERE grn = ?`,
         [grn]
       );
 
+      // Commit transaction
+      await connection.commit();
       return res.json({
         success: true,
         message: "Stock sent to inventory successfully",
       });
     } catch (error) {
+      if (connection) await connection.rollback();
       console.error("Send to inventory error:", error);
       res.status(500).json({
         success: false,
         message: "Internal server error",
       });
+    } finally {
+      if (connection) connection.release();
     }
   }
 
