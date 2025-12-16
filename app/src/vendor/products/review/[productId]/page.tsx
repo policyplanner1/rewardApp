@@ -24,7 +24,6 @@ interface VariantView {
   MRP?: string | number;
   salesPrice?: string | number;
   stock?: string | number;
-  sku?: string;
   expiryDate?: string;
   manufacturingYear?: string;
   materialType?: string;
@@ -193,7 +192,6 @@ export default function ReviewProductPage({
               MRP: v.MRP ?? v.mrp ?? "",
               salesPrice: v.salesPrice ?? v.sales_price ?? v.price ?? "",
               stock: v.stock ?? v.qty ?? "",
-              sku: v.sku ?? "",
               expiryDate: v.expiryDate ?? "",
               manufacturingYear: v.manufacturingYear ?? "",
               materialType: v.materialType ?? "",
@@ -339,7 +337,6 @@ export default function ReviewProductPage({
               value={product.manufacturer}
             />
             <FormInput id="barCode" label="Barcode" value={product.barCode} />
-            <FormInput id="model" label="Model / SKU" value={product.model} />
             <FormInput id="gst" label="GST" value={product.gstIn} />
           </div>
         </section>

@@ -26,7 +26,6 @@ type Variant = {
   MRP?: string | number;
   salesPrice?: string | number;
   stock?: string | number;
-  sku?: string;
   expiryDate?: string;
   manufacturingYear?: string;
   materialType?: string;
@@ -159,7 +158,6 @@ export default function EditProductPage({
               MRP: v.MRP ?? v.mrp ?? "",
               salesPrice: v.salesPrice ?? v.sales_price ?? v.price ?? "",
               stock: v.stock ?? v.qty ?? "",
-              sku: v.sku ?? "",
               expiryDate: v.expiryDate ?? "",
               manufacturingYear: v.manufacturingYear ?? "",
               materialType: v.materialType ?? "",
@@ -478,18 +476,6 @@ export default function EditProductPage({
 
               <div>
                 <label className="block mb-2 text-sm font-medium text-gray-700">
-                  Model / SKU
-                </label>
-                <input
-                  name="model"
-                  value={form.model ?? ""}
-                  onChange={handleField}
-                  className="w-full p-3 border rounded-lg"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-2 text-sm font-medium text-gray-700">
                   GST
                 </label>
                 <input
@@ -604,19 +590,6 @@ export default function EditProductPage({
                         value={String(v.stock ?? "")}
                         onChange={(e) =>
                           handleVariantField(idx, "stock", e.target.value)
-                        }
-                        className="w-full p-2 border rounded-lg"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block mb-1 text-sm font-medium text-gray-700">
-                        SKU
-                      </label>
-                      <input
-                        value={v.sku ?? ""}
-                        onChange={(e) =>
-                          handleVariantField(idx, "sku", e.target.value)
                         }
                         className="w-full p-2 border rounded-lg"
                       />

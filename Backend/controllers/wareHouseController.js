@@ -216,7 +216,7 @@ class wareHouseController {
       });
     }
 
-    try {g
+    try {
       //  Fetch the stock entry
       connection = await db.getConnection();
       await connection.beginTransaction();
