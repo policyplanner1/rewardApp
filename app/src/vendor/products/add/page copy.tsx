@@ -1076,24 +1076,10 @@ export default function ProductListingDynamic() {
                   onChange={(e) => {
                     if (e.target.value === "other") {
                       setIsCustomCategory(true);
-                      setIsCustomSubcategory(true);
-                      setIsCustomSubSubcategory(true);
-
-                      setProduct((prev) => ({
-                        ...prev,
-                        categoryId: null,
-                        subCategoryId: null,
-                        subSubCategoryId: null,
-                      }));
+                      setProduct((prev) => ({ ...prev, categoryId: null }));
                     } else {
                       setIsCustomCategory(false);
-                      setIsCustomSubcategory(false);
-                      setIsCustomSubSubcategory(false);
-
                       setCustomCategory("");
-                      setCustomSubCategory("");
-                      setCustomSubSubCategory("");
-
                       handleFieldChange(e);
                     }
                   }}
@@ -1122,6 +1108,7 @@ export default function ProductListingDynamic() {
               </div>
 
               {/* Sub Category */}
+              {/* Sub Category */}
               <div>
                 <label className="block mb-2 text-sm font-medium text-gray-700">
                   Sub Category
@@ -1135,21 +1122,14 @@ export default function ProductListingDynamic() {
                   onChange={(e) => {
                     if (e.target.value === "other") {
                       setIsCustomSubcategory(true);
-                      setIsCustomSubSubcategory(true);
-
-                      setProduct((prev) => ({
-                        ...prev,
-                        subCategoryId: null,
-                        subSubCategoryId: null,
-                      }));
+                      setProduct((prev) => ({ ...prev, subCategoryId: null }));
                     } else {
                       setIsCustomSubcategory(false);
-                      setIsCustomSubSubcategory(false);
                       setCustomSubCategory("");
                       handleFieldChange(e);
                     }
                   }}
-                  disabled={!product.categoryId && !isCustomCategory}
+                  disabled={!product.categoryId}
                   className="w-full p-3 border rounded-lg"
                 >
                   <option value="">Select Sub Category</option>
@@ -1168,12 +1148,13 @@ export default function ProductListingDynamic() {
                     type="text"
                     value={custom_subcategory}
                     onChange={(e) => setCustomSubCategory(e.target.value)}
-                    placeholder="Enter custom sub-category"
+                    placeholder="Enter new sub-category"
                     className="w-full p-3 mt-3 border rounded-lg"
                   />
                 )}
               </div>
 
+              {/* Sub Sub Category */}
               {/* Sub Sub Category */}
               <div>
                 <label className="block mb-2 text-sm font-medium text-gray-700">
@@ -1200,7 +1181,7 @@ export default function ProductListingDynamic() {
                       handleFieldChange(e);
                     }
                   }}
-                  disabled={!product.subCategoryId && !isCustomSubcategory}
+                  disabled={!product.subCategoryId}
                   className="w-full p-3 border rounded-lg"
                 >
                   <option value="">Select Type</option>
@@ -1222,7 +1203,7 @@ export default function ProductListingDynamic() {
                     type="text"
                     value={custom_subsubcategory}
                     onChange={(e) => setCustomSubSubCategory(e.target.value)}
-                    placeholder="Enter custom type / sub-type"
+                    placeholder="Enter new type"
                     className="w-full p-3 mt-3 border rounded-lg"
                   />
                 )}
@@ -1349,6 +1330,7 @@ export default function ProductListingDynamic() {
             </div>
           </section>
 
+       
           {/* Main Product Images */}
           <section>
             <SectionHeader
