@@ -51,6 +51,7 @@ interface RequiredDocument {
 }
 
 interface Variant {
+  variant_id: string | number;
   size: string;
   color: string;
   dimension: string;
@@ -64,6 +65,7 @@ interface Variant {
   manufacturingYear: string;
   materialType: string;
   images: File[];
+  existingImages?: string[];
 }
 
 interface ProductData {
@@ -79,6 +81,7 @@ interface ProductData {
   gstIn?: string;
   variants: Variant[];
   productImages: File[];
+  existingImages?: string[];
 }
 
 const initialProductData: ProductData = {
@@ -94,6 +97,7 @@ const initialProductData: ProductData = {
   gstIn: "",
   variants: [
     {
+      variant_id: "",
       size: "",
       color: "",
       dimension: "",
@@ -209,11 +213,6 @@ export default function EditProductPage() {
     if (!e.target.files) return;
 
     const files = Array.from(e.target.files);
-
-    if (files.length < 1) {
-      setImageError("Please select at least 1 image.");
-      return;
-    }
 
     if (files.length > 5) {
       setImageError("You can select a maximum of 5 images.");
@@ -361,10 +360,12 @@ export default function EditProductPage() {
         categoryId: p.category_id || null,
         subCategoryId: p.subcategory_id || null,
         subSubCategoryId: p.sub_subcategory_id || null,
-        productImages: [], 
+        productImages: [],
+        existingImages: p.images || [],
         variants:
           p.variants?.length > 0
             ? p.variants.map((v: any) => ({
+                variant_id: v.variant_id,
                 size: v.size || "",
                 color: v.color || "",
                 dimension: v.dimension || "",
@@ -378,6 +379,7 @@ export default function EditProductPage() {
                 materialType: v.material_type || "",
                 customAttributes: v.custom_attributes || {},
                 images: [],
+                existingImages: v.images || [],
               }))
             : [...initialProductData.variants],
       });
@@ -444,11 +446,6 @@ export default function EditProductPage() {
 
     const files = Array.from(e.target.files);
 
-    if (files.length < 1) {
-      alert("Please select at least 1 image for this variant.");
-      return;
-    }
-
     if (files.length > 5) {
       alert("You can select a maximum of 5 images.");
       return;
@@ -467,6 +464,7 @@ export default function EditProductPage() {
       variants: [
         ...prev.variants,
         {
+          variant_id: "",
           size: "",
           color: "",
           dimension: "",
@@ -475,11 +473,12 @@ export default function EditProductPage() {
           MRP: "",
           salesPrice: "",
           stock: "",
+          sku: "",
           expiryDate: "",
           manufacturingYear: "",
           materialType: "",
-          sku: "",
           images: [],
+          existingImages: [],
         },
       ],
     }));
@@ -544,21 +543,6 @@ export default function EditProductPage() {
         throw new Error("Please fill in all required product information");
       }
 
-      // Validate required documents
-      for (const doc of requiredDocs) {
-        if (doc.status === 1 && !docFiles[doc.document_id]) {
-          // status 1 = required
-          throw new Error(
-            `Please upload required document: ${doc.document_name}`
-          );
-        }
-      }
-
-      // Validate at least one main image
-      if (product.productImages.length === 0) {
-        throw new Error("Please upload at least one product image");
-      }
-
       // Validate variants
       if (product.variants.length === 0) {
         throw new Error("Please add at least one variant");
@@ -571,6 +555,7 @@ export default function EditProductPage() {
         ) {
           throw new Error("Please enter valid sales price for all variants");
         }
+
         if (!variant.stock || parseInt(variant.stock as string) < 0) {
           throw new Error("Please enter valid stock quantity for all variants");
         }
@@ -604,48 +589,19 @@ export default function EditProductPage() {
 
       if (product.gstIn) formData.append("gstIn", product.gstIn);
 
-      // Add first variant data as main product data (for backward compatibility)
-      if (product.variants.length > 0) {
-        const firstVariant = product.variants[0];
-        formData.append("size", firstVariant.size || "");
-        formData.append("color", firstVariant.color || "");
-        formData.append("dimension", firstVariant.dimension || "");
-        formData.append("weight", firstVariant.weight || "");
-        formData.append("stock", firstVariant.stock?.toString() || "0");
-        formData.append(
-          "salesPrice",
-          firstVariant.salesPrice?.toString() || "0"
-        );
-        formData.append("MRP", firstVariant.MRP?.toString() || "0");
-        formData.append(
-          "expiryDate",
-          firstVariant.expiryDate?.toString() || ""
-        );
-        formData.append(
-          "manufacturingYear",
-          firstVariant.manufacturingYear?.toString() || ""
-        );
-        formData.append(
-          "materialType",
-          firstVariant.materialType?.toString() || ""
-        );
-      }
-
       // Add main product images
       product.productImages.forEach((file, index) => {
         formData.append("images", file);
       });
 
-      // Add document files - map document_id to field names
       Object.entries(docFiles).forEach(([docId, file]) => {
         if (file) {
           formData.append(docId, file);
         }
       });
 
-      // Add variants as JSON
       const variantsPayload = product.variants.map((variant, index) => ({
-        // sku: variant.sku || generateSKU(index),
+        variant_id: variant.variant_id,
         expiryDate: variant.expiryDate,
         manufacturingYear: variant.manufacturingYear,
         materialType: variant.materialType,
@@ -669,13 +625,16 @@ export default function EditProductPage() {
       });
 
       // Submit to backend
-      const response = await fetch(`${API_BASE}/api/product/create-product`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
+      const response = await fetch(
+        `${API_BASE}/api/product/update-product/${productId}`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        }
+      );
 
       const data = await response.json();
 
@@ -683,12 +642,8 @@ export default function EditProductPage() {
         throw new Error(data.message || "Failed to create product");
       }
 
-      setSuccess(`Product created successfully! Product ID: ${data.productId}`);
-
-      // Reset form
-      setProduct(initialProductData);
-      setDocFiles({});
-      setRequiredDocs([]);
+      setSuccess(`Product updated successfully! Product ID: ${data.productId}`);
+      router.push("/src/vendor/products/list");
     } catch (err: any) {
       console.error("Submit error:", err);
       setError(err.message);
@@ -941,39 +896,22 @@ export default function EditProductPage() {
               </div>
             </div>
 
-            {/* === ONLY SHOW CUSTOM ATTRIBUTES IF PRESENT === */}
-            {attributes?.attributes && (
-              <div className="mb-4">
-                <h4 className="mb-2 font-medium text-gray-700">
-                  Product Attributes
-                </h4>
-
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                  {Object.keys(attributes.attributes).map((key) => (
-                    <div key={key}>
-                      <label className="block mb-1 text-sm font-medium text-gray-700">
-                        {key}
-                      </label>
-                      <input
-                        type="text"
-                        value={variant.customAttributes[key] || ""}
-                        onChange={(e) =>
-                          handleVariantAttributeChange(
-                            index,
-                            key,
-                            e.target.value
-                          )
-                        }
-                        placeholder={`Enter ${key}`}
-                        className="w-full p-2 border rounded-lg"
-                      />
-                    </div>
+            {variant.existingImages && variant.existingImages.length > 0 && (
+              <div className="mt-3">
+                <p className="text-xs text-gray-500 mb-1">Existing images</p>
+                <div className="flex gap-2 flex-wrap">
+                  {variant.existingImages.map((img, imgIndex) => (
+                    <img
+                      key={imgIndex}
+                      src={img}
+                      alt={`Variant ${index + 1} image ${imgIndex + 1}`}
+                      className="w-16 h-16 object-cover border rounded"
+                    />
                   ))}
                 </div>
               </div>
             )}
 
-            {/* === VARIANT IMAGES === */}
             {/* Variant Images */}
             <div className="mt-4">
               <label className="block mb-2 text-sm font-medium text-gray-700">
@@ -1368,6 +1306,18 @@ export default function EditProductPage() {
               description="Main images for product listing"
             />
 
+            {product.existingImages && product.existingImages.length > 0 && (
+              <div className="mb-3 flex gap-2 flex-wrap">
+                {product.existingImages.map((img, i) => (
+                  <img
+                    key={i}
+                    src={img}
+                    className="w-20 h-20 object-cover border rounded"
+                  />
+                ))}
+              </div>
+            )}
+
             <div className="flex items-center p-3 bg-white border border-gray-400 border-dashed rounded-lg">
               <span className="flex-1 text-sm text-gray-600">
                 {product.productImages.length === 0
@@ -1387,7 +1337,7 @@ export default function EditProductPage() {
             </div>
 
             <p className="mt-2 text-xs text-gray-500">
-              Upload high-quality product images (min 1, max 5)
+              Upload additional product images (optional, max 5)
             </p>
 
             {imageError && (
@@ -1432,7 +1382,7 @@ export default function EditProductPage() {
               {isSubmitting ? (
                 <>
                   <FaSpinner className="mr-2 animate-spin" />
-                  Submitting...
+                  Updating...
                 </>
               ) : (
                 "Update Product"
