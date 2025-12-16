@@ -35,7 +35,6 @@ interface ProductView {
   productName?: string;
   brandName?: string;
   manufacturer?: string;
-  itemType?: string;
   barCode?: string;
   description?: string;
   shortDescription?: string;
@@ -45,7 +44,6 @@ interface ProductView {
   categoryName?: string | null;
   subCategoryName?: string | null;
   subSubCategoryName?: string | null;
-  model?: string;
   gstIn?: string;
   variants?: VariantView[];
   productImages?: string[]; // URLs
@@ -125,14 +123,14 @@ export default function ReviewProductPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [productId]);
 
-  const resolveImageUrl = (p?: string) => {
-    if (!p) return "";
-    try {
-      const u = new URL(p);
-      return u.toString();
-    } catch {
-      return `${API_BASE}/${p.replace(/^\/+/, "")}`;
+  const resolveImageUrl = (path?: string) => {
+    if (!path) return "";
+
+    if (path.startsWith("http://") || path.startsWith("https://")) {
+      return path;
     }
+
+    return `${API_BASE}/uploads/${path.replace(/^\/+/, "")}`;
   };
 
   const fetchProduct = async (id: string) => {
@@ -155,30 +153,29 @@ export default function ReviewProductPage({
       }
 
       const json = await res.json();
+      console.log(json, "json");
       const raw = json.data ?? json.product ?? json;
 
       // Map backend shape to ProductView expected by this page
       const mapped: ProductView = {
-        productId: raw.productId ?? raw.product_id ?? raw.id,
-        productName: raw.productName ?? raw.product_name ?? raw.title,
-        brandName: raw.brandName ?? raw.brand_name ?? raw.brand,
-        manufacturer: raw.manufacturer ?? raw.mfg ?? "",
-        itemType: raw.itemType ?? "",
+        productId: raw.product_id ?? raw.productId,
+        productName: raw.product_name ?? raw.productName,
+        brandName: raw.brand_name ?? raw.brandName,
+        manufacturer: raw.manufacturer ?? "",
         barCode: raw.barcode ?? raw.barCode ?? "",
         description: raw.description ?? "",
-        shortDescription: raw.shortDescription ?? raw.short_description ?? "",
+        shortDescription: raw.short_description ?? raw.shortDescription ?? "",
         categoryId: raw.category_id ?? raw.categoryId ?? null,
         subCategoryId: raw.subcategory_id ?? raw.subCategoryId ?? null,
         subSubCategoryId:
           raw.sub_subcategory_id ?? raw.subSubCategoryId ?? null,
 
-        categoryName: raw.category_name ?? raw.categoryName ?? null,
-        subCategoryName: raw.subcategory_name ?? raw.subCategoryName ?? null,
+        categoryName: raw.category_name ?? raw.custom_category ?? null,
+        subCategoryName: raw.subcategory_name ?? raw.custom_subcategory ?? null,
         subSubCategoryName:
-          raw.sub_subcategory_name ?? raw.subSubCategoryName ?? null,
+          raw.sub_subcategory_name ?? raw.custom_sub_subcategory ?? null,
 
-        model: raw.model ?? "",
-        gstIn: raw.gstIn ?? raw.gst_in ?? "",
+        gstIn: raw.gst ?? "",
         // Expecting arrays of image URLs coming from backend:
         productImages: Array.isArray(raw.productImages)
           ? raw.productImages
@@ -188,13 +185,14 @@ export default function ReviewProductPage({
               size: v.size ?? "",
               color: v.color ?? "",
               dimension: v.dimension ?? "",
-              customAttributes: v.customAttributes ?? v.attributes ?? {},
-              MRP: v.MRP ?? v.mrp ?? "",
-              salesPrice: v.salesPrice ?? v.sales_price ?? v.price ?? "",
+              customAttributes: v.customAttributes ?? {},
+              MRP: v.mrp ?? "",
+              salesPrice: v.sale_price ?? "",
               stock: v.stock ?? v.qty ?? "",
-              expiryDate: v.expiryDate ?? "",
-              manufacturingYear: v.manufacturingYear ?? "",
-              materialType: v.materialType ?? "",
+              expiryDate: new Date(v.expiry_date).toLocaleDateString() ?? "",
+              manufacturingYear:
+                new Date(v.manufacturing_date).toLocaleDateString() ?? "",
+              materialType: v.material_type ?? "",
               images: Array.isArray(v.images) ? v.images : v.imageUrls ?? [],
             }))
           : [],
@@ -283,7 +281,7 @@ export default function ReviewProductPage({
               </label>
               <input
                 readOnly
-                value={String(product.categoryName?? "Not selected")}
+                value={String(product.categoryName ?? "Not selected")}
                 className="w-full p-3 border rounded-lg bg-gray-50"
               />
             </div>
@@ -294,7 +292,7 @@ export default function ReviewProductPage({
               </label>
               <input
                 readOnly
-                value={String(product.subCategoryName?? "Not selected")}
+                value={String(product.subCategoryName ?? "Not selected")}
                 className="w-full p-3 border rounded-lg bg-gray-50"
               />
             </div>
