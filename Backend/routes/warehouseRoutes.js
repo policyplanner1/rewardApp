@@ -47,7 +47,7 @@ router.get(
   "/stock-adjustments",
   authenticateToken,
   authorizeRoles("warehouse_manager"),
-  wareHouseController.adjustedRecord
+  wareHouseController.getStockAdjustments
 );
 
 /**************************************warehouses****************************************************/

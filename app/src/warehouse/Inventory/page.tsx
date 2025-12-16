@@ -160,8 +160,8 @@ export default function InventoryMasterPage() {
           <table className="w-full border-collapse">
             <thead>
               <tr className="text-left bg-gray-100">
-                <th className="p-3 border">Product</th>
                 <th className="p-3 border">SKU</th>
+                <th className="p-3 border">Product</th>
                 <th className="p-3 border">Vendor</th>
                 <th className="p-3 border">Stock</th>
                 <th className="p-3 border">Warehouse</th>{" "}
@@ -182,8 +182,8 @@ export default function InventoryMasterPage() {
               ) : (
                 inventoryData.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50">
+                     <td className="p-3 border font-semibold">{item.sku}</td>
                     <td className="p-3 border">{item.product_name}</td>
-                    <td className="p-3 border">{item.sku}</td>
                     <td className="p-3 border">{item.full_name}</td>
                     <td
                       className={`p-3 border ${

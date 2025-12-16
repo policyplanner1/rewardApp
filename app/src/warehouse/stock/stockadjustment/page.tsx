@@ -18,13 +18,14 @@ interface InventoryItem {
 }
 
 interface AdjustmentEntry {
-  date: string;
-  inventoryId: number;
-  product: string;
+  adjusted_date: string;
+  product_name: string;
   sku: string;
   quantity: number;
-  adjustmentType: "IN" | "OUT";
+  adjustment_type: "IN" | "OUT";
   reason: string;
+  name: string;
+  location: string;
 }
 
 // ============================
@@ -34,7 +35,8 @@ export default function StockAdjustmentPage() {
   const [date, setDate] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [inventoryList, setInventoryList] = useState<InventoryItem[]>([]);
-  const [selectedInventory, setSelectedInventory] = useState<InventoryItem | null>(null);
+  const [selectedInventory, setSelectedInventory] =
+    useState<InventoryItem | null>(null);
   const [quantity, setQuantity] = useState("");
   const [adjustType, setAdjustType] = useState("");
   const [reason, setReason] = useState("");
@@ -54,9 +56,12 @@ export default function StockAdjustmentPage() {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(`${API_BASE}/api/warehouse/search?query=${search}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch(
+        `${API_BASE}/api/warehouse/search?query=${search}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       const data = await res.json();
 
       if (data.success) {
@@ -79,8 +84,16 @@ export default function StockAdjustmentPage() {
       });
       const data = await res.json();
 
+      console.log(data, "Data");
+
       if (data.success) {
-        setTableData(data.data);
+        setTableData(
+          data.data.map((adjustment: any) => ({
+            ...adjustment,
+            warehouse: adjustment.warehouse_name,
+            location: adjustment.location,
+          }))
+        );
       }
     } catch (err) {
       console.error("Failed to fetch adjustments", err);
@@ -133,13 +146,14 @@ export default function StockAdjustmentPage() {
       setTableData((prev) => [
         ...prev,
         {
-          date,
-          inventoryId: selectedInventory.inventory_id,
-          product: selectedInventory.product_name,
+          adjusted_date: date,
+          product_name: selectedInventory.product_name,
           sku: selectedInventory.sku,
           quantity: Number(quantity),
-          adjustmentType: adjustmentTypeMap[adjustType],
+          adjustment_type: adjustmentTypeMap[adjustType],
           reason,
+          name: selectedInventory.warehouse_name,
+          location: selectedInventory.location,
         },
       ]);
 
@@ -285,23 +299,27 @@ export default function StockAdjustmentPage() {
         <table className="w-full border">
           <thead className="bg-gray-100">
             <tr>
-              <th className="p-3 border">Date</th>
-              <th className="p-3 border">Product</th>
               <th className="p-3 border">SKU</th>
+              <th className="p-3 border">Product</th>
               <th className="p-3 border">Quantity</th>
               <th className="p-3 border">Type</th>
               <th className="p-3 border">Reason</th>
+              <th className="p-3 border">Warehouse</th>
+              <th className="p-3 border">Location</th>
+              <th className="p-3 border">Date</th>
             </tr>
           </thead>
           <tbody>
             {tableData.map((row, i) => (
               <tr key={i}>
-                <td className="p-3 border">{row.date}</td>
-                <td className="p-3 border">{row.product}</td>
-                <td className="p-3 border">{row.sku}</td>
+                 <td className="p-3 border font-semibold">{row.sku}</td>
+                <td className="p-3 border">{row.product_name}</td>
                 <td className="p-3 border">{row.quantity}</td>
-                <td className="p-3 border">{row.adjustmentType}</td>
+                <td className="p-3 border">{row.adjustment_type}</td>
                 <td className="p-3 border">{row.reason}</td>
+                <td className="p-3 border">{row.name}</td>
+                <td className="p-3 border">{row.location}</td>
+                <td className="p-3 border">{row.adjusted_date}</td>
               </tr>
             ))}
           </tbody>
