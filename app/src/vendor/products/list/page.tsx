@@ -30,7 +30,6 @@ import { FiPackage } from "react-icons/fi";
 
 const API_BASE = "http://localhost:5000";
 
-
 /* ================================
        TYPES
 ================================ */
@@ -496,17 +495,16 @@ export default function ProductManagerList() {
         setStats((prev) => ({
           ...prev,
           total: Math.max(0, prev.total - 1),
-          pending: Math.max(0, prev.pending - 1), 
+          pending: Math.max(0, prev.pending - 1),
         }));
 
         alert(data.message || "Product deleted successfully");
         return;
       }
-
     } catch (error: any) {
       console.error("Error performing action:", error);
       alert(error.message || "Error performing action");
-      throw error; 
+      throw error;
     } finally {
       setActionLoading(null);
     }
@@ -802,8 +800,8 @@ export default function ProductManagerList() {
                         </button>
                       </Link>
 
-                      {/* Edit */}
-                      {!["approved", "rejected", "resubmission"].includes(
+                      {/* Edit Button */}
+                      {!["approved", "rejected","sent_for_approval"].includes(
                         product.status
                       ) && (
                         <Link

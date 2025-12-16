@@ -16,7 +16,7 @@ import {
   FaEdit,
 } from "react-icons/fa";
 
-const API_BASE = "http://localhost:5000"; // change to your API host
+const API_BASE = "http://localhost:5000"; 
 
 type Variant = {
   size?: string;
