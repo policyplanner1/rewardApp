@@ -312,14 +312,18 @@ export default function StockAdjustmentPage() {
           <tbody>
             {tableData.map((row, i) => (
               <tr key={i}>
-                 <td className="p-3 border font-semibold">{row.sku}</td>
+                <td className="p-3 border font-semibold">{row.sku}</td>
                 <td className="p-3 border">{row.product_name}</td>
                 <td className="p-3 border">{row.quantity}</td>
                 <td className="p-3 border">{row.adjustment_type}</td>
                 <td className="p-3 border">{row.reason}</td>
                 <td className="p-3 border">{row.name}</td>
                 <td className="p-3 border">{row.location}</td>
-                <td className="p-3 border">{row.adjusted_date}</td>
+                <td className="p-3 border">
+                  {row.adjusted_date
+                    ? new Date(row.adjusted_date).toLocaleDateString()
+                    : "N/A"}
+                </td>
               </tr>
             ))}
           </tbody>
