@@ -332,12 +332,21 @@ class ProductController {
         (acc, product) => {
           acc.total += 1;
           if (product.status === "pending") acc.pending += 1;
+          if (product.status === "sent_for_approval")
+            acc.sent_for_approval += 1;
           if (product.status === "approved") acc.approved += 1;
           if (product.status === "rejected") acc.rejected += 1;
           if (product.status === "resubmission") acc.resubmission += 1;
           return acc;
         },
-        { pending: 0, approved: 0, rejected: 0, resubmission: 0, total: 0 }
+        {
+          pending: 0,
+          sent_for_approval: 0,
+          approved: 0,
+          rejected: 0,
+          resubmission: 0,
+          total: 0,
+        }
       );
 
       return res.json({

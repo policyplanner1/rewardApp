@@ -33,7 +33,12 @@ const API_BASE = "http://localhost:5000";
 /* ================================
        TYPES
 ================================ */
-type ProductStatus = "pending" | "approved" | "rejected" | "resubmission";
+type ProductStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "resubmission"
+  | "sent_for_approval";
 
 interface ProductDocument {
   document_id: number;
@@ -71,6 +76,7 @@ interface Stats {
   approved: number;
   rejected: number;
   resubmission: number;
+  sent_for_approval: number;
   total: number;
 }
 
@@ -116,6 +122,11 @@ const StatusChip = ({ status }: { status: ProductStatus }) => {
       color: "bg-yellow-100 text-yellow-800 border-yellow-200",
       icon: FaClock,
       text: "Pending",
+    },
+    sent_for_approval: {
+      color: "bg-blue-100 text-blue-800 border-blue-200",
+      icon: FaPaperPlane,
+      text: "Sent for Approval",
     },
   };
 
@@ -313,6 +324,7 @@ export default function ProductManagerList() {
     approved: 0,
     rejected: 0,
     resubmission: 0,
+    sent_for_approval: 0,
   });
 
   // Modal state
@@ -604,6 +616,12 @@ export default function ProductManagerList() {
             </div>
             <div className="text-xs text-yellow-600">Pending</div>
           </div>
+          <div className="p-3 border border-indigo-100 rounded-lg bg-indigo-50">
+            <div className="text-xl font-bold text-indigo-700">
+              {stats.sent_for_approval ? stats.sent_for_approval : 0}
+            </div>
+            <div className="text-xs text-indigo-600">Sent for Approval</div>
+          </div>
           <div className="p-3 border border-green-100 rounded-lg bg-green-50">
             <div className="text-xl font-bold text-green-700">
               {stats.approved}
@@ -657,6 +675,7 @@ export default function ProductManagerList() {
               >
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>
+                <option value="sent_for_approval">Sent for Approval</option>
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
                 <option value="resubmission">Resubmission</option>
@@ -801,7 +820,7 @@ export default function ProductManagerList() {
                       </Link>
 
                       {/* Edit Button */}
-                      {!["approved", "rejected","sent_for_approval"].includes(
+                      {!["approved", "rejected", "sent_for_approval"].includes(
                         product.status
                       ) && (
                         <Link
