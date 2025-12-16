@@ -935,7 +935,7 @@ export default function EditProductPage() {
                   {variant.existingImages.map((img, imgIndex) => (
                     <img
                       key={imgIndex}
-                      src={img}
+                      src={`${API_BASE}/uploads/${img}`}
                       alt={`Variant ${index + 1} image ${imgIndex + 1}`}
                       className="w-16 h-16 object-cover border rounded"
                     />
@@ -1343,7 +1343,7 @@ export default function EditProductPage() {
                 {product.existingImages.map((img, i) => (
                   <img
                     key={i}
-                    src={img}
+                    src={`${API_BASE}/uploads/${img}`}
                     className="w-20 h-20 object-cover border rounded"
                   />
                 ))}
