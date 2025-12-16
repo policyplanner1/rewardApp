@@ -15,7 +15,6 @@ import { useRouter } from "next/navigation";
 
 const API_BASE = "http://localhost:5000";
 
-// Types (kept similar to your add page)
 interface VariantView {
   size?: string;
   color?: string;

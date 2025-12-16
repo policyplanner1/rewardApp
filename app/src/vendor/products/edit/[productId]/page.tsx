@@ -165,7 +165,10 @@ const SectionHeader = ({ icon: Icon, title, description }: any) => (
 );
 
 export default function EditProductPage() {
-  const { productId } = useParams();
+  const params = useParams();
+  const productId = Array.isArray(params.productId)
+    ? params.productId[0]
+    : params.productId;
   const router = useRouter();
 
   const [product, setProduct] = useState<ProductData>(initialProductData);
@@ -257,11 +260,9 @@ export default function EditProductPage() {
 
   const fetchSubCategories = async (categoryId: number) => {
     try {
-      // console.log("Fetching subcategories for category ID:", categoryId);
       const res = await fetch(`${API_BASE}/api/subcategory/${categoryId}`);
 
       const json = await res.json();
-      console.log("Subcategories response:", json);
       if (json.success) {
         setSubCategories(json.data);
       }
@@ -276,7 +277,6 @@ export default function EditProductPage() {
         `${API_BASE}/api/subsubcategory/${subcategoryId}`
       );
       const json = await res.json();
-      console.log("Sub-subcategories response:", json.data);
       if (json.success) {
         setSubSubCategories(json.data);
       }
@@ -303,7 +303,6 @@ export default function EditProductPage() {
       }
 
       const json = await res.json();
-      console.log("Required documents response:", json);
 
       if (json.success) {
         setRequiredDocs(json.data || []);
@@ -324,6 +323,16 @@ export default function EditProductPage() {
     fetchProductDetails(productId);
   }, [productId]);
 
+  // const isValidDate = (date: any): boolean => {
+  //   const parsedDate = new Date(date);
+  //   return !isNaN(parsedDate.getTime());
+  // };
+
+  const isValidDate = (date: any) => {
+    const parsedDate = new Date(date);
+    return !isNaN(parsedDate.getTime());
+  };
+
   const fetchProductDetails = async (id: string) => {
     try {
       setLoading(true);
@@ -338,7 +347,7 @@ export default function EditProductPage() {
       const json = await res.json();
       if (!json.success) throw new Error(json.message);
 
-      const p = json.data;
+      const p = json.product;
       if (!p) {
         throw new Error("Product not found");
       }
@@ -357,7 +366,7 @@ export default function EditProductPage() {
         brandName: p.brand_name || "",
         manufacturer: p.manufacturer || "",
         barCode: p.barcode || "",
-        gstIn: p.gst_in || "",
+        gstIn: p.gst || "",
         description: p.description || "",
         shortDescription: p.short_description || "",
         categoryId: p.category_id || null,
@@ -374,11 +383,17 @@ export default function EditProductPage() {
                 dimension: v.dimension || "",
                 weight: v.weight || "",
                 MRP: v.mrp || "",
-                salesPrice: v.sales_price || "",
+                salesPrice: v.sale_price || "",
                 stock: v.stock || "",
                 sku: v.sku || "",
-                expiryDate: v.expiry_date || "",
-                manufacturingYear: v.manufacturing_year || "",
+                expiryDate:
+                  v.expiry_date && isValidDate(v.expiry_date)
+                    ? new Date(v.expiry_date).toLocaleDateString()
+                    : "",
+                manufacturingYear:
+                  v.manufacturing_date && isValidDate(v.manufacturing_date)
+                    ? new Date(v.manufacturing_date).toLocaleDateString()
+                    : "",
                 materialType: v.material_type || "",
                 customAttributes: v.custom_attributes || {},
                 images: [],
@@ -866,14 +881,18 @@ export default function EditProductPage() {
                 />
               </div>
 
-              {/* expiryDate */}
+              {/* Expiry Date */}
               <div>
                 <label className="block mb-1 text-sm font-medium text-gray-700">
                   Expiry Date
                 </label>
                 <input
                   type="date"
-                  value={variant.expiryDate}
+                  value={
+                    isValidDate(variant.expiryDate)
+                      ? new Date(variant.expiryDate).toISOString().split("T")[0]
+                      : ""
+                  }
                   onChange={(e) =>
                     handleVariantChange(index, "expiryDate", e.target.value)
                   }
@@ -882,13 +901,20 @@ export default function EditProductPage() {
                 />
               </div>
 
+              {/* Manufacturing Year */}
               <div>
                 <label className="block mb-1 text-sm font-medium text-gray-700">
                   Manufacturing Year
                 </label>
                 <input
                   type="date"
-                  value={variant.manufacturingYear}
+                  value={
+                    isValidDate(variant.manufacturingYear)
+                      ? new Date(variant.manufacturingYear)
+                          .toISOString()
+                          .split("T")[0]
+                      : ""
+                  }
                   onChange={(e) =>
                     handleVariantChange(
                       index,
