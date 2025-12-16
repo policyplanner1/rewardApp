@@ -477,6 +477,9 @@ class ProductModel {
         p.product_name,
         p.status,
         p.rejection_reason,
+        p.custom_category,
+        p.custom_subcategory,
+        p.custom_sub_subcategory,
         p.created_at,
         IFNULL(
           CONCAT(

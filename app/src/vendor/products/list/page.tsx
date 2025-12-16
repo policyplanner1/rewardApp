@@ -66,6 +66,9 @@ interface ProductItem {
   category_name: string;
   subcategory_name: string;
   sub_subcategory_name: string | null;
+  custom_category: string;
+  custom_subcategory: string;
+  custom_sub_subcategory: string | null;
   sku: string;
   barcode: string;
   documents?: ProductDocument[];
@@ -419,6 +422,7 @@ export default function ProductManagerList() {
       }
 
       const data: ApiResponse = await response.json();
+      console.log(data,"Dat")
 
       if (data.success) {
         setProducts(data.products);
@@ -777,21 +781,23 @@ export default function ProductManagerList() {
                   {/* CATEGORY */}
                   <td className="px-4 py-4">
                     <div className="text-sm text-gray-900">
-                      {product?.category_name || "N/A"}
+                      {product?.category_name ||
+                        product?.custom_category ||
+                        "N/A"}
                     </div>
                   </td>
 
                   {/* Subcategory Name */}
                   <td className="px-4 py-4">
                     <div className="text-sm text-gray-900">
-                      {product?.subcategory_name || "N/A"}
+                      {product?.subcategory_name ||  product?.custom_subcategory || "N/A"}
                     </div>
                   </td>
 
                   {/* Sub sub category */}
                   <td className="px-4 py-4">
                     <div className="text-sm text-gray-900">
-                      {product?.sub_subcategory_name || "N/A"}
+                      {product?.sub_subcategory_name || product?.custom_sub_subcategory || "N/A"}
                     </div>
                   </td>
 
@@ -834,9 +840,12 @@ export default function ProductManagerList() {
                       )}
 
                       {/* Delete */}
-                      {!["approved", "rejected", "resubmission","sent_for_approval"].includes(
-                        product.status
-                      ) && (
+                      {![
+                        "approved",
+                        "rejected",
+                        "resubmission",
+                        "sent_for_approval",
+                      ].includes(product.status) && (
                         <button
                           onClick={() => openActionModal(product, "delete")}
                           className="p-2 text-red-700 bg-red-100 rounded hover:bg-red-200"
