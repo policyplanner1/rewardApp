@@ -273,7 +273,7 @@ export default function ReviewProductPage({
             >
               <FaEdit /> Edit
             </Link> */}
-            {!["approved", "rejected", "resubmission"].includes(
+            {!["approved", "rejected", "sent_for_approval"].includes(
               product.product_status
             ) && (
               <Link
@@ -594,7 +594,6 @@ export default function ReviewProductPage({
                       </div>
                     </div>
 
-                    {/* Check if the document is an image */}
                     {doc.mime_type && doc.mime_type.startsWith("image/") ? (
                       <img
                         src={resolveImageUrl(doc.file_path)}

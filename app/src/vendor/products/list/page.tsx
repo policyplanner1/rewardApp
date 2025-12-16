@@ -834,7 +834,7 @@ export default function ProductManagerList() {
                       )}
 
                       {/* Delete */}
-                      {!["approved", "rejected", "resubmission"].includes(
+                      {!["approved", "rejected", "resubmission","sent_for_approval"].includes(
                         product.status
                       ) && (
                         <button
