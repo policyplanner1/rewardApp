@@ -261,7 +261,26 @@ class ProductController {
   // Get all Products
   async getAllProductDetails(req, res) {
     try {
-      const products = await ProductModel.getAllProductDetails();
+      // filters
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 10;
+      const offset = (page - 1) * limit;
+
+      const search = req.query.search || "";
+      const status = req.query.status || "";
+      const sortBy = req.query.sortBy || "created_at";
+      const sortOrder =
+        req.query.sortOrder?.toUpperCase() === "ASC" ? "ASC" : "DESC";
+
+      // fetch product Details
+      const { products, totalItems } = await ProductModel.getAllProductDetails({
+        search,
+        status,
+        sortBy,
+        sortOrder,
+        limit,
+        offset,
+      });
 
       const processedProducts = products.map((product) => {
         let images = [];
@@ -278,9 +297,35 @@ class ProductController {
         };
       });
 
+      // Stats calculation
+      const stats = processedProducts.reduce(
+        (acc, product) => {
+          acc.total += 1;
+          if (product.status === "pending") acc.pending += 1;
+          if (product.status === "sent_for_approval")
+            acc.sent_for_approval += 1;
+          if (product.status === "approved") acc.approved += 1;
+          if (product.status === "rejected") acc.rejected += 1;
+          if (product.status === "resubmission") acc.resubmission += 1;
+          return acc;
+        },
+        {
+          pending: 0,
+          sent_for_approval: 0,
+          approved: 0,
+          rejected: 0,
+          resubmission: 0,
+          total: 0,
+        }
+      );
+
       return res.json({
         success: true,
-        products: processedProducts
+        products: processedProducts,
+        stats,
+        total: totalItems,
+        totalPages: Math.ceil(totalItems / limit),
+        currentPage: page,
       });
     } catch (err) {
       console.error("GET ALL PRODUCTS ERROR:", err);

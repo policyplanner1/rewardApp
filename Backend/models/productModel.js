@@ -516,10 +516,37 @@ class ProductModel {
   }
 
   // Get all products
-  async getAllProductDetails() {
+  async getAllProductDetails({
+    search,
+    status,
+    sortBy,
+    sortOrder,
+    limit,
+    offset,
+  }) {
     try {
-      const [rows] = await db.execute(
-        `SELECT 
+      const conditions = [];
+      const params = [];
+
+      if (status) {
+        conditions.push("p.status = ?");
+        params.push(status);
+      }
+
+      if (search) {
+        conditions.push("p.product_name LIKE ?");
+        params.push(`%${search}%`);
+      }
+
+      const whereClause = conditions.length
+        ? `WHERE ${conditions.join(" AND ")}`
+        : "";
+
+      // Validate sort column
+      const sortableColumns = ["created_at", "product_name", "brand_name"];
+      if (!sortableColumns.includes(sortBy)) sortBy = "created_at";
+
+      const query = `SELECT 
          p.product_id,
          p.vendor_id,
          v.full_name AS vendor_name,
@@ -563,10 +590,22 @@ class ProductModel {
        LEFT JOIN sub_sub_categories ssc ON p.sub_subcategory_id = ssc.sub_subcategory_id
        LEFT JOIN vendors v ON p.vendor_id = v.vendor_id
        LEFT JOIN product_images pi ON p.product_id = pi.product_id
+      ${whereClause}
        GROUP BY p.product_id
-       ORDER BY p.product_id DESC`
+       ORDER BY p.${sortBy} ${sortOrder}
+      LIMIT ? OFFSET ?
+        `;
+
+      const dataParams = [...params, limit, offset];
+      const [rows] = await db.execute(query, dataParams);
+
+      // Total count for pagination
+      const [[{ total }]] = await db.execute(
+        `SELECT COUNT(*) AS total FROM products p ${whereClause}`,
+        params
       );
-      return rows;
+
+      return { products: rows, totalItems: total };
     } catch (error) {
       console.error("Error fetching all products:", error);
       throw error;
@@ -657,7 +696,7 @@ class ProductModel {
 
   // async updateProductStatus(productId, status, reason) {
   //   const [result] = await db.execute(
-  //     `UPDATE products 
+  //     `UPDATE products
   //      SET status=?, rejection_reason=?
   //      WHERE product_id=?`,
   //     [status, reason, productId]

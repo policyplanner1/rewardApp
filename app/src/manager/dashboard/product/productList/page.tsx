@@ -33,7 +33,7 @@ const API_BASE = "http://localhost:5000";
 /* ================================
        TYPES
 ================================ */
-type ProductStatus = "pending" | "approved" | "rejected" | "resubmission";
+type ProductStatus = "pending" | "approved" | "rejected" | "resubmission" | "sent_for_approval";
 
 interface ProductDocument {
   document_id: number;
@@ -71,6 +71,7 @@ interface ProductItem {
 
 interface Stats {
   pending: number;
+  sent_for_approval: number;
   approved: number;
   rejected: number;
   resubmission: number;
@@ -313,6 +314,7 @@ export default function ProductManagerList() {
   const [stats, setStats] = useState<Stats>({
     total: 0,
     pending: 0,
+    sent_for_approval:0,
     approved: 0,
     rejected: 0,
     resubmission: 0,
@@ -394,7 +396,7 @@ export default function ProductManagerList() {
         sortOrder,
       });
 
-      const response = await fetch(`${API_BASE}/api/product/all-products`, {
+      const response = await fetch(`${API_BASE}/api/product/all-products?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -607,7 +609,7 @@ export default function ProductManagerList() {
           </div>
           <div className="p-3 border border-yellow-100 rounded-lg bg-yellow-50">
             <div className="text-xl font-bold text-yellow-700">
-              {stats.pending}
+              {stats.sent_for_approval}
             </div>
             <div className="text-xs text-yellow-600">Pending for Review</div>
           </div>
