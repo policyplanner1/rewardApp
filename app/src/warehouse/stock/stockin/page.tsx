@@ -24,6 +24,7 @@ interface StockEntry {
 interface Warehouse {
   warehouse_id: number;
   name: string;
+  location:string;
 }
 
 interface ApiStockRow {
@@ -68,7 +69,8 @@ function SendToInventoryModal({ onClose, onSubmit }: Props) {
   return (
     <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
       <div className="bg-white p-6 rounded-lg w-96 space-y-4">
-        <h2 className="text-xl font-semibold">Select Warehouse</h2>
+        <h2 className="text-xl font-semibold mb-5">Select Warehouse</h2>
+        <label className="font-medium">Warehouse</label>
         <select
           className="w-full p-3 border rounded"
           value={selectedWarehouse || ""}
@@ -77,19 +79,19 @@ function SendToInventoryModal({ onClose, onSubmit }: Props) {
           <option value="">Select Warehouse</option>
           {warehouses.map((wh) => (
             <option key={wh.warehouse_id} value={wh.warehouse_id}>
-              {wh.name}
+              {wh.name} | {wh.location}
             </option>
           ))}
         </select>
 
         <div>
-          <label className="font-medium">Location</label>
+          <label className="font-medium">Storage</label>
           <input
             type="text"
             className="w-full p-3 border rounded mt-1"
             value={warehouseLocation}
             onChange={(e) => setWarehouseLocation(e.target.value)}
-            placeholder="Enter location"
+            placeholder="Rack/ Bin/ Aisle"
           />
         </div>
 
