@@ -412,38 +412,38 @@ class ProductController {
   }
 
   // Update product status
-  async updateStatus(req, res) {
-    try {
-      const { productId } = req.params;
-      const { status, rejectionReason } = req.body;
+  // async updateStatus(req, res) {
+  //   try {
+  //     const { productId } = req.params;
+  //     const { status, rejectionReason } = req.body;
 
-      const allowed = ["approved", "rejected", "pending"];
-      if (!allowed.includes(status)) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid status" });
-      }
+  //     const allowed = ["approved", "rejected", "pending"];
+  //     if (!allowed.includes(status)) {
+  //       return res
+  //         .status(400)
+  //         .json({ success: false, message: "Invalid status" });
+  //     }
 
-      const updated = await ProductModel.updateProductStatus(
-        productId,
-        status,
-        rejectionReason || null
-      );
+  //     const updated = await ProductModel.updateProductStatus(
+  //       productId,
+  //       status,
+  //       rejectionReason || null
+  //     );
 
-      if (!updated) {
-        return res
-          .status(404)
-          .json({ success: false, message: "Product not found" });
-      }
+  //     if (!updated) {
+  //       return res
+  //         .status(404)
+  //         .json({ success: false, message: "Product not found" });
+  //     }
 
-      return res.json({
-        success: true,
-        message: `Product ${status}`,
-      });
-    } catch (err) {
-      return res.status(500).json({ success: false, message: "Server error" });
-    }
-  }
+  //     return res.json({
+  //       success: true,
+  //       message: `Product ${status}`,
+  //     });
+  //   } catch (err) {
+  //     return res.status(500).json({ success: false, message: "Server error" });
+  //   }
+  // }
 
   // Get approved Products Details
   async approvedProductList(req, res) {

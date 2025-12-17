@@ -198,7 +198,7 @@ const ActionModal = ({
       iconBg: "bg-blue-100",
       iconColor: "text-blue-600",
       Icon: FaCheck,
-      showReason: false,
+      showReason: true,
       placeholder: "",
     },
     delete: {
@@ -460,20 +460,20 @@ export default function ProductManagerList() {
 
       switch (action) {
         case "approve":
-          url = `${API_BASE}/api/product/approve/${productId}`;
+          url = `${API_BASE}/api/manager/product/approve/${productId}`;
           break;
         case "reject":
-          url = `${API_BASE}/api/product/reject/${productId}`;
+          url = `${API_BASE}/api/manager/product/reject/${productId}`;
           body = JSON.stringify({ reason });
           break;
         case "request_resubmission":
-          url = `${API_BASE}/api/product/resubmission/${productId}`;
+          url = `${API_BASE}/api/manager/product/resubmission/${productId}`;
           body = JSON.stringify({ reason });
           break;
         default:
           throw new Error("Invalid action");
       }
-
+      
       // Make the API request
       const res = await fetch(url, {
         method,
@@ -627,7 +627,7 @@ export default function ProductManagerList() {
             <div className="text-xl font-bold text-blue-700">
               {stats.resubmission}
             </div>
-            <div className="text-xs text-blue-600">Resubmission</div>
+            <div className="text-xs text-blue-600">Need Resubmission</div>
           </div>
         </div>
 

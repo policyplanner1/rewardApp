@@ -14,12 +14,12 @@ router.post(
 );
 
 // Update product approval
-router.put(
-  "/status/:productId",
-  authenticateToken,
-  authorizeRoles("vendor_manager", "admin"),
-  ProductController.updateStatus
-);
+// router.put(
+//   "/status/:productId",
+//   authenticateToken,
+//   authorizeRoles("vendor_manager", "admin"),
+//   ProductController.updateStatus
+// );
 
 // Update product by vendor
 router.put(

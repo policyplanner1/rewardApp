@@ -8,6 +8,7 @@ require("dotenv").config();
 
 const authRoutes = require("./routes/auth");
 const vendorRoutes = require("./routes/vendorRoutes");
+const managerRoutes = require("./routes/managerRoutes");
 const productRoutes = require("./routes/productRoutes");
 const wareHouseRoutes = require("./routes/warehouseRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
@@ -57,6 +58,7 @@ app.get("/", (req, res) => {
 // -----------------------------
 app.use("/api/auth", authRoutes);
 app.use("/api/vendor", vendorRoutes);
+app.use("/api/manager", managerRoutes);
 app.use("/api/product", productRoutes);
 app.use("/api/category", categoryRoutes);
 app.use("/api/warehouse", wareHouseRoutes);

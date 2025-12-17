@@ -655,16 +655,16 @@ class ProductModel {
     }
   }
 
-  async updateProductStatus(productId, status, reason) {
-    const [result] = await db.execute(
-      `UPDATE products 
-       SET status=?, rejection_reason=?
-       WHERE product_id=?`,
-      [status, reason, productId]
-    );
+  // async updateProductStatus(productId, status, reason) {
+  //   const [result] = await db.execute(
+  //     `UPDATE products 
+  //      SET status=?, rejection_reason=?
+  //      WHERE product_id=?`,
+  //     [status, reason, productId]
+  //   );
 
-    return result.affectedRows > 0;
-  }
+  //   return result.affectedRows > 0;
+  // }
 
   // get list name
   async getApprovedProductList(vendorId) {
