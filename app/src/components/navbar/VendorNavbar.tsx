@@ -160,11 +160,6 @@ export default function VendorNavbar() {
 
     { href: "/src/vendor/products/list", label: "Products", Icon: Package },
 
-    {
-      href: "/src/vendor/track-order",
-      label: "Track Order",
-      Icon: OrderTrackingV3,
-    },
   ];
 
   const isActive = (href: string) => pathname === href;
