@@ -168,6 +168,7 @@ export default function ReviewProductPage({
         brandName: raw.brand_name ?? raw.brandName,
         manufacturer: raw.manufacturer ?? "",
         barCode: raw.barcode ?? raw.barCode ?? "",
+        gstIn: raw.gst  ?? "",
         description: raw.description ?? "",
         shortDescription: raw.short_description ?? raw.shortDescription ?? "",
         categoryId: raw.category_id ?? raw.categoryId ?? null,
