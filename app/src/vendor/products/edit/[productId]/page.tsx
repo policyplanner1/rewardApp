@@ -903,26 +903,6 @@ export default function EditProductPage() {
                 />
               </div>
 
-              {/* Expiry Date */}
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700">
-                  Expiry Date
-                </label>
-                <input
-                  type="date"
-                  value={
-                    isValidDate(variant.expiryDate)
-                      ? new Date(variant.expiryDate).toISOString().split("T")[0]
-                      : ""
-                  }
-                  onChange={(e) =>
-                    handleVariantChange(index, "expiryDate", e.target.value)
-                  }
-                  placeholder="Enter Expiry Date"
-                  className="w-full p-2 border rounded-lg"
-                />
-              </div>
-
               {/* Manufacturing Year */}
               <div>
                 <label className="block mb-1 text-sm font-medium text-gray-700">
@@ -945,6 +925,26 @@ export default function EditProductPage() {
                     )
                   }
                   placeholder="Enter Manufacturing Year"
+                  className="w-full p-2 border rounded-lg"
+                />
+              </div>
+
+              {/* Expiry Date */}
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Expiry Date
+                </label>
+                <input
+                  type="date"
+                  value={
+                    isValidDate(variant.expiryDate)
+                      ? new Date(variant.expiryDate).toISOString().split("T")[0]
+                      : ""
+                  }
+                  onChange={(e) =>
+                    handleVariantChange(index, "expiryDate", e.target.value)
+                  }
+                  placeholder="Enter Expiry Date"
                   className="w-full p-2 border rounded-lg"
                 />
               </div>

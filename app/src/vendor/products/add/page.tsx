@@ -862,38 +862,7 @@ export default function ProductListingDynamic() {
                 />
               </div>
 
-              {/* SKU */}
-              {/* <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700">
-                  SKU
-                </label>
-                <input
-                  type="text"
-                  value={variant.sku}
-                  onChange={(e) =>
-                    handleVariantChange(index, "sku", e.target.value)
-                  }
-                  placeholder="Enter SKU"
-                  className="w-full p-2 border rounded-lg"
-                />
-              </div> */}
-
-              {/* expiryDate */}
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700">
-                  Expiry Date
-                </label>
-                <input
-                  type="date"
-                  value={variant.expiryDate}
-                  onChange={(e) =>
-                    handleVariantChange(index, "expiryDate", e.target.value)
-                  }
-                  placeholder="Enter Expiry Date"
-                  className="w-full p-2 border rounded-lg"
-                />
-              </div>
-
+              {/* Manufacturing */}
               <div>
                 <label className="block mb-1 text-sm font-medium text-gray-700">
                   Manufacturing Year
@@ -909,6 +878,22 @@ export default function ProductListingDynamic() {
                     )
                   }
                   placeholder="Enter Manufacturing Year"
+                  className="w-full p-2 border rounded-lg"
+                />
+              </div>
+
+              {/* expiryDate */}
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Expiry Date
+                </label>
+                <input
+                  type="date"
+                  value={variant.expiryDate}
+                  onChange={(e) =>
+                    handleVariantChange(index, "expiryDate", e.target.value)
+                  }
+                  placeholder="Enter Expiry Date"
                   className="w-full p-2 border rounded-lg"
                 />
               </div>
