@@ -422,7 +422,6 @@ export default function ProductManagerList() {
       }
 
       const data: ApiResponse = await response.json();
-      console.log(data,"Dat")
 
       if (data.success) {
         setProducts(data.products);
@@ -790,14 +789,18 @@ export default function ProductManagerList() {
                   {/* Subcategory Name */}
                   <td className="px-4 py-4">
                     <div className="text-sm text-gray-900">
-                      {product?.subcategory_name ||  product?.custom_subcategory || "N/A"}
+                      {product?.subcategory_name ||
+                        product?.custom_subcategory ||
+                        "N/A"}
                     </div>
                   </td>
 
                   {/* Sub sub category */}
                   <td className="px-4 py-4">
                     <div className="text-sm text-gray-900">
-                      {product?.sub_subcategory_name || product?.custom_sub_subcategory || "N/A"}
+                      {product?.sub_subcategory_name ||
+                        product?.custom_sub_subcategory ||
+                        "N/A"}
                     </div>
                   </td>
 
@@ -855,7 +858,10 @@ export default function ProductManagerList() {
                       )}
 
                       {/* Request Resubmission*/}
-                      {product.status === "pending" && (
+                      {[
+                        "pending",
+                        "resubmission"
+                      ].includes(product.status) && (
                         <button
                           onClick={() =>
                             openActionModal(product, "request_resubmission")
