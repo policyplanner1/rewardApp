@@ -202,15 +202,15 @@ const ActionModal = ({
       placeholder: "Provide rejection reason...",
     },
     request_resubmission: {
-      title: "Request Resubmission",
-      description: `Request changes for "${product.product_name}"?`,
-      buttonText: "Request Changes",
+      title: "Send for Approval",
+      description: `Are you sure you want to send "${product.product_name}" for approval?`,
+      buttonText: "Send",
       buttonColor: "bg-blue-600 hover:bg-blue-700",
       iconBg: "bg-blue-100",
       iconColor: "text-blue-600",
-      Icon: FaRedo,
-      showReason: true,
-      placeholder: "Specify required changes...",
+      Icon: FaCheck,
+      showReason: false,
+      placeholder: "",
     },
     delete: {
       title: "Delete Product",
@@ -858,10 +858,7 @@ export default function ProductManagerList() {
                       )}
 
                       {/* Request Resubmission*/}
-                      {[
-                        "pending",
-                        "resubmission"
-                      ].includes(product.status) && (
+                      {["pending", "resubmission"].includes(product.status) && (
                         <button
                           onClick={() =>
                             openActionModal(product, "request_resubmission")
