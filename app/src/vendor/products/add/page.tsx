@@ -488,7 +488,7 @@ export default function ProductListingDynamic() {
       }
 
       // Validate required fields
-      if (!product.categoryId) {
+      if (!product.categoryId && !custom_category) {
         throw new Error("Please select a category");
       }
 
@@ -530,19 +530,9 @@ export default function ProductListingDynamic() {
 
       const formData = new FormData();
 
-      formData.append("category_id", product.categoryId.toString());
-      formData.append("brandName", product.brandName);
-      formData.append("manufacturer", product.manufacturer);
-      formData.append("barCode", product.barCode || "");
-      formData.append("productName", product.productName);
-      formData.append("description", product.description);
-      formData.append("shortDescription", product.shortDescription);
-      if (isCustomCategory) formData.append("custom_category", custom_category);
-      if (isCustomSubcategory)
-        formData.append("custom_subcategory", custom_subcategory);
-      if (isCustomSubSubcategory)
-        formData.append("custom_sub_subcategory", custom_subsubcategory);
-
+      if (product.categoryId) {
+        formData.append("category_id", product.categoryId.toString());
+      }
       if (product.subCategoryId) {
         formData.append("subcategory_id", product.subCategoryId.toString());
       }
@@ -553,6 +543,21 @@ export default function ProductListingDynamic() {
           product.subSubCategoryId.toString()
         );
       }
+
+      if (isCustomCategory && custom_category.trim()) {
+        formData.append("custom_category", custom_category.trim());
+      }
+      if (isCustomSubcategory)
+        formData.append("custom_subcategory", custom_subcategory);
+      if (isCustomSubSubcategory)
+        formData.append("custom_sub_subcategory", custom_subsubcategory);
+
+      formData.append("brandName", product.brandName);
+      formData.append("manufacturer", product.manufacturer);
+      formData.append("barCode", product.barCode || "");
+      formData.append("productName", product.productName);
+      formData.append("description", product.description);
+      formData.append("shortDescription", product.shortDescription);
 
       if (product.gstIn) formData.append("gstIn", product.gstIn);
 
