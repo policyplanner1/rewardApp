@@ -78,6 +78,15 @@ router.get(
   ProductController.approvedProducts
 );
 
+// send for approval
+router.post(
+  "/submission/:productId",
+  authenticateToken,
+  authorizeRoles("vendor",),
+  ProductController.approvalRequest
+);
+
+
 // get product Documents
 router.get(
   "/category/required_docs/:id",

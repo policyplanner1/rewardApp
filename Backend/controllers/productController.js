@@ -480,6 +480,55 @@ class ProductController {
       });
     }
   }
+
+  async approvalRequest(req, res) {
+    const vendorId = req.user.vendor_id;
+    const productId = req.params.productId;
+
+    if (!vendorId || !productId) {
+      return res.status(400).json({
+        success: false,
+        message: "Vendor and Product Id is required",
+      });
+    }
+
+    const [productRows] = await db.query(
+      `SELECT * FROM products WHERE product_id = ? AND vendor_id = ? `,
+      [productId, vendorId]
+    );
+
+    if (productRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    const product = productRows[0];
+
+    if (
+      productRows.length > 0 &&
+      (product.status == "pending" || product.status == "resubmission")
+    ) {
+      await db.query(
+        `UPDATE products
+         SET status = 'sent_for_approval'
+         WHERE product_id = ?`,
+        [product.product_id]
+      );
+    }
+
+    return res.json({
+      success: true,
+      message: "Product sent for approval successfully",
+    });
+  }
+  catch(err) {
+    return res.status(500).json({
+      success: false,
+      message: "Error fetching approved product List",
+    });
+  }
 }
 
 module.exports = new ProductController();

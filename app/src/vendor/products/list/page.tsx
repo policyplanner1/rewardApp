@@ -516,6 +516,42 @@ export default function ProductManagerList() {
         alert(data.message || "Product deleted successfully");
         return;
       }
+
+      // --- REQUEST RESUBMISSION ---
+      if (action === "request_resubmission") {
+        const res = await fetch(
+          `${API_BASE}/api/product/submission/${productId}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              reason: reason || null, 
+            }),
+          }
+        );
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || "Failed to send for approval");
+        }
+
+        const data = await res.json();
+
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.product_id === productId
+              ? { ...p, status: "sent_for_approval" }
+              : p
+          )
+        );
+
+        alert(data.message || "Product sent for approval successfully");
+        return;
+      }
     } catch (error: any) {
       console.error("Error performing action:", error);
       alert(error.message || "Error performing action");
