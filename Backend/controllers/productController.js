@@ -262,9 +262,25 @@ class ProductController {
   async getAllProductDetails(req, res) {
     try {
       const products = await ProductModel.getAllProductDetails();
+
+      const processedProducts = products.map((product) => {
+        let images = [];
+        try {
+          images = JSON.parse(product.images);
+        } catch {
+          images = [];
+        }
+
+        return {
+          ...product,
+          images,
+          main_image: images.length ? images[0].image_url : null,
+        };
+      });
+
       return res.json({
         success: true,
-        products,
+        products: processedProducts
       });
     } catch (err) {
       console.error("GET ALL PRODUCTS ERROR:", err);
