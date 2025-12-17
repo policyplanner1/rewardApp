@@ -173,29 +173,37 @@ class ProductController {
 
   // Update Product
   async updateProduct(req, res) {
+    let connection;
+
     try {
+      connection = await db.getConnection();
+      await connection.beginTransaction();
+
       const productId = req.params.id;
       const body = req.body;
       const files = req.files;
-
       if (!productId) {
         return res
           .status(400)
           .json({ success: false, message: "Product ID is required" });
       }
 
-      await ProductModel.updateProduct(productId, body, files);
+      await ProductModel.updateProduct(connection, productId, body, files);
 
+      await connection.commit();
       return res.json({
         success: true,
         message: "Product updated successfully",
       });
     } catch (err) {
+      if (connection) await connection.rollback();
       console.error("PRODUCT UPDATE ERROR:", err);
       return res.status(500).json({
         success: false,
         message: err.message,
       });
+    } finally {
+      if (connection) connection.release();
     }
   }
 

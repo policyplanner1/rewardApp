@@ -71,6 +71,7 @@ class ProductModel {
   }
 
   async insertProductDocuments(connection, productId, categoryId, files) {
+    if (!categoryId) return;
     const [docTypes] = await connection.execute(
       `SELECT d.document_id
      FROM category_document cd
@@ -218,14 +219,14 @@ class ProductModel {
   }
 
   // update product by Id
-  async updateProduct(productId, data, files = []) {
+  async updateProduct(connection, productId, data, files = []) {
     const safe = (v) => (v === undefined || v === "" ? null : v);
     const custom_category = data.custom_category || null;
     const custom_subcategory = data.custom_subcategory || null;
     const custom_sub_subcategory = data.custom_sub_subcategory || null;
 
     // 1️⃣ Update main product info
-    await db.execute(
+    await connection.execute(
       `UPDATE products SET 
       category_id = ?, 
       subcategory_id = ?, 
@@ -266,18 +267,21 @@ class ProductModel {
 
       if (mainImages.length) {
         // Optional: Remove old images if needed
-        await db.execute(`DELETE FROM product_images WHERE product_id = ?`, [
-          productId,
-        ]);
-        await this.insertProductImages(productId, mainImages);
+        await connection.execute(
+          `DELETE FROM product_images WHERE product_id = ?`,
+          [productId]
+        );
+        await this.insertProductImages(connection, productId, mainImages);
       }
 
-      if (otherFiles.length) {
+      if (otherFiles.length && data.category_id) {
         // Optional: Remove old documents if needed
-        await db.execute(`DELETE FROM product_documents WHERE product_id = ?`, [
-          productId,
-        ]);
+        await connection.execute(
+          `DELETE FROM product_documents WHERE product_id = ?`,
+          [productId]
+        );
         await this.insertProductDocuments(
+          connection,
           productId,
           data.category_id,
           otherFiles
@@ -295,7 +299,7 @@ class ProductModel {
 
         if (variant.variant_id) {
           // Existing variant -> update
-          await db.execute(
+          await connection.execute(
             `UPDATE product_variants SET 
             size = ?, 
             color = ?, 
@@ -328,11 +332,12 @@ class ProductModel {
             f.fieldname.startsWith(`variant_${i}_`)
           );
           if (variantFiles.length) {
-            await db.execute(
+            await connection.execute(
               `DELETE FROM product_variant_images WHERE variant_id = ?`,
               [variant.variant_id]
             );
             await this.insertProductVariantImages(
+              connection,
               variant.variant_id,
               variantFiles
             );
@@ -340,6 +345,7 @@ class ProductModel {
         } else {
           // New variant -> insert
           const newVariantId = await this.createProductVariant(
+            connection,
             productId,
             variant
           );
@@ -347,7 +353,11 @@ class ProductModel {
             f.fieldname.startsWith(`variant_${i}_`)
           );
           if (variantFiles.length) {
-            await this.insertProductVariantImages(newVariantId, variantFiles);
+            await this.insertProductVariantImages(
+              connection,
+              newVariantId,
+              variantFiles
+            );
           }
         }
       }
