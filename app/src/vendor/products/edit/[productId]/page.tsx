@@ -352,6 +352,22 @@ export default function EditProductPage() {
         throw new Error("Product not found");
       }
 
+      // Detect custom taxonomy
+      const hasCustomCategory = !p.category_id && !!p.custom_category;
+      const hasCustomSubcategory = !p.subcategory_id && !!p.custom_subcategory;
+      const hasCustomSubSubcategory =
+        !p.sub_subcategory_id && !!p.custom_sub_subcategory;
+
+      // Set flags FIRST
+      setIsCustomCategory(hasCustomCategory);
+      setIsCustomSubcategory(hasCustomSubcategory);
+      setIsCustomSubSubcategory(hasCustomSubSubcategory);
+
+      // Set custom values
+      setCustomCategory(p.custom_category || "");
+      setCustomSubCategory(p.custom_subcategory || "");
+      setCustomSubSubCategory(p.custom_sub_subcategory || "");
+
       // preload dropdowns
       if (p.category_id) {
         await fetchSubCategories(p.category_id);
@@ -553,8 +569,8 @@ export default function EditProductPage() {
       }
 
       // Validate required fields
-      if (!product.categoryId) {
-        throw new Error("Please select a category");
+      if (!product.categoryId && !custom_category.trim()) {
+        throw new Error("Please select or enter a category");
       }
 
       if (!product.productName || !product.brandName || !product.manufacturer) {
@@ -580,22 +596,13 @@ export default function EditProductPage() {
       }
 
       const formData = new FormData();
-      if (!product.categoryId) {
-        throw new Error("Category is required");
+      if (!product.categoryId && !custom_category.trim()) {
+        throw new Error("Please select or enter a category");
       }
 
-      formData.append("category_id", product.categoryId.toString());
-      formData.append("brandName", product.brandName);
-      formData.append("manufacturer", product.manufacturer);
-      formData.append("barCode", product.barCode || "");
-      formData.append("productName", product.productName);
-      formData.append("description", product.description);
-      formData.append("shortDescription", product.shortDescription);
-      if (isCustomCategory) formData.append("custom_category", custom_category);
-      if (isCustomSubcategory)
-        formData.append("custom_subcategory", custom_subcategory);
-      if (isCustomSubSubcategory)
-        formData.append("custom_sub_subcategory", custom_subsubcategory);
+      if (product.categoryId) {
+        formData.append("category_id", product.categoryId.toString());
+      }
 
       if (product.subCategoryId) {
         formData.append("subcategory_id", product.subCategoryId.toString());
@@ -607,7 +614,22 @@ export default function EditProductPage() {
           product.subSubCategoryId.toString()
         );
       }
+      if (isCustomCategory) {
+        formData.append("custom_category", custom_category.trim());
+      }
+      if (isCustomSubcategory) {
+        formData.append("custom_subcategory", custom_subcategory.trim());
+      }
+      if (isCustomSubSubcategory) {
+        formData.append("custom_sub_subcategory", custom_subsubcategory.trim());
+      }
 
+      formData.append("brandName", product.brandName);
+      formData.append("manufacturer", product.manufacturer);
+      formData.append("barCode", product.barCode || "");
+      formData.append("productName", product.productName);
+      formData.append("description", product.description);
+      formData.append("shortDescription", product.shortDescription);
       if (product.gstIn) formData.append("gstIn", product.gstIn);
 
       // Add main product images
@@ -1130,7 +1152,7 @@ export default function EditProductPage() {
                       handleFieldChange(e);
                     }
                   }}
-                  disabled={!product.categoryId}
+                  disabled={!product.categoryId && !isCustomCategory}
                   className="w-full p-3 border rounded-lg"
                 >
                   <option value="">Select Sub Category</option>
@@ -1181,7 +1203,7 @@ export default function EditProductPage() {
                       handleFieldChange(e);
                     }
                   }}
-                  disabled={!product.subCategoryId}
+                  disabled={!product.subCategoryId && !isCustomSubcategory}
                   className="w-full p-3 border rounded-lg"
                 >
                   <option value="">Select Type</option>
