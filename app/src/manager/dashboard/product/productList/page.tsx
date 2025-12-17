@@ -33,12 +33,7 @@ const API_BASE = "http://localhost:5000";
 /* ================================
        TYPES
 ================================ */
-type ProductStatus =
-  | "pending"
-  | "approved"
-  | "rejected"
-  | "resubmission"
-  | "sent_for_approval";
+type ProductStatus = "pending" | "approved" | "rejected" | "resubmission";
 
 interface ProductDocument {
   document_id: number;
@@ -79,7 +74,6 @@ interface Stats {
   approved: number;
   rejected: number;
   resubmission: number;
-  sent_for_approval: number;
   total: number;
 }
 
@@ -92,7 +86,7 @@ interface ApiResponse {
   stats: Stats;
 }
 
-type ActionType = "approve" | "reject" | "request_resubmission" | "delete";
+type ActionType = "approve" | "reject" | "request_resubmission";
 
 /* ================================
        STATUS CHIP
@@ -125,11 +119,6 @@ const StatusChip = ({ status }: { status: ProductStatus }) => {
       color: "bg-yellow-100 text-yellow-800 border-yellow-200",
       icon: FaClock,
       text: "Pending",
-    },
-    sent_for_approval: {
-      color: "bg-blue-100 text-blue-800 border-blue-200",
-      icon: FaPaperPlane,
-      text: "Sent for Approval",
     },
   };
 
@@ -202,9 +191,9 @@ const ActionModal = ({
       placeholder: "Provide rejection reason...",
     },
     request_resubmission: {
-      title: "Send for Approval",
-      description: `Are you sure you want to send "${product.product_name}" for approval?`,
-      buttonText: "Send",
+      title: "Allow Vendor to Resubmit",
+      description: `Do you want to allow the vendor to resubmit "${product.product_name}" for approval?`,
+      buttonText: "Allow Resubmission",
       buttonColor: "bg-blue-600 hover:bg-blue-700",
       iconBg: "bg-blue-100",
       iconColor: "text-blue-600",
@@ -327,7 +316,6 @@ export default function ProductManagerList() {
     approved: 0,
     rejected: 0,
     resubmission: 0,
-    sent_for_approval: 0,
   });
 
   // Modal state
@@ -406,23 +394,19 @@ export default function ProductManagerList() {
         sortOrder,
       });
 
-      const response = await fetch(
-        `${API_BASE}/api/product/all-products`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-        }
-      );
+      const response = await fetch(`${API_BASE}/api/product/all-products`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data: ApiResponse = await response.json();
-      console.log(data,"Data")
 
       if (data.success) {
         setProducts(data.products);
@@ -470,93 +454,62 @@ export default function ProductManagerList() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No token");
 
-      // --- DELETE branch (implemented) ---
-      if (action === "delete") {
-        const res = await fetch(
-          `http://localhost:5000/api/product/delete-product/${productId}`,
-          {
-            method: "DELETE",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-          }
-        );
+      let url = "";
+      let method: "PUT" | "DELETE" = "PUT"; 
+      let body: any = undefined;
 
-        if (!res.ok) {
-          let text = await res.text().catch(() => "");
-          try {
-            const json = JSON.parse(text || "{}");
-            throw new Error(
-              json.message || `Failed to delete product (status ${res.status})`
-            );
-          } catch {
-            throw new Error(
-              text || `Failed to delete product (status ${res.status})`
-            );
-          }
-        }
-
-        // Parse response (if JSON)
-        const data = await res.json().catch(() => ({ success: true }));
-
-        if (data && data.success === false) {
-          throw new Error(data.message || "Delete failed");
-        }
-
-        // Remove from local UI
-        setProducts((prev) => prev.filter((p) => p.product_id !== productId));
-
-        setStats((prev) => ({
-          ...prev,
-          total: Math.max(0, prev.total - 1),
-          pending: Math.max(0, prev.pending - 1),
-        }));
-
-        alert(data.message || "Product deleted successfully");
-        return;
+      switch (action) {
+        case "approve":
+          url = `${API_BASE}/api/product/approve/${productId}`;
+          break;
+        case "reject":
+          url = `${API_BASE}/api/product/reject/${productId}`;
+          body = JSON.stringify({ reason });
+          break;
+        case "request_resubmission":
+          url = `${API_BASE}/api/product/resubmission/${productId}`;
+          body = JSON.stringify({ reason });
+          break;
+        default:
+          throw new Error("Invalid action");
       }
 
-      // --- REQUEST RESUBMISSION ---
-      if (action === "request_resubmission") {
-        const res = await fetch(
-          `${API_BASE}/api/product/submission/${productId}`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-            body: JSON.stringify({
-              reason: reason || null, 
-            }),
-          }
-        );
+      // Make the API request
+      const res = await fetch(url, {
+        method,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body,
+        credentials: "include",
+      });
 
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.message || "Failed to send for approval");
-        }
+      const data = await res.json();
 
-        const data = await res.json();
-
-        setProducts((prev) =>
-          prev.map((p) =>
-            p.product_id === productId
-              ? { ...p, status: "sent_for_approval" }
-              : p
-          )
-        );
-
-        alert(data.message || "Product sent for approval successfully");
-        return;
+      // Handle failed response
+      if (!res.ok || data.success === false) {
+        throw new Error(data.message || "Action failed");
       }
+
+      // Update the product's status locally
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.product_id === productId
+            ? {
+                ...p,
+                status: action === "approve" ? "approved" : "rejected",
+                rejection_reason: action === "reject" ? reason || null : null,
+              }
+            : p
+        )
+      );
+
+      // Show the success message (consider replacing with toast or UI feedback)
+      alert(data.message || "Action completed successfully");
     } catch (error: any) {
       console.error("Error performing action:", error);
       alert(error.message || "Error performing action");
-      throw error;
     } finally {
       setActionLoading(null);
     }
@@ -632,7 +585,9 @@ export default function ProductManagerList() {
               <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
                 Product Management
               </h1>
-              <p className="text-gray-600">Review and manage vendor-submitted products</p>
+              <p className="text-gray-600">
+                Review and manage vendor-submitted products
+              </p>
             </div>
           </div>
 
@@ -654,13 +609,7 @@ export default function ProductManagerList() {
             <div className="text-xl font-bold text-yellow-700">
               {stats.pending}
             </div>
-            <div className="text-xs text-yellow-600">Pending</div>
-          </div>
-          <div className="p-3 border border-indigo-100 rounded-lg bg-indigo-50">
-            <div className="text-xl font-bold text-indigo-700">
-              {stats.sent_for_approval ? stats.sent_for_approval : 0}
-            </div>
-            <div className="text-xs text-indigo-600">Sent for Approval</div>
+            <div className="text-xs text-yellow-600">Pending for Review</div>
           </div>
           <div className="p-3 border border-green-100 rounded-lg bg-green-50">
             <div className="text-xl font-bold text-green-700">
@@ -715,7 +664,6 @@ export default function ProductManagerList() {
               >
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>
-                <option value="sent_for_approval">Sent for Approval</option>
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
                 <option value="resubmission">Resubmission</option>
@@ -860,37 +808,33 @@ export default function ProductManagerList() {
                       <Link
                         href={`/src/vendor/products/review/${product.product_id}`}
                       >
-                        <button className="p-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
+                        <button
+                          className="p-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                          title="view"
+                        >
                           <FaEye />
                         </button>
                       </Link>
 
-                      {/* Edit Button */}
-                      {!["approved", "rejected", "sent_for_approval"].includes(
-                        product.status
-                      ) && (
-                        <Link
-                          href={`/src/vendor/products/edit/${product.product_id}`}
-                          target="_blank"
+                      {/* APPROVE */}
+                      {product.status === "pending" && (
+                        <button
+                          onClick={() => openActionModal(product, "approve")}
+                          className="p-2 text-green-700 bg-green-100 rounded hover:bg-green-200"
+                          title="Approve"
                         >
-                          <button className="p-2 text-purple-700 bg-purple-100 rounded hover:bg-purple-200">
-                            <FaEdit />
-                          </button>
-                        </Link>
+                          <FaCheck />
+                        </button>
                       )}
 
-                      {/* Delete */}
-                      {![
-                        "approved",
-                        "rejected",
-                        "resubmission",
-                        "sent_for_approval",
-                      ].includes(product.status) && (
+                      {/* REJECT */}
+                      {product.status === "pending" && (
                         <button
-                          onClick={() => openActionModal(product, "delete")}
+                          onClick={() => openActionModal(product, "reject")}
                           className="p-2 text-red-700 bg-red-100 rounded hover:bg-red-200"
+                          title="Reject"
                         >
-                          <FaTrash />
+                          <FaTimes />
                         </button>
                       )}
 
@@ -900,9 +844,10 @@ export default function ProductManagerList() {
                           onClick={() =>
                             openActionModal(product, "request_resubmission")
                           }
-                          className="p-2 text-green-700 bg-green-100 rounded hover:bg-green-200"
+                          title="Resubmit"
+                          className="p-2 text-blue-700 bg-blue-100 rounded hover:bg-blue-200"
                         >
-                          <FaPaperPlane />
+                          <FaRedo />
                         </button>
                       )}
                     </div>
