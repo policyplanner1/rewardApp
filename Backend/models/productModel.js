@@ -408,8 +408,8 @@ class ProductModel {
             mrp = ?, 
             sale_price = ?, 
             stock = ?, 
-            manufacturing_date = ?, 
-            expiry_date = ?, 
+            manufacturing_date = COALESCE(?, manufacturing_date),
+            expiry_date = COALESCE(?, expiry_date),
             material_type = ?
            WHERE variant_id = ?`,
             [
