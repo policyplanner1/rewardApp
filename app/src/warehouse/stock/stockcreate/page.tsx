@@ -125,7 +125,7 @@ export default function StockInCreatePage() {
       id: p.product_id,
       name: p.product_name,
       vendorId: p.vendor_id,
-      category: p.category_name,
+      category: p.category_name || p.custom_category,
     });
 
     setVariants(
