@@ -58,6 +58,11 @@ export default function InventoryMasterPage() {
     return Math.ceil((exp.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
   };
 
+  const isValidDate = (date: any): boolean => {
+    const parsedDate = new Date(date);
+    return !isNaN(parsedDate.getTime());
+  };
+
   // ===============================
   // CSV EXPORT FUNCTION
   // ===============================
@@ -85,9 +90,9 @@ export default function InventoryMasterPage() {
       item.name,
       item.quantity,
       item.location,
-      item.expiry_date
-        ? new Date(item.expiry_date).toLocaleDateString("en-GB")
-        : "N/A",
+      item.expiry_date && isValidDate(item.expiry_date)
+        ? new Date(item.expiry_date).toLocaleDateString()
+        : "",
       item.status,
     ]);
 
@@ -182,7 +187,7 @@ export default function InventoryMasterPage() {
               ) : (
                 inventoryData.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50">
-                     <td className="p-3 border font-semibold">{item.sku}</td>
+                    <td className="p-3 border font-semibold">{item.sku}</td>
                     <td className="p-3 border">{item.product_name}</td>
                     <td className="p-3 border">{item.full_name}</td>
                     <td
@@ -203,7 +208,9 @@ export default function InventoryMasterPage() {
                           : ""
                       }`}
                     >
-                      {new Date(item.expiry_date).toLocaleDateString("en-US")}
+                      {item.expiry_date && isValidDate(item.expiry_date)
+                        ? new Date(item.expiry_date).toLocaleDateString()
+                        : ""}
                     </td>
 
                     <td className="p-3 border">
