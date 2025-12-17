@@ -44,7 +44,7 @@ interface ProductView {
   subCategoryName?: string | null;
   subSubCategoryName?: string | null;
   gstIn?: string;
-  product_status?:string;
+  product_status?: string;
   variants?: VariantView[];
   productImages?: string[];
   requiredDocs?: Array<{
@@ -168,7 +168,7 @@ export default function ReviewProductPage({
         brandName: raw.brand_name ?? raw.brandName,
         manufacturer: raw.manufacturer ?? "",
         barCode: raw.barcode ?? raw.barCode ?? "",
-        gstIn: raw.gst  ?? "",
+        gstIn: raw.gst ?? "",
         description: raw.description ?? "",
         shortDescription: raw.short_description ?? raw.shortDescription ?? "",
         categoryId: raw.category_id ?? raw.categoryId ?? null,
@@ -452,22 +452,22 @@ export default function ReviewProductPage({
 
                   <div>
                     <label className="block mb-1 text-sm font-medium text-gray-700">
-                      Expiry Date
+                      Manufacturing Year
                     </label>
                     <input
                       readOnly
-                      value={v.expiryDate ?? ""}
+                      value={v.manufacturingYear ?? ""}
                       className="w-full p-2 border rounded-lg"
                     />
                   </div>
 
                   <div>
                     <label className="block mb-1 text-sm font-medium text-gray-700">
-                      Manufacturing Year
+                      Expiry Date
                     </label>
                     <input
                       readOnly
-                      value={v.manufacturingYear ?? ""}
+                      value={v.expiryDate ?? ""}
                       className="w-full p-2 border rounded-lg"
                     />
                   </div>
