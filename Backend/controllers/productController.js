@@ -180,6 +180,7 @@ class ProductController {
       await connection.beginTransaction();
 
       const productId = req.params.id;
+      const vendorId = req.user.vendor_id;
       const body = req.body;
       const files = req.files;
       if (!productId) {
@@ -188,7 +189,13 @@ class ProductController {
           .json({ success: false, message: "Product ID is required" });
       }
 
-      await ProductModel.updateProduct(connection, productId, body, files);
+      await ProductModel.updateProduct(
+        connection,
+        productId,
+        vendorId,
+        body,
+        files
+      );
 
       await connection.commit();
       return res.json({

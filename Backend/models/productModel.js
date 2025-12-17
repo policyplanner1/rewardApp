@@ -1,9 +1,46 @@
 const db = require("../config/database");
+const { moveFile } = require("../utils/moveFile");
+const fs = require("fs");
+const path = require("path");
 
+// generate SKU
 function generateSKU(productId) {
   const randomPart = Math.random().toString(36).substring(2, 8).toUpperCase();
 
   return `RP-${productId}-${randomPart}`;
+}
+
+const UPLOAD_BASE = path.join(__dirname, "..", "uploads", "products");
+
+// for image
+async function processUploadedFiles(
+  files,
+  { vendorId, productId, imagesFolder, docsFolder, variantFolder }
+) {
+  const movedFiles = [];
+
+  for (const file of files) {
+    const filename = path.basename(file.path);
+    let newPath;
+
+    if (file.fieldname === "images") {
+      newPath = path.join(imagesFolder, filename);
+      file.finalPath = `products/${vendorId}/${productId}/images/${filename}`;
+    } else if (!isNaN(parseInt(file.fieldname))) {
+      newPath = path.join(docsFolder, filename);
+      file.finalPath = `products/${vendorId}/${productId}/documents/${filename}`;
+    } else if (file.fieldname.startsWith("variant_")) {
+      newPath = path.join(variantFolder, filename);
+      file.finalPath = `products/${vendorId}/${productId}/variants/${filename}`;
+    } else {
+      continue;
+    }
+
+    await moveFile(file.path, newPath);
+    movedFiles.push(file);
+  }
+
+  return movedFiles;
 }
 
 async function generateUniqueSKU(connection, productId) {
@@ -219,13 +256,32 @@ class ProductModel {
   }
 
   // update product by Id
-  async updateProduct(connection, productId, data, files = []) {
+  async updateProduct(connection, productId, vendorId, data, files = []) {
     const safe = (v) => (v === undefined || v === "" ? null : v);
     const custom_category = data.custom_category || null;
     const custom_subcategory = data.custom_subcategory || null;
     const custom_sub_subcategory = data.custom_sub_subcategory || null;
 
-    // 1️⃣ Update main product info
+    const imagesFolder = path.join(
+      UPLOAD_BASE,
+      vendorId.toString(),
+      productId.toString(),
+      "images"
+    );
+    const docsFolder = path.join(
+      UPLOAD_BASE,
+      vendorId.toString(),
+      productId.toString(),
+      "documents"
+    );
+    const variantFolder = path.join(
+      UPLOAD_BASE,
+      vendorId.toString(),
+      productId.toString(),
+      "variants"
+    );
+
+    // 1 Update main product info
     await connection.execute(
       `UPDATE products SET 
       category_id = ?, 
@@ -260,10 +316,18 @@ class ProductModel {
       ]
     );
 
-    // 2️⃣ Handle uploaded files
+    const movedFiles = await processUploadedFiles(files, {
+      vendorId,
+      productId,
+      imagesFolder,
+      docsFolder,
+      variantFolder,
+    });
+
+    // 2 Handle uploaded files
     if (files && files.length) {
-      const mainImages = files.filter((f) => f.fieldname === "images");
-      const otherFiles = files.filter((f) => f.fieldname !== "images");
+      const mainImages = movedFiles.filter((f) => f.fieldname === "images");
+      const otherFiles = movedFiles.filter((f) => f.fieldname !== "images");
 
       if (mainImages.length) {
         // Optional: Remove old images if needed
@@ -289,10 +353,10 @@ class ProductModel {
       }
     }
 
-    // 3️⃣ Handle product variants
+    // 3 Handle product variants
     if (data.variants) {
       let variants = JSON.parse(data.variants);
-      if (!variants && !Array.isArray(variants)) return;
+      if (!variants || !Array.isArray(variants)) return;
 
       for (let i = 0; i < variants.length; i++) {
         const variant = variants[i];
@@ -328,7 +392,7 @@ class ProductModel {
           );
 
           // Update variant images
-          const variantFiles = files.filter((f) =>
+          const variantFiles = movedFiles.filter((f) =>
             f.fieldname.startsWith(`variant_${i}_`)
           );
           if (variantFiles.length) {
@@ -349,7 +413,7 @@ class ProductModel {
             productId,
             variant
           );
-          const variantFiles = files.filter((f) =>
+          const variantFiles = movedFiles.filter((f) =>
             f.fieldname.startsWith(`variant_${i}_`)
           );
           if (variantFiles.length) {
