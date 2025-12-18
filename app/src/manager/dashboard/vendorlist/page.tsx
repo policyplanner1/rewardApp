@@ -22,6 +22,8 @@ interface VendorItem {
   submitted_at: string;
 }
 
+const API_BASE = "http://localhost:5000";
+
 const StatusChip = ({ status }: { status: VendorItem["status"] }) => {
   switch (status) {
     case "approved":
@@ -65,12 +67,11 @@ export default function VendorApprovalList() {
       try {
         const token = localStorage.getItem("token");
 
-        const res = await fetch("http://localhost:5000/api/vendor", {
+        const res = await fetch(`${API_BASE}/api/manager/all-vendors`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         const data = await res.json();
-
         if (data.success) {
           setVendors(data.data);
         }
