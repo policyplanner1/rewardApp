@@ -9,6 +9,7 @@ import {
   FaSpinner,
   FaArrowLeft,
   FaEdit,
+  FaDownload,
 } from "react-icons/fa";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -519,7 +520,7 @@ export default function ReviewProductPage({
                               title="Download"
                               className="absolute bottom-1 right-1 p-1 text-xs text-white bg-black/60 rounded opacity-0 group-hover:opacity-100"
                             >
-                              ⬇
+                              <FaDownload className="text-sm" />
                             </button>
                           </div>
                         );
@@ -585,7 +586,7 @@ export default function ReviewProductPage({
                       title="Download"
                       className="absolute bottom-1 right-1 p-1 text-xs text-white bg-black/60 rounded opacity-0 group-hover:opacity-100"
                     >
-                      ⬇
+                      <FaDownload className="text-sm" />
                     </button>
                   </div>
                 );
@@ -650,7 +651,7 @@ export default function ReviewProductPage({
                           }
                           className="px-3 py-1.5 text-sm font-medium text-white bg-[#852BAF] rounded hover:bg-[#76209e]"
                         >
-                          Download
+                          <FaDownload className="text-sm" />
                         </button>
                       </div>
                     </div>
