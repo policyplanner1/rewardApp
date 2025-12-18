@@ -829,7 +829,7 @@ export default function ProductManagerList() {
                     <div className="flex items-center space-x-2">
                       {/* View Button*/}
                       <Link
-                        href={`/src/vendor/products/review/${product.product_id}`}
+                        href={`/src/manager/dashboard/product/productView/${product.product_id}`}
                       >
                         <button
                           className="p-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"

@@ -212,14 +212,14 @@ class ProductModel {
       if (!productRows.length) return null;
       const product = productRows[0];
 
-      // 2️⃣ Get product images
+      // 2 Get product images
       const [images] = await db.execute(
         `SELECT image_url FROM product_images WHERE product_id = ?`,
         [productId]
       );
       product.images = images.map((img) => img.image_url);
 
-      // 3️⃣ Get product documents
+      // 3 Get product documents
       const [documents] = await db.execute(
         `SELECT pd.id, pd.file_path, pd.mime_type,pd.status, d.document_name
        FROM product_documents pd
@@ -229,13 +229,13 @@ class ProductModel {
       );
       product.documents = documents;
 
-      // 4️⃣ Get product variants
+      // 4 Get product variants
       const [variants] = await db.execute(
         `SELECT * FROM product_variants WHERE product_id = ?`,
         [productId]
       );
 
-      // 5️⃣ Get images for each variant
+      // 5 Get images for each variant
       for (const variant of variants) {
         const [variantImages] = await db.execute(
           `SELECT image_url FROM product_variant_images WHERE variant_id = ?`,
