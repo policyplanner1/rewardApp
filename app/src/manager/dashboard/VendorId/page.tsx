@@ -17,8 +17,6 @@ import {
   FaCommentAlt,
 } from "react-icons/fa";
 
-// --- 1. INTERFACES & DATA RESTRUCTURING (Required for Fetching) ---
-
 interface VendorOnboardingData {
   /* =========================
      BUSINESS DETAILS
@@ -190,8 +188,6 @@ const restructureData = (
   };
 };
 
-// --- 2. REUSABLE DISPLAY COMPONENTS ---
-
 const ReviewField = ({
   label,
   value,
@@ -256,8 +252,6 @@ const SectionHeader = ({
   </div>
 );
 
-// --- 3. MAIN APPROVAL COMPONENT ---
-
 export default function VendorApprovalForm() {
   const searchParams = useSearchParams();
   const vendorId = searchParams.get("vendor_id");
@@ -268,10 +262,9 @@ export default function VendorApprovalForm() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Tracks if the user has started typing a reason (implies intent to reject)
   const [isRejecting, setIsRejecting] = useState(false);
 
-  // 4. DYNAMIC DATA FETCH
+  
   useEffect(() => {
     async function fetchVendorData() {
       if (!vendorId) {
@@ -325,7 +318,6 @@ export default function VendorApprovalForm() {
     fetchVendorData();
   }, [vendorId, API_BASE_URL]);
 
-  // 5. Handle Final Submission (Single Status Update)
   const handleFinalDecision = async (status: "approved" | "rejected") => {
     if (status === "rejected" && rejectionReason.trim() === "") {
       alert("Rejection reason is required to reject the vendor.");
@@ -369,8 +361,6 @@ export default function VendorApprovalForm() {
     }
   };
 
-  // --- RENDER LOGIC ---
-
   if (loading) {
     return (
       <div className="p-10 text-center text-gray-600 flex items-center justify-center space-x-2">
@@ -408,7 +398,6 @@ export default function VendorApprovalForm() {
           decision.
         </p>
 
-        {/* Global Rejection Reason Input */}
         <div
           className="mb-8 p-6 border-2 rounded-xl"
           style={{ borderColor: isRejecting ? "#EF4444" : "#E5E7EB" }}
@@ -422,7 +411,6 @@ export default function VendorApprovalForm() {
             value={rejectionReason}
             onChange={(e) => {
               setRejectionReason(e.target.value);
-              // Automatically set rejecting state when user starts typing
               if (e.target.value.trim()) setIsRejecting(true);
             }}
             placeholder={
