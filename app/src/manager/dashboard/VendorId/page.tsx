@@ -20,7 +20,7 @@ import {
 } from "react-icons/fa";
 
 const resolveImageUrl = (path: string) =>
-  path?.startsWith("http") ? path : `http://localhost:5000/${path}`;
+  path?.startsWith("http") ? path : `http://localhost:5000/uploads/${path}`;
 
 interface VendorOnboardingData {
   /* =========================

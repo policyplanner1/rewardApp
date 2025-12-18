@@ -1,4 +1,5 @@
 const db = require("../config/database");
+const path=require('path')
 
 class VendorModel {
   /* ============================================================
@@ -111,11 +112,18 @@ class VendorModel {
     for (const key of Object.keys(files)) {
       const file = files[key][0];
 
+      const relativePath = path.join(
+        "vendors",
+        vendorId.toString(),
+        "documents",
+        file.filename
+      );
+
       await connection.execute(
         `INSERT INTO vendor_documents 
            (vendor_id, document_key, file_path, mime_type, uploaded_at)
          VALUES (?, ?, ?, ?, NOW())`,
-        [vendorId, key, file.path, file.mimetype]
+        [vendorId, key, relativePath, file.mimetype]
       );
     }
   }
