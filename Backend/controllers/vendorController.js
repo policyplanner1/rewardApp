@@ -3,6 +3,31 @@ const categoryModel = require("../models/categoryModel");
 const subCategoryModel = require("../models/subCategoryModel");
 const subSubCategoryModel = require("../models/subSubCategoryModel");
 const db = require("../config/database");
+const fs = require("fs");
+const path = require("path");
+
+// helper function to upload the images and docs
+async function moveVendorFiles(vendorId, files) {
+  const targetDir = path.join(
+    __dirname,
+    "../uploads/vendors",
+    vendorId.toString(),
+    "documents"
+  );
+
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, { recursive: true });
+  }
+
+  for (const key of Object.keys(files)) {
+    const file = files[key][0];
+
+    const newPath = path.join(targetDir, file.filename);
+    fs.renameSync(file.path, newPath);
+
+    file.path = newPath;
+  }
+}
 
 class VendorController {
   /* ============================================================
@@ -28,6 +53,7 @@ class VendorController {
       await VendorModel.insertContacts(connection, vendorId, data);
 
       if (files) {
+        await moveVendorFiles(vendorId, files);
         await VendorModel.insertCommonDocuments(connection, vendorId, files);
       }
 
