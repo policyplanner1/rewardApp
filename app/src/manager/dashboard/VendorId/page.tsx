@@ -22,6 +22,15 @@ import {
 const resolveImageUrl = (path: string) =>
   path?.startsWith("http") ? path : `http://localhost:5000/uploads/${path}`;
 
+const downloadFile = (url: string, filename?: string) => {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename || url.split("/").pop() || "file";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+};
+
 interface VendorOnboardingData {
   /* =========================
      BUSINESS DETAILS
@@ -108,7 +117,7 @@ interface BackendVendorData {
 const DOCUMENT_CONFIG = {
   gstinFile: { label: "GST Document" },
   panFile: { label: "PAN Card" },
-  cancelledChequeFile: { label: "Bank Cancelled Cheque" },
+  bankProofFile: { label: "Bank Cancelled Cheque" },
   signatoryIdFile: { label: "Authorized Signatory ID Proof" },
   businessProfileFile: { label: "Business Profile" },
   brandLogoFile: { label: "Brand Logo" },
