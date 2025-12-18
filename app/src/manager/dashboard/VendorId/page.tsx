@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   FaBuilding,
   FaAddressBook,
@@ -351,6 +351,7 @@ export default function VendorApprovalForm() {
   const searchParams = useSearchParams();
   const vendorId = searchParams.get("vendor_id");
   const API_BASE_URL = "http://localhost:5000";
+  const router = useRouter();
 
   const [documentMap, setDocumentMap] = useState<Record<string, any>>({});
   const [formData, setFormData] = useState<VendorOnboardingData | null>(null);
@@ -433,23 +434,21 @@ export default function VendorApprovalForm() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/vendor/status/${vendorId}`,
-        {
-          method: "PUT",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const res = await fetch(`${API_BASE_URL}/api/vendor/status/${vendorId}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
 
       const json = await res.json();
 
       if (!res.ok) throw new Error(json.message);
 
       alert(`Vendor status updated to ${status}`);
+      router.push("/src/manager/dashboard/vendorlist");
     } catch (err: any) {
       alert(err.message);
     } finally {
