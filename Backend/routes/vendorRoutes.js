@@ -181,7 +181,7 @@ router.get(
 router.get(
   "/:vendorId",
   authenticateToken,
-  authorizeRoles("admin", "vendor", "vendor_manager"),
+  authorizeRoles("admin", "vendor_manager"),
   VendorController.getVendor
 );
 

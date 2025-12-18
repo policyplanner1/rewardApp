@@ -261,7 +261,7 @@ const SectionHeader = ({
 export default function VendorApprovalForm() {
   const searchParams = useSearchParams();
   const vendorId = searchParams.get("vendor_id");
-  const API_BASE_URL = "http://localhost:5000/api/vendor";
+  const API_BASE_URL = "http://localhost:5000";
 
   const [formData, setFormData] = useState<VendorOnboardingData | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -288,7 +288,7 @@ export default function VendorApprovalForm() {
       }
 
       try {
-        const res = await fetch(`${API_BASE_URL}/${vendorId}`, {
+        const res = await fetch(`${API_BASE_URL}/api/vendor/${vendorId}`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,

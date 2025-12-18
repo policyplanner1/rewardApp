@@ -128,7 +128,7 @@ class VendorModel {
       `SELECT v.*, u.email, u.phone
        FROM vendors v 
        JOIN users u ON v.user_id = u.user_id
-       WHERE vendor_id = ?`,
+       WHERE v.vendor_id = ?`,
       [vendorId]
     );
 

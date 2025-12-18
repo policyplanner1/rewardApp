@@ -59,6 +59,13 @@ class VendorController {
     try {
       const vendorId = req.params.vendorId;
 
+      if (!vendorId) {
+        return res.status(404).json({
+          success: false,
+          message: "Vendor ID is required",
+        });
+      }
+
       const data = await VendorModel.getVendorById(vendorId);
 
       if (!data) {
