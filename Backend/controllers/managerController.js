@@ -32,7 +32,7 @@ class ManagerController {
 
     console.log(role, "role");
     try {
-      if (role != "vendor_manager" || role != "admin") {
+      if (role != "vendor_manager" && role != "admin") {
         return res
           .status(400)
           .json({ success: false, message: "Unauthorized user" });
