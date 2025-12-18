@@ -59,6 +59,9 @@ router.get(
   }
 );
 
+// All Vendor list
+router.get('/all-vendors',authenticateToken,authorizeRoles('vendor_manager','admin'),managerController.vendorList);
+
 // approve product
 router.put(
   "/product/approve/:productId",

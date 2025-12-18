@@ -26,6 +26,40 @@ class ManagerController {
     }
   }
 
+  // all Vendor List
+  async vendorList(req, res) {
+    const role = req.user?.role;
+
+    console.log(role, "role");
+    try {
+      if (role != "vendor_manager" || role != "admin") {
+        return res
+          .status(400)
+          .json({ success: false, message: "Unauthorized user" });
+      }
+
+      const [vendorRows] = await db.query(`SELECT * FROM vendors `);
+
+      if (vendorRows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Vendor not found",
+        });
+      }
+
+      return res.json({
+        data: vendorRows,
+        success: true,
+        message: "Product approved successfully",
+      });
+    } catch (error) {
+      console.error("Error fetching vendor List:", error);
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to fetch Vendor Details" });
+    }
+  }
+
   // Approve vendor Product
   async approveProduct(req, res) {
     try {
@@ -160,9 +194,10 @@ class ManagerController {
       });
     } catch (error) {
       console.error("Product Resubmission error:", error);
-      res
-        .status(500)
-        .json({ success: false, message: "Failed to send resubmission reject" });
+      res.status(500).json({
+        success: false,
+        message: "Failed to send resubmission reject",
+      });
     }
   }
 }
