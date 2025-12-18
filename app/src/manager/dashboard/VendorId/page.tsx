@@ -15,7 +15,12 @@ import {
   FaDownload,
   FaSpinner,
   FaCommentAlt,
+  FaEye,
+  FaFilePdf,
 } from "react-icons/fa";
+
+const resolveImageUrl = (path: string) =>
+  path?.startsWith("http") ? path : `http://localhost:5000/${path}`;
 
 interface VendorOnboardingData {
   /* =========================
@@ -99,6 +104,19 @@ interface BackendVendorData {
   contacts: any;
   documents: Array<any>;
 }
+
+const DOCUMENT_CONFIG = {
+  gstinFile: { label: "GST Document" },
+  panFile: { label: "PAN Card" },
+  cancelledChequeFile: { label: "Bank Cancelled Cheque" },
+  signatoryIdFile: { label: "Authorized Signatory ID Proof" },
+  businessProfileFile: { label: "Business Profile" },
+  brandLogoFile: { label: "Brand Logo" },
+  nocFile: { label: "NOC" },
+  electricityBillFile: { label: "Electricity Bill" },
+  rightsAdvisoryFile: { label: "Advisory / Disclaimer" },
+  signedAgreementFile: { label: "Signed Agreement (Optional)" },
+};
 
 const restructureData = (
   backendData: BackendVendorData
@@ -188,6 +206,66 @@ const restructureData = (
   };
 };
 
+const DocumentPreviewCard = ({ label, doc }: any) => {
+  if (!doc) {
+    return (
+      <div className="p-4 border rounded-xl bg-gray-50 text-sm text-gray-400">
+        {label}: Not uploaded
+      </div>
+    );
+  }
+
+  const fileUrl = resolveImageUrl(doc.file_path);
+  const isImage = doc.mime_type?.startsWith("image/");
+
+  return (
+    <div className="p-4 border rounded-xl bg-white shadow-sm">
+      <div className="text-sm font-medium text-gray-700 mb-2">{label}</div>
+
+      <div className="flex items-center gap-3">
+        {/* IMAGE PREVIEW */}
+        {isImage ? (
+          <a
+            href={fileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="View"
+          >
+            <img
+              src={fileUrl}
+              alt={label}
+              className="w-16 h-16 object-cover rounded border cursor-pointer"
+            />
+          </a>
+        ) : (
+          <FaFilePdf className="text-3xl text-red-500" />
+        )}
+
+        {/* ACTIONS */}
+        <div className="flex gap-2">
+          <a
+            href={fileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 border rounded hover:bg-gray-100"
+            title="View"
+          >
+            <FaEye />
+          </a>
+
+          <button
+            onClick={() => downloadFile(fileUrl, fileUrl.split("/").pop())}
+            className="p-2 border rounded hover:bg-gray-100"
+            title="Download"
+          >
+            <FaDownload />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const ReviewField = ({
   label,
   value,
@@ -252,11 +330,20 @@ const SectionHeader = ({
   </div>
 );
 
+const mapDocumentsByKey = (documents: any[]) => {
+  const map: Record<string, any> = {};
+  documents.forEach((doc) => {
+    map[doc.document_key] = doc;
+  });
+  return map;
+};
+
 export default function VendorApprovalForm() {
   const searchParams = useSearchParams();
   const vendorId = searchParams.get("vendor_id");
   const API_BASE_URL = "http://localhost:5000";
 
+  const [documentMap, setDocumentMap] = useState<Record<string, any>>({});
   const [formData, setFormData] = useState<VendorOnboardingData | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [loading, setLoading] = useState(true);
@@ -264,7 +351,6 @@ export default function VendorApprovalForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
 
-  
   useEffect(() => {
     async function fetchVendorData() {
       if (!vendorId) {
@@ -299,8 +385,9 @@ export default function VendorApprovalForm() {
 
         const json = await res.json();
         const structuredData = restructureData(json.data);
-
+        const documentMap = mapDocumentsByKey(json.data.documents);
         setFormData(structuredData);
+        setDocumentMap(documentMap);
         setError(null);
       } catch (err) {
         console.error("Fetch Error:", err);
@@ -457,40 +544,13 @@ export default function VendorApprovalForm() {
 
             {/* --- DOCUMENTS (ORDERED AS REQUESTED) --- */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              <FileReviewField
-                label="GST Document"
-                fileUrl={formData.gstinFileUrl}
-              />
-              <FileReviewField label="PAN Card" fileUrl={formData.panFileUrl} />
-              <FileReviewField
-                label="Bank Cancelled Cheque"
-                fileUrl={formData.bankCancelledChequeFileUrl}
-              />
-              <FileReviewField
-                label="Authorized Signatory ID Proof"
-                fileUrl={formData.authorizedSignatoryIdFileUrl}
-              />
-              <FileReviewField
-                label="Business Profile"
-                fileUrl={formData.businessProfileFileUrl}
-              />
-              <FileReviewField
-                label="Brand Logo"
-                fileUrl={formData.brandLogoFileUrl}
-              />
-              <FileReviewField label="NOC" fileUrl={formData.nocFileUrl} />
-              <FileReviewField
-                label="Electricity Bill"
-                fileUrl={formData.electricityBillFileUrl}
-              />
-              <FileReviewField
-                label="Advisory / Disclaimer"
-                fileUrl={formData.advisoryDisclaimerFileUrl}
-              />
-              <FileReviewField
-                label="Signed Agreement (Optional)"
-                fileUrl={formData.signedAgreementFileUrl}
-              />
+              {Object.entries(DOCUMENT_CONFIG).map(([key, cfg]) => (
+                <DocumentPreviewCard
+                  key={key}
+                  label={cfg.label}
+                  doc={documentMap[key]}
+                />
+              ))}
             </div>
 
             {/* --- COMPANY CONTACT --- */}
@@ -594,8 +654,8 @@ export default function VendorApprovalForm() {
           <section className="space-y-6">
             <SectionHeader
               icon={FaUniversity}
-              title="Bank Details & Proof"
-              description="Account details for receiving payments and required proof."
+              title="Bank Details"
+              description="Account details for receiving payments."
             />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <ReviewField label="Bank Name" value={formData.bankName} />
