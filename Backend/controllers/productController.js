@@ -262,6 +262,9 @@ class ProductController {
   async getAllProductDetails(req, res) {
     try {
       // filters
+      const user = req?.user;
+      const role = user?.role;
+
       const page = parseInt(req.query.page) || 1;
       const limit = parseInt(req.query.limit) || 10;
       const offset = (page - 1) * limit;
@@ -297,13 +300,31 @@ class ProductController {
         };
       });
 
+      const normalizedProducts =
+        role === "vendor_manager"
+          ? processedProducts
+              .filter((p) => p.status !== "pending")
+              .map((p) => ({
+                ...p,
+                status: p.status === "sent_for_approval" ? "pending" : p.status,
+              }))
+          : processedProducts;
+
       // Stats calculation
-      const stats = processedProducts.reduce(
+      const statsSource =
+        role === "vendor_manager"
+          ? processedProducts
+              .filter((p) => p.status !== "pending")
+              .map((p) => ({
+                ...p,
+                status: p.status === "sent_for_approval" ? "pending" : p.status,
+              }))
+          : processedProducts;
+
+      const stats = statsSource.reduce(
         (acc, product) => {
           acc.total += 1;
           if (product.status === "pending") acc.pending += 1;
-          if (product.status === "sent_for_approval")
-            acc.sent_for_approval += 1;
           if (product.status === "approved") acc.approved += 1;
           if (product.status === "rejected") acc.rejected += 1;
           if (product.status === "resubmission") acc.resubmission += 1;
@@ -311,7 +332,6 @@ class ProductController {
         },
         {
           pending: 0,
-          sent_for_approval: 0,
           approved: 0,
           rejected: 0,
           resubmission: 0,
@@ -321,7 +341,7 @@ class ProductController {
 
       return res.json({
         success: true,
-        products: processedProducts,
+        products: normalizedProducts,
         stats,
         total: totalItems,
         totalPages: Math.ceil(totalItems / limit),

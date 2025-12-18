@@ -33,7 +33,12 @@ const API_BASE = "http://localhost:5000";
 /* ================================
        TYPES
 ================================ */
-type ProductStatus = "pending" | "approved" | "rejected" | "resubmission" | "sent_for_approval";
+type ProductStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "resubmission"
+  | "sent_for_approval";
 
 interface ProductDocument {
   document_id: number;
@@ -120,6 +125,11 @@ const StatusChip = ({ status }: { status: ProductStatus }) => {
       color: "bg-yellow-100 text-yellow-800 border-yellow-200",
       icon: FaClock,
       text: "Pending",
+    },
+    sent_for_approval: {
+      color: "bg-blue-100 text-blue-800 border-blue-200",
+      icon: FaPaperPlane,
+      text: "Sent for Approval",
     },
   };
 
@@ -314,7 +324,7 @@ export default function ProductManagerList() {
   const [stats, setStats] = useState<Stats>({
     total: 0,
     pending: 0,
-    sent_for_approval:0,
+    sent_for_approval: 0,
     approved: 0,
     rejected: 0,
     resubmission: 0,
@@ -396,13 +406,16 @@ export default function ProductManagerList() {
         sortOrder,
       });
 
-      const response = await fetch(`${API_BASE}/api/product/all-products?${params.toString()}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-      });
+      const response = await fetch(
+        `${API_BASE}/api/product/all-products?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -457,7 +470,7 @@ export default function ProductManagerList() {
       if (!token) throw new Error("No token");
 
       let url = "";
-      let method: "PUT" | "DELETE" = "PUT"; 
+      let method: "PUT" | "DELETE" = "PUT";
       let body: any = undefined;
 
       switch (action) {
@@ -475,7 +488,7 @@ export default function ProductManagerList() {
         default:
           throw new Error("Invalid action");
       }
-      
+
       // Make the API request
       const res = await fetch(url, {
         method,
@@ -500,8 +513,16 @@ export default function ProductManagerList() {
           p.product_id === productId
             ? {
                 ...p,
-                status: action === "approve" ? "approved" : "rejected",
-                rejection_reason: action === "reject" ? reason || null : null,
+                status:
+                  action === "approve"
+                    ? "approved"
+                    : action === "reject"
+                    ? "rejected"
+                    : "resubmission",
+                rejection_reason:
+                  action === "reject" || action === "request_resubmission"
+                    ? reason || null
+                    : null,
               }
             : p
         )
@@ -609,7 +630,7 @@ export default function ProductManagerList() {
           </div>
           <div className="p-3 border border-yellow-100 rounded-lg bg-yellow-50">
             <div className="text-xl font-bold text-yellow-700">
-              {stats.sent_for_approval}
+              {stats.pending}
             </div>
             <div className="text-xs text-yellow-600">Pending for Review</div>
           </div>
@@ -665,7 +686,7 @@ export default function ProductManagerList() {
                 className="appearance-none pl-10 pr-8 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#852BAF] focus:border-transparent"
               >
                 <option value="all">All Status</option>
-                <option value="pending">Pending</option>
+                <option value="sent_for_approval">Pending</option>
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
                 <option value="resubmission">Resubmission</option>
@@ -841,7 +862,7 @@ export default function ProductManagerList() {
                       )}
 
                       {/* Request Resubmission*/}
-                      {["pending", "resubmission"].includes(product.status) && (
+                      {["pending"].includes(product.status) && (
                         <button
                           onClick={() =>
                             openActionModal(product, "request_resubmission")

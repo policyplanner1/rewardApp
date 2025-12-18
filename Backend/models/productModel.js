@@ -601,7 +601,7 @@ class ProductModel {
 
       // Total count for pagination
       const [[{ total }]] = await db.execute(
-        `SELECT COUNT(*) AS total FROM products p ${whereClause}`,
+        `SELECT COUNT(DISTINCT p.product_id) AS total FROM products p ${whereClause}`,
         params
       );
 
