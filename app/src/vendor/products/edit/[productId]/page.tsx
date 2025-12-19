@@ -116,6 +116,11 @@ const initialProductData: ProductData = {
   productImages: [],
 };
 
+const allowOnlyAlphabets = (value: string) => /^[A-Za-z ]*$/.test(value);
+const allowOnlyNumbers = (value: string) => /^[0-9]*$/.test(value);
+const allowOnlyDecimal = (value: string) => /^\d*\.?\d*$/.test(value);
+const allowOnlyDimensionFormat = (value: string) => /^[0-9.*]*$/.test(value);
+
 const FormInput = ({
   id,
   label,
@@ -318,11 +323,66 @@ export default function EditProductPage() {
     }
   };
 
+  const handleFieldChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
+    const { name, value } = e.target;
+
+    /* ===== GST % ===== */
+    if (name === "gstIn") {
+      if (!allowOnlyDecimal(value)) return;
+      if (value && Number(value) > 100) return;
+
+      setProduct((prev) => ({ ...prev, gstIn: value }));
+      return;
+    }
+
+    /* ===== PRODUCT TEXT (ALPHABETS ONLY) ===== */
+    const productAlphabetFields = ["productName", "brandName", "manufacturer"];
+
+    if (productAlphabetFields.includes(name)) {
+      if (!allowOnlyAlphabets(value)) return;
+    }
+
+    /* ===== CATEGORY LOGIC (UNCHANGED) ===== */
+    if (name === "category_id") {
+      setProduct((prev) => ({
+        ...prev,
+        categoryId: value ? Number(value) : null,
+        subCategoryId: null,
+        subSubCategoryId: null,
+      }));
+      return;
+    }
+
+    if (name === "subcategory_id") {
+      setProduct((prev) => ({
+        ...prev,
+        subCategoryId: value ? Number(value) : null,
+        subSubCategoryId: null,
+      }));
+      return;
+    }
+
+    if (name === "sub_subcategory_id") {
+      setProduct((prev) => ({
+        ...prev,
+        subSubCategoryId: value ? Number(value) : null,
+      }));
+      return;
+    }
+
+    /* ===== DEFAULT ===== */
+    setProduct((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   useEffect(() => {
     if (!productId) return;
     fetchProductDetails(productId);
   }, [productId]);
-
 
   const fetchProductDetails = async (id: string) => {
     try {
@@ -417,39 +477,79 @@ export default function EditProductPage() {
     }
   };
 
-  // --- Form Handlers ---
-  const handleFieldChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
+  const handleVariantChange = (index: number, field: string, value: string) => {
+    /* ================= HARD BLOCK ================= */
 
-    if (name === "category_id") {
-      setProduct((prev) => ({
-        ...prev,
-        categoryId: value ? Number(value) : null,
-        subCategoryId: null,
-        subSubCategoryId: null,
-      }));
-    } else if (name === "subcategory_id") {
-      setProduct((prev) => ({
-        ...prev,
-        subCategoryId: value ? Number(value) : null,
-        subSubCategoryId: null,
-      }));
-    } else if (name === "sub_subcategory_id") {
-      setProduct((prev) => ({
-        ...prev,
-        subSubCategoryId: value ? Number(value) : null,
-      }));
-    } else {
-      setProduct((prev) => ({ ...prev, [name]: value }));
+    // Decimal numbers
+    if (["MRP", "salesPrice", "weight"].includes(field)) {
+      if (!/^\d*\.?\d*$/.test(value)) return;
     }
-  };
 
-  const handleVariantChange = (index: number, field: string, value: any) => {
+    // Integers only
+    if (field === "stock") {
+      if (!/^\d*$/.test(value)) return;
+    }
+
+    // Alphabets only
+    if (field === "color" || field === "materialType") {
+      if (!/^[A-Za-z ]*$/.test(value)) return;
+    }
+
+    // Dimension (numbers + * + .)
+    if (field === "dimension") {
+      if (!/^[0-9.*]*$/.test(value)) return;
+    }
+
+    /* ================= DATE VALIDATION ================= */
+
+    // Manufacturing date
+    if (field === "manufacturingYear") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const mfg = new Date(value);
+      mfg.setHours(0, 0, 0, 0);
+
+      if (mfg >= today) return;
+
+      const expiry = product.variants[index].expiryDate;
+      if (expiry) {
+        const exp = new Date(expiry);
+        exp.setHours(0, 0, 0, 0);
+        if (mfg >= exp) return;
+      }
+    }
+
+    // Expiry date
+    if (field === "expiryDate") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const exp = new Date(value);
+      exp.setHours(0, 0, 0, 0);
+
+      if (exp <= today) return;
+
+      const mfg = product.variants[index].manufacturingYear;
+      if (mfg) {
+        const mfgDate = new Date(mfg);
+        mfgDate.setHours(0, 0, 0, 0);
+        if (exp <= mfgDate) return;
+      }
+    }
+
+    /* ================= STATE UPDATE ================= */
+
     const updatedVariants = [...product.variants];
-    updatedVariants[index] = { ...updatedVariants[index], [field]: value };
-    setProduct((prev) => ({ ...prev, variants: updatedVariants }));
+    updatedVariants[index] = {
+      ...updatedVariants[index],
+      [field]: value,
+    };
+
+    setProduct((prev) => ({
+      ...prev,
+      variants: updatedVariants,
+    }));
   };
 
   const handleVariantAttributeChange = (
@@ -904,6 +1004,7 @@ export default function EditProductPage() {
                 <input
                   type="date"
                   value={variant.manufacturingYear || ""}
+                  max={new Date().toISOString().split("T")[0]}
                   onChange={(e) =>
                     handleVariantChange(
                       index,
@@ -924,6 +1025,7 @@ export default function EditProductPage() {
                 <input
                   type="date"
                   value={variant.expiryDate || ""}
+                  min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
                   onChange={(e) =>
                     handleVariantChange(index, "expiryDate", e.target.value)
                   }
