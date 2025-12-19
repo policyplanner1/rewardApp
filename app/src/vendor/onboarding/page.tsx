@@ -174,6 +174,10 @@ const allowOnlyAlphabets = (value: string) => /^[A-Za-z ]*$/.test(value);
 
 const allowOnlyNumbers = (value: string) => /^[0-9]*$/.test(value);
 
+const panValidator = (value: string) => {
+  return /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(value);
+};
+
 const FormInput = ({
   id,
   label,
@@ -335,13 +339,26 @@ export default function Onboarding() {
       if (!allowOnlyAlphabets(value)) return;
     }
 
-    // Number-only fields
+    // Bank Number
     const bankNumberFields = ["accountNumber"];
 
     if (bankNumberFields.includes(name)) {
       if (!allowOnlyNumbers(value)) return;
     }
-    
+
+    // Contact number
+    const contactNumberFields = [
+      "primaryContactNumber",
+      "alternateContactNumber",
+    ];
+
+    if (contactNumberFields.includes(name)) {
+      // numbers only
+      if (!allowOnlyNumbers(value)) return;
+
+      // restrict to 10 digits
+      if (value.length > 10) return;
+    }
     // pin code validation
     const pincodeFields = ["pincode", "billingPincode", "shippingPincode"];
 
@@ -349,6 +366,17 @@ export default function Onboarding() {
       if (!allowOnlyNumbers(value)) return;
 
       if (value.length > 6) return;
+    }
+
+    // pan
+    /* ================= HARD BLOCK: PAN ================= */
+
+    if (name === "panNumber") {
+      // allow only alphabets & numbers
+      if (!/^[A-Za-z0-9]*$/.test(value)) return;
+
+      // restrict length to 10
+      if (value.length > 10) return;
     }
 
     /* ================= SOFT VALIDATION ================= */
@@ -363,8 +391,8 @@ export default function Onboarding() {
         break;
 
       case "panNumber":
-        if (value && !validators.panNumber(value.toUpperCase())) {
-          error = "Invalid PAN format (ABCDE1234F)";
+        if (value && !panValidator(value.toUpperCase())) {
+          error = "PAN must be in format ABCDE1234F";
         }
         break;
 
