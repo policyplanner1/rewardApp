@@ -1,26 +1,55 @@
 const db = require("../config/database");
-const path=require('path')
+const path = require("path");
 
 class VendorModel {
   /* ============================================================
       CREATE VENDOR
   ============================================================ */
-  async createVendor(connection, data, userId) {
-    const [result] = await connection.execute(
-      `INSERT INTO vendors 
+  async createVendor(connection, data, userId, vndID) {
+    if (vndID) {
+      // UPDATE vendor
+      const [result] = await connection.execute(
+        `UPDATE vendors
+       SET 
+         company_name = ?,
+         full_name = ?,
+         vendor_type = ?,
+         gstin = ?,
+         ipaddress = ?,
+         pan_number = ?
+       WHERE vendor_id = ? AND user_id = ?`,
+        [
+          data.companyName || "",
+          data.fullName || "",
+          data.vendorType || "",
+          data.gstin || "",
+          data.ip_address || "",
+          data.panNumber || "",
+          vndID,
+          userId,
+        ]
+      );
+
+      return vndID; // return existing vendor id
+    } else {
+      // INSERT vendor
+      const [result] = await connection.execute(
+        `INSERT INTO vendors
         (user_id, company_name, full_name, vendor_type, gstin, ipaddress, pan_number, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?,'pending', NOW())`,
-      [
-        userId,
-        data.companyName || "",
-        data.fullName || "",
-        data.vendorType || "",
-        data.gstin || "",
-        data.ip_address || "",
-        data.panNumber || "",
-      ]
-    );
-    return result.insertId;
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())`,
+        [
+          userId,
+          data.companyName || "",
+          data.fullName || "",
+          data.vendorType || "",
+          data.gstin || "",
+          data.ip_address || "",
+          data.panNumber || "",
+        ]
+      );
+
+      return result.insertId;
+    }
   }
 
   /* ============================================================

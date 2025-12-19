@@ -39,11 +39,12 @@ class VendorController {
       connection = await db.getConnection();
       await connection.beginTransaction();
 
-      const userId = req.user.user_id;
+      const userId = req.user?.user_id;
+      const vndID = req.user?.vendor_id;
       const data = req.body;
       const files = req.files;
 
-      const vendorId = await VendorModel.createVendor(connection, data, userId);
+      const vendorId = await VendorModel.createVendor(connection, data, userId,vndID);
 
       await VendorModel.insertAddress(connection, vendorId, "business", data);
       await VendorModel.insertAddress(connection, vendorId, "billing", data);
