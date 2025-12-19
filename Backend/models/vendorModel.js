@@ -230,12 +230,18 @@ class VendorModel {
       UPDATE VENDOR STATUS
   ============================================================ */
   async updateVendorStatus(vendorId, status, reason = null) {
+    const onboarding_flag = status === "approved" ? 1 : 0;
+
     const [result] = await db.execute(
-      `UPDATE vendors 
-         SET status=?, rejection_reason=?, created_at=NOW()
-       WHERE vendor_id=?`,
-      [status, reason, vendorId]
+      `UPDATE vendors
+     SET status = ?,
+         onboarding_flag = ?,
+         rejection_reason = ?,
+         created_at = NOW()
+     WHERE vendor_id = ?`,
+      [status, onboarding_flag, reason, vendorId]
     );
+
     return result.affectedRows > 0;
   }
 }
