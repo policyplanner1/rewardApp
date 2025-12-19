@@ -5,58 +5,53 @@ class VendorModel {
   /* ============================================================
       CREATE VENDOR
   ============================================================ */
-  async createVendor(connection, data, userId, vndID) {
-    if (vndID) {
-      // UPDATE vendor
-      const [result] = await connection.execute(
-        `UPDATE vendors
-       SET 
-         company_name = ?,
-         full_name = ?,
-         vendor_type = ?,
-         gstin = ?,
-         ipaddress = ?,
-         pan_number = ?,
-         status='sent_for_approval'
-       WHERE vendor_id = ? AND user_id = ?`,
-        [
-          data.companyName || "",
-          data.fullName || "",
-          data.vendorType || "",
-          data.gstin || "",
-          data.ip_address || "",
-          data.panNumber || "",
-          vndID,
-          userId,
-        ]
-      );
+  async createVendor(connection, data, userId, vendorId) {
+    const [result] = await connection.execute(
+      `UPDATE vendors
+     SET
+       company_name = ?,
+       full_name = ?,
+       vendor_type = ?,
+       gstin = ?,
+       ipaddress = ?,
+       pan_number = ?,
+       status = 'sent_for_approval',
+       rejection_reason = NULL,
+       onboarding_flag = 0
+     WHERE vendor_id = ? AND user_id = ?`,
+      [
+        data.companyName || null,
+        data.fullName || null,
+        data.vendorType || null,
+        data.gstin || null,
+        data.ip_address || null,
+        data.panNumber || null,
+        vendorId,
+        userId,
+      ]
+    );
 
-      return vndID; // return existing vendor id
-    } else {
-      // INSERT vendor
-      const [result] = await connection.execute(
-        `INSERT INTO vendors
-        (user_id, company_name, full_name, vendor_type, gstin, ipaddress, pan_number, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'sent_for_approval', NOW())`,
-        [
-          userId,
-          data.companyName || "",
-          data.fullName || "",
-          data.vendorType || "",
-          data.gstin || "",
-          data.ip_address || "",
-          data.panNumber || "",
-        ]
-      );
-
-      return result.insertId;
+    if (result.affectedRows === 0) {
+      throw new Error("Vendor update failed");
     }
+
+    const [rows] = await connection.execute(
+      `SELECT * FROM vendors WHERE vendor_id = ?`,
+      [vendorId]
+    );
+
+    return rows[0];
   }
 
   /* ============================================================
       INSERT ADDRESS (business/billing/shipping)
   ============================================================ */
   async insertAddress(connection, vendorId, type, d) {
+    await connection.execute(
+      `DELETE FROM vendor_addresses WHERE vendor_id = ? AND type = ?`,
+      [vendorId, type]
+    );
+
     const address = {
       line1: d[`${type}AddressLine1`] || d.addressLine1 || "",
       line2: d[`${type}AddressLine2`] || d.addressLine2 || "",
@@ -88,6 +83,10 @@ class VendorModel {
   ============================================================ */
   async insertBankDetails(connection, vendorId, d) {
     await connection.execute(
+      `DELETE FROM vendor_bank_details WHERE vendor_id = ?`,
+      [vendorId]
+    );
+    await connection.execute(
       `INSERT INTO vendor_bank_details 
         (vendor_id, bank_name, account_number, branch, ifsc_code)
        VALUES (?, ?, ?, ?, ?)`,
@@ -105,6 +104,11 @@ class VendorModel {
       INSERT CONTACT DETAILS
   ============================================================ */
   async insertContacts(connection, vendorId, d) {
+    await connection.execute(
+      `DELETE FROM vendor_contacts WHERE vendor_id = ?`,
+      [vendorId]
+    );
+
     await connection.execute(
       `INSERT INTO vendor_contacts
         (vendor_id, primary_contact, alternate_contact, email, payment_terms, comments)
@@ -139,6 +143,13 @@ class VendorModel {
       Works with ANY file key from frontend
   ============================================================ */
   async insertCommonDocuments(connection, vendorId, files) {
+    await connection.execute(
+      `UPDATE vendor_documents
+          SET is_active = 0
+          WHERE vendor_id = ?`,
+      [vendorId]
+    );
+
     for (const key of Object.keys(files)) {
       const file = files[key][0];
 
@@ -151,8 +162,8 @@ class VendorModel {
 
       await connection.execute(
         `INSERT INTO vendor_documents 
-           (vendor_id, document_key, file_path, mime_type, uploaded_at)
-         VALUES (?, ?, ?, ?, NOW())`,
+           (vendor_id, document_key, file_path, mime_type, uploaded_at, is_active)
+         VALUES (?, ?, ?, ?, NOW(),1)`,
         [vendorId, key, relativePath, file.mimetype]
       );
     }

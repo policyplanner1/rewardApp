@@ -44,18 +44,48 @@ class VendorController {
       const data = req.body;
       const files = req.files;
 
-      const vendorId = await VendorModel.createVendor(connection, data, userId,vndID);
+      // fetch vendor
+      const [rows] = await connection.query(
+        `SELECT status FROM vendors WHERE vendor_id = ? AND user_id = ?`,
+        [vndID, userId]
+      );
 
-      await VendorModel.insertAddress(connection, vendorId, "business", data);
-      await VendorModel.insertAddress(connection, vendorId, "billing", data);
-      await VendorModel.insertAddress(connection, vendorId, "shipping", data);
+      if (!rows.length) {
+        throw new Error("Vendor not found");
+      }
 
-      await VendorModel.insertBankDetails(connection, vendorId, data);
-      await VendorModel.insertContacts(connection, vendorId, data);
+      // block approved vendor
+      if (rows[0].status === "approved") {
+        return res.status(400).json({
+          success: false,
+          message: "Vendor already approved",
+        });
+      }
+
+      if (rows[0].status === "sent_for_approval") {
+        return res.status(400).json({
+          success: false,
+          message: "Onboarding already submitted",
+        });
+      }
+
+      const vendor = await VendorModel.createVendor(
+        connection,
+        data,
+        userId,
+        vndID
+      );
+
+      await VendorModel.insertAddress(connection, vndID, "business", data);
+      await VendorModel.insertAddress(connection, vndID, "billing", data);
+      await VendorModel.insertAddress(connection, vndID, "shipping", data);
+
+      await VendorModel.insertBankDetails(connection, vndID, data);
+      await VendorModel.insertContacts(connection, vndID, data);
 
       if (files) {
-        await moveVendorFiles(vendorId, files);
-        await VendorModel.insertCommonDocuments(connection, vendorId, files);
+        await moveVendorFiles(vndID, files);
+        await VendorModel.insertCommonDocuments(connection, vndID, files);
       }
 
       await connection.commit();
@@ -63,7 +93,7 @@ class VendorController {
       return res.status(201).json({
         success: true,
         message: "Vendor onboarded successfully",
-        vendorId,
+        vndID,
       });
     } catch (err) {
       if (connection) await connection.rollback();
