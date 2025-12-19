@@ -16,7 +16,8 @@ class VendorModel {
          vendor_type = ?,
          gstin = ?,
          ipaddress = ?,
-         pan_number = ?
+         pan_number = ?,
+         status='sent_for_approval'
        WHERE vendor_id = ? AND user_id = ?`,
         [
           data.companyName || "",
@@ -36,7 +37,7 @@ class VendorModel {
       const [result] = await connection.execute(
         `INSERT INTO vendors
         (user_id, company_name, full_name, vendor_type, gstin, ipaddress, pan_number, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', NOW())`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'sent_for_approval', NOW())`,
         [
           userId,
           data.companyName || "",
