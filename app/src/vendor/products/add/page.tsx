@@ -363,6 +363,15 @@ export default function ProductListingDynamic() {
   ) => {
     const { name, value } = e.target;
     /* ================= GST % ================= */
+
+    /* ================= PRODUCT TEXT FIELDS ================= */
+
+    const productAlphabetFields = ["productName", "brandName", "manufacturer"];
+
+    if (productAlphabetFields.includes(name)) {
+      if (!allowOnlyAlphabets(value)) return;
+    }
+
     if (name === "gstIn") {
       // Allow only digits and one decimal
       if (!/^\d*\.?\d*$/.test(value)) return;
@@ -414,7 +423,6 @@ export default function ProductListingDynamic() {
   };
 
   const handleVariantChange = (index: number, field: string, value: string) => {
-
     // manufacturing Year
     if (field === "manufacturingYear") {
       const today = new Date();
