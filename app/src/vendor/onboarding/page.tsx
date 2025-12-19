@@ -18,7 +18,12 @@ interface VendorOnboardingData {
   // A. Business Information
   companyName: string;
   fullName: string; // As per PAN Card
-  vendorType: "Manufacturer" | "Trader" | "Service Provider" | "";
+  vendorType:
+    | "Manufacturer"
+    | "Trader"
+    | "Distributor"
+    | "Service Provider"
+    | "";
   gstin: string;
   panNumber: string;
   ip_address: string;
@@ -651,6 +656,7 @@ export default function Onboarding() {
                   <option value="">Select vendor type</option>
                   <option value="Manufacturer">Manufacturer</option>
                   <option value="Trader">Trader</option>
+                  <option value="Distributor">Distributor</option>
                   <option value="Service Provider">Service Provider</option>
                 </select>
               </div>
@@ -1154,12 +1160,27 @@ export default function Onboarding() {
               description="Custom terms and vendor notes."
             />
 
-            <FormInput
-              id="paymentTerms"
-              label="Payment Terms"
-              value={formData.paymentTerms}
-              onChange={handleChange}
-            />
+            <div className="flex flex-col space-y-1">
+              <label
+                htmlFor="paymentTerms"
+                className="text-sm font-medium text-gray-700"
+              >
+                Payment Terms
+              </label>
+
+              <select
+                id="paymentTerms"
+                name="paymentTerms"
+                value={formData.paymentTerms}
+                onChange={handleChange}
+                className="p-3 transition duration-150 border border-gray-300 rounded-lg focus:ring-1 focus:ring-brand-purple focus:border-brand-purple"
+              >
+                <option value="">Select payment terms</option>
+                <option value="NET 15">NET 15</option>
+                <option value="NET 30">NET 30</option>
+                <option value="NET 45">NET 45</option>
+              </select>
+            </div>
 
             <div className="flex flex-col space-y-1">
               <label
