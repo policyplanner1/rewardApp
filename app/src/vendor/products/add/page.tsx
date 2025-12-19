@@ -171,6 +171,31 @@ const SectionHeader = ({ icon: Icon, title, description }: any) => (
   </div>
 );
 
+const allowOnlyNumbers = (value: string, allowDecimal = false) => {
+  const regex = allowDecimal ? /^[0-9]*\.?[0-9]*$/ : /^[0-9]*$/;
+  return regex.test(value);
+};
+
+const allowOnlyDecimal = (value: string) => {
+  // allows: "", "1", "1.", "1.5"
+  // blocks: letters, symbols, multiple dots
+  return /^\d*\.?\d*$/.test(value);
+};
+
+const gstValidator = (value: string) => {
+  if (!/^\d*\.?\d*$/.test(value)) return false;
+  const num = Number(value);
+  return !isNaN(num) && num >= 0 && num <= 100;
+};
+
+const allowOnlyAlphabets = (value: string) => {
+  return /^[A-Za-z ]*$/.test(value);
+};
+
+const allowOnlyDimensionFormat = (value: string) => {
+  return /^[0-9.*]*$/.test(value);
+};
+
 export default function ProductListingDynamic() {
   const [product, setProduct] = useState<ProductData>(initialProductData);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -337,7 +362,23 @@ export default function ProductListingDynamic() {
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+    /* ================= GST % ================= */
+    if (name === "gstIn") {
+      // Allow only digits and one decimal
+      if (!/^\d*\.?\d*$/.test(value)) return;
 
+      // Restrict range 0–100
+      const num = Number(value);
+      if (value && !isNaN(num) && num > 100) return;
+
+      setProduct((prev) => ({
+        ...prev,
+        gstIn: value,
+      }));
+      return;
+    }
+
+    /* ================= CATEGORY HANDLING ================= */
     if (name === "category_id") {
       setProduct((prev) => ({
         ...prev,
@@ -345,60 +386,103 @@ export default function ProductListingDynamic() {
         subCategoryId: null,
         subSubCategoryId: null,
       }));
-    } else if (name === "subcategory_id") {
+      return;
+    }
+
+    if (name === "subcategory_id") {
       setProduct((prev) => ({
         ...prev,
         subCategoryId: value ? Number(value) : null,
         subSubCategoryId: null,
       }));
-    } else if (name === "sub_subcategory_id") {
+      return;
+    }
+
+    if (name === "sub_subcategory_id") {
       setProduct((prev) => ({
         ...prev,
         subSubCategoryId: value ? Number(value) : null,
       }));
-    } else {
-      setProduct((prev) => ({ ...prev, [name]: value }));
+      return;
     }
+
+    /* ================= DEFAULT ================= */
+    setProduct((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  // const handleMainImages = (e: ChangeEvent<HTMLInputElement>) => {
-  //   if (e.target.files) {
-  //     setProduct((prev) => ({
-  //       ...prev,
-  //       productImages: Array.from(e.target.files || []),
-  //     }));
-  //   }
-  // };
-
-  // const handleVariantChange = (index: number, field: string, value: any) => {
-  //   const updatedVariants = [...product.variants];
-  //   updatedVariants[index] = { ...updatedVariants[index], [field]: value };
-  //   setProduct((prev) => ({ ...prev, variants: updatedVariants }));
-  // };
-
   const handleVariantChange = (index: number, field: string, value: string) => {
+
+    // manufacturing Year
+    if (field === "manufacturingYear") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const mfgDate = new Date(value);
+      mfgDate.setHours(0, 0, 0, 0);
+
+      // must be before today
+      if (mfgDate >= today) return;
+
+      // must be before expiry date (if exists)
+      const expiry = product.variants[index].expiryDate;
+      if (expiry) {
+        const expiryDate = new Date(expiry);
+        expiryDate.setHours(0, 0, 0, 0);
+        if (mfgDate >= expiryDate) return;
+      }
+    }
+
+    // expiry Date
+    if (field === "expiryDate") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const expiryDate = new Date(value);
+      expiryDate.setHours(0, 0, 0, 0);
+
+      // must be after today
+      if (expiryDate <= today) return;
+
+      // must be after manufacturing date (if exists)
+      const mfg = product.variants[index].manufacturingYear;
+      if (mfg) {
+        const mfgDate = new Date(mfg);
+        mfgDate.setHours(0, 0, 0, 0);
+        if (expiryDate <= mfgDate) return;
+      }
+    }
+
+    // ================= DIMENSION =================
+    if (field === "dimension") {
+      if (!/^[0-9.*]*$/.test(value)) return;
+    }
+
+    // ================= ALPHABET ONLY =================
+    if (field === "color" || field === "materialType") {
+      if (!/^[A-Za-z ]*$/.test(value)) return;
+    }
+
+    // ================= DECIMAL NUMBERS =================
+    if (["MRP", "salesPrice", "weight"].includes(field)) {
+      if (!/^\d*\.?\d*$/.test(value)) return;
+    }
+
+    // ================= INTEGER ONLY =================
+    if (field === "stock") {
+      if (!/^\d*$/.test(value)) return;
+    }
+
+    // ---------- Soft validation (error messages) ----------
     let error = "";
 
-    switch (field) {
-      case "MRP":
-      case "salesPrice":
-      case "weight":
-        if (value && !numberValidators.positiveNumber(value)) {
-          error = "Must be a valid number";
-        }
-        break;
-
-      case "stock":
-        if (value && !numberValidators.nonNegativeInt(value)) {
-          error = "Stock must be a whole number";
-        }
-        break;
-
-      case "gst":
-        if (value && !numberValidators.gst(value)) {
-          error = "GST must be between 0 and 100";
-        }
-        break;
+    if (field === "gst") {
+      const gst = Number(value);
+      if (value && (isNaN(gst) || gst < 0 || gst > 100)) {
+        error = "GST must be between 0 and 100";
+      }
     }
 
     setVariantErrors((prev) => ({
@@ -409,6 +493,7 @@ export default function ProductListingDynamic() {
       },
     }));
 
+    // ---------- STATE UPDATE ----------
     const updatedVariants = [...product.variants];
     updatedVariants[index] = {
       ...updatedVariants[index],
@@ -871,7 +956,6 @@ export default function ProductListingDynamic() {
                   type="text"
                   value={variant.weight}
                   placeholder="1000g"
-                  placeholder="1000g"
                   className="w-full p-2 border rounded-lg"
                   onChange={(e) =>
                     handleVariantChange(index, "weight", e.target.value)
@@ -956,6 +1040,7 @@ export default function ProductListingDynamic() {
                 </label>
                 <input
                   type="date"
+                  max={new Date().toISOString().split("T")[0]}
                   value={variant.manufacturingYear}
                   onChange={(e) =>
                     handleVariantChange(
@@ -976,6 +1061,9 @@ export default function ProductListingDynamic() {
                 </label>
                 <input
                   type="date"
+                  min={
+                    new Date(Date.now() + 86400000).toISOString().split("T")[0]
+                  }
                   value={variant.expiryDate}
                   onChange={(e) =>
                     handleVariantChange(index, "expiryDate", e.target.value)
