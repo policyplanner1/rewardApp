@@ -161,6 +161,8 @@ const validators = {
   phone: (value: string) => /^[0-9]{10}$/.test(value),
 
   state: (value: string) => /^[A-Za-z ]+$/.test(value),
+
+  email: (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value),
 };
 
 const FormInput = ({
@@ -338,6 +340,12 @@ export default function Onboarding() {
         }
         break;
 
+      case "email":
+      case "companyEmail":
+        if (value && !validators.email(value)) {
+          error = "Enter a valid email address";
+        }
+        break;
       case "state":
       case "billingState":
       case "shippingState":
@@ -810,15 +818,25 @@ export default function Onboarding() {
                       />
                       Company Email <span className="text-red-500">*</span>
                     </label>
-                    <input
+                    {/* <input
                       type="email"
                       id="companyEmail"
                       name="companyEmail"
                       value={formData.companyEmail}
                       onChange={handleChange}
-                      placeholder="Enter official company email"
                       required
                       className="p-3 transition duration-150 border border-gray-300 rounded-lg focus:ring-1 focus:ring-brand-purple focus:border-brand-purple"
+                    /> */}
+
+                    <FormInput
+                      type="email"
+                      id="companyEmail"
+                      label="Company Email"
+                      value={formData.companyEmail}
+                      onChange={handleChange}
+                      placeholder="Enter official company email"
+                      required
+                      error={errors.companyEmail}
                     />
                   </div>
 
@@ -966,6 +984,7 @@ export default function Onboarding() {
                 value={formData.billingPincode}
                 onChange={handleChange}
                 required={!isSameAsAddress}
+                error={errors.billingPincode}
               />
             </div>
           </section>
@@ -1034,6 +1053,7 @@ export default function Onboarding() {
                 value={formData.shippingPincode}
                 onChange={handleChange}
                 required={!isSameAsBilling}
+                error={errors.shippingPincode}
               />
             </div>
           </section>
@@ -1112,6 +1132,7 @@ export default function Onboarding() {
                 value={formData.alternateContactNumber}
                 onChange={handleChange}
                 type="tel"
+                error={errors.alternateContactNumber}
               />
               <FormInput
                 id="email"
@@ -1120,6 +1141,7 @@ export default function Onboarding() {
                 onChange={handleChange}
                 type="email"
                 required
+                error={errors.email}
               />
             </div>
           </section>
@@ -1164,7 +1186,15 @@ export default function Onboarding() {
           <div className="pt-4 border-t">
             <button
               type="submit"
-              className="w-full px-6 py-3 text-lg font-semibold text-white transition duration-300 rounded-full md:w-auto hover:shadow-lg"
+              disabled={Object.values(errors).some(Boolean)}
+              className="
+                    w-full px-6 py-3 text-lg font-semibold text-white transition duration-300
+                    rounded-full md:w-auto
+                    hover:shadow-lg
+                    disabled:opacity-50
+                    disabled:cursor-not-allowed
+                    disabled:hover:shadow-none
+                  "
               style={{
                 background: "linear-gradient(to right, #852BAF, #FC3F78)",
               }}
