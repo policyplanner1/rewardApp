@@ -170,6 +170,10 @@ const validators = {
   email: (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value),
 };
 
+const allowOnlyAlphabets = (value: string) => /^[A-Za-z ]*$/.test(value);
+
+const allowOnlyNumbers = (value: string) => /^[0-9]*$/.test(value);
+
 const FormInput = ({
   id,
   label,
@@ -313,7 +317,42 @@ export default function Onboarding() {
       return;
     }
 
-    // FIELD VALIDATION
+    /* ================= HARD BLOCK ================= */
+    const alphabetOnlyFields = [
+      "companyName",
+      "fullName",
+      "city",
+      "state",
+      "billingCity",
+      "billingState",
+      "shippingCity",
+      "shippingState",
+      "bankName",
+      "branch",
+    ];
+
+    if (alphabetOnlyFields.includes(name)) {
+      if (!allowOnlyAlphabets(value)) return;
+    }
+
+    // Number-only fields
+    const bankNumberFields = ["accountNumber"];
+
+    if (bankNumberFields.includes(name)) {
+      if (!allowOnlyNumbers(value)) return;
+    }
+    
+    // pin code validation
+    const pincodeFields = ["pincode", "billingPincode", "shippingPincode"];
+
+    if (pincodeFields.includes(name)) {
+      if (!allowOnlyNumbers(value)) return;
+
+      if (value.length > 6) return;
+    }
+
+    /* ================= SOFT VALIDATION ================= */
+
     let error = "";
 
     switch (name) {
@@ -351,6 +390,7 @@ export default function Onboarding() {
           error = "Enter a valid email address";
         }
         break;
+
       case "state":
       case "billingState":
       case "shippingState":
