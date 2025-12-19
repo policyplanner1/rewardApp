@@ -112,6 +112,16 @@ const initialProductData: ProductData = {
   productImages: [],
 };
 
+// field validator
+const numberValidators = {
+  positiveNumber: (v: string) => /^\d+(\.\d+)?$/.test(v),
+  nonNegativeInt: (v: string) => /^\d+$/.test(v),
+  gst: (v: string) => {
+    const n = Number(v);
+    return !isNaN(n) && n >= 0 && n <= 100;
+  },
+};
+
 // --- UI Components ---
 const FormInput = ({
   id,
@@ -169,6 +179,9 @@ export default function ProductListingDynamic() {
   const [subSubCategories, setSubSubCategories] = useState<SubSubCategory[]>(
     []
   );
+  const [variantErrors, setVariantErrors] = useState<
+    Record<number, Record<string, string>>
+  >({});
   const [requiredDocs, setRequiredDocs] = useState<RequiredDocument[]>([]);
   const [docFiles, setDocFiles] = useState<Record<number, File | null>>({}); // key by document_id
   const [loading, setLoading] = useState(false);
@@ -357,9 +370,51 @@ export default function ProductListingDynamic() {
   //   }
   // };
 
-  const handleVariantChange = (index: number, field: string, value: any) => {
+  // const handleVariantChange = (index: number, field: string, value: any) => {
+  //   const updatedVariants = [...product.variants];
+  //   updatedVariants[index] = { ...updatedVariants[index], [field]: value };
+  //   setProduct((prev) => ({ ...prev, variants: updatedVariants }));
+  // };
+
+  const handleVariantChange = (index: number, field: string, value: string) => {
+    let error = "";
+
+    switch (field) {
+      case "MRP":
+      case "salesPrice":
+      case "weight":
+        if (value && !numberValidators.positiveNumber(value)) {
+          error = "Must be a valid number";
+        }
+        break;
+
+      case "stock":
+        if (value && !numberValidators.nonNegativeInt(value)) {
+          error = "Stock must be a whole number";
+        }
+        break;
+
+      case "gst":
+        if (value && !numberValidators.gst(value)) {
+          error = "GST must be between 0 and 100";
+        }
+        break;
+    }
+
+    setVariantErrors((prev) => ({
+      ...prev,
+      [index]: {
+        ...(prev[index] || {}),
+        [field]: error,
+      },
+    }));
+
     const updatedVariants = [...product.variants];
-    updatedVariants[index] = { ...updatedVariants[index], [field]: value };
+    updatedVariants[index] = {
+      ...updatedVariants[index],
+      [field]: value,
+    };
+
     setProduct((prev) => ({ ...prev, variants: updatedVariants }));
   };
 
@@ -477,6 +532,17 @@ export default function ProductListingDynamic() {
   // --- Form Submission ---
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    const hasVariantErrors = Object.values(variantErrors).some((variant) =>
+      Object.values(variant).some(Boolean)
+    );
+
+    if (hasVariantErrors) {
+      setError("Please fix variant pricing/stock errors before submitting.");
+      setIsSubmitting(false);
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
     setSuccess(null);
@@ -804,12 +870,18 @@ export default function ProductListingDynamic() {
                 <input
                   type="text"
                   value={variant.weight}
+                  placeholder="1000g"
+                  placeholder="1000g"
+                  className="w-full p-2 border rounded-lg"
                   onChange={(e) =>
                     handleVariantChange(index, "weight", e.target.value)
                   }
-                  placeholder="1000g"
-                  className="w-full p-2 border rounded-lg"
                 />
+                {variantErrors[index]?.weight && (
+                  <p className="text-xs text-red-500">
+                    {variantErrors[index].weight}
+                  </p>
+                )}
               </div>
 
               {/* MRP */}
@@ -818,14 +890,19 @@ export default function ProductListingDynamic() {
                   MRP
                 </label>
                 <input
-                  type="number"
+                  type="text"
+                  placeholder="Enter MRP"
+                  className="w-full p-2 border rounded-lg"
                   value={variant.MRP}
                   onChange={(e) =>
                     handleVariantChange(index, "MRP", e.target.value)
                   }
-                  placeholder="Enter MRP"
-                  className="w-full p-2 border rounded-lg"
                 />
+                {variantErrors[index]?.MRP && (
+                  <p className="text-xs text-red-500">
+                    {variantErrors[index].MRP}
+                  </p>
+                )}
               </div>
 
               {/* Sales Price */}
@@ -834,15 +911,20 @@ export default function ProductListingDynamic() {
                   Sales Price
                 </label>
                 <input
-                  type="number"
+                  type="text"
+                  placeholder="Enter Sales Price"
+                  className="w-full p-2 border rounded-lg"
+                  required
                   value={variant.salesPrice}
                   onChange={(e) =>
                     handleVariantChange(index, "salesPrice", e.target.value)
                   }
-                  placeholder="Enter Sales Price"
-                  className="w-full p-2 border rounded-lg"
-                  required
                 />
+                {variantErrors[index]?.salesPrice && (
+                  <p className="text-xs text-red-500">
+                    {variantErrors[index].salesPrice}
+                  </p>
+                )}
               </div>
 
               {/* Stock */}
@@ -851,15 +933,20 @@ export default function ProductListingDynamic() {
                   Stock
                 </label>
                 <input
-                  type="number"
+                  type="text"
+                  placeholder="Enter Stock / Unit"
+                  className="w-full p-2 border rounded-lg"
+                  required
                   value={variant.stock}
                   onChange={(e) =>
                     handleVariantChange(index, "stock", e.target.value)
                   }
-                  placeholder="Enter Stock / Unit"
-                  className="w-full p-2 border rounded-lg"
-                  required
                 />
+                {variantErrors[index]?.stock && (
+                  <p className="text-xs text-red-500">
+                    {variantErrors[index].stock}
+                  </p>
+                )}
               </div>
 
               {/* Manufacturing */}
