@@ -199,7 +199,7 @@ class VendorModel {
     );
 
     const [documents] = await db.execute(
-      "SELECT * FROM vendor_documents WHERE vendor_id = ?",
+      "SELECT * FROM vendor_documents WHERE vendor_id = ? AND is_active=1",
       [vendorId]
     );
 
