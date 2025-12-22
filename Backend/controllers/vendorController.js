@@ -599,6 +599,43 @@ class VendorController {
       });
     }
   }
+
+  // get my details
+  async getMyDetails(req, res) {
+    try {
+      const vendorId = req.user.vendor_id;
+      const userId = req.user?.user_id;
+
+      if (!vendorId) {
+        return res.status(404).json({
+          success: false,
+          message: "Vendor ID is required",
+        });
+      }
+
+      const [vendorRows] = await db.query(
+        `SELECT * FROM vendors WHERE vendor_id = ? AND user_id = ?`,
+        [vendorId, userId]
+      );
+
+      if (!vendorRows.length) {
+        return res.status(404).json({
+          success: false,
+          message: "Vendor not found",
+        });
+      }
+
+      const vendor = vendorRows[0];
+
+      return res.json({ success: true, vendor });
+    } catch (error) {
+      console.error("Get my Details Error:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
 }
 
 module.exports = new VendorController();

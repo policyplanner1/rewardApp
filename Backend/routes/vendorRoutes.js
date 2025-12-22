@@ -177,6 +177,13 @@ router.get(
   VendorController.getAllVendors
 );
 
+router.get(
+  "/my-details",
+  authenticateToken,
+  authorizeRoles("vendor"),
+  VendorController.getMyDetails
+);
+
 // Get vendor by ID
 router.get(
   "/:vendorId",

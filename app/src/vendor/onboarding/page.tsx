@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, ChangeEvent, FormEvent } from "react";
+import { useState, ChangeEvent, FormEvent, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   FaBuilding,
@@ -298,12 +298,18 @@ const SectionHeader = ({
 
 // --- MAIN COMPONENT ---
 export default function Onboarding() {
+  const router = useRouter();
   const [formData, setFormData] =
     useState<VendorOnboardingData>(initialFormData);
   const [isSameAsAddress, setIsSameAsAddress] = useState(true);
   const [isSameAsBilling, setIsSameAsBilling] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const router = useRouter();
+  const [vendorStatus, setVendorStatus] = useState<
+    "pending" | "sent_for_approval" | "approved" | "rejected" | null
+  >(null);
+
+  const [loadingStatus, setLoadingStatus] = useState(true);
+  const [rejectionReason, setRejectionReason] = useState<string>("");
 
   // Generic change handler (handles text/select/file/checkbox)
   const handleChange = (
@@ -498,6 +504,36 @@ export default function Onboarding() {
       }
     }
   };
+
+  // fetch vendor Details
+  useEffect(() => {
+    const fetchVendorStatus = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const res = await fetch("http://localhost:5000/api/vendor/my-details", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
+        console.log(data,"data")
+
+        if (data.success) {
+          setVendorStatus(data.vendor.status);
+          setRejectionReason(data.vendor.rejection_reason || "");
+        }
+      } catch (err) {
+        console.error("Failed to fetch vendor status", err);
+      } finally {
+        setLoadingStatus(false);
+      }
+    };
+
+    fetchVendorStatus();
+  }, []);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
