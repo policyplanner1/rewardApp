@@ -1,21 +1,20 @@
-const bcrypt = require('bcryptjs');
-const db = require('../config/database');
-const { generateToken } = require('../utils/jwt');
+const bcrypt = require("bcryptjs");
+const db = require("../config/database");
+const { generateToken } = require("../utils/jwt");
 
 const authController = {
-
   /* ============================================================
        REGISTER USER (Auto-create vendor if role = vendor)
      ============================================================ */
   register: async (req, res, forcedRole = null) => {
     try {
-      const { email, password, phone } = req.body;
+      const { name, email, password, phone } = req.body;
       const role = forcedRole || req.body.role;
 
-      if (!email || !password || !role) {
+      if (!name || !email || !password || !role) {
         return res.status(400).json({
           success: false,
-          message: "Email, password and role are required",
+          message: "Name, Email, password and role are required",
         });
       }
 
@@ -35,8 +34,8 @@ const authController = {
 
       // Create User
       const [insertUser] = await db.execute(
-        "INSERT INTO users (email, password, role, phone, created_at) VALUES (?, ?, ?, ?, NOW())",
-        [email.toLowerCase(), hashedPassword, role, phone || null]
+        "INSERT INTO users (name, email, password, role, phone, created_at) VALUES (?, ?, ?, ?, ?, NOW())",
+        [name, email.toLowerCase(), hashedPassword, role, phone || null]
       );
 
       let vendorData = null;
@@ -58,7 +57,7 @@ const authController = {
         user_id: insertUser.insertId,
         vendor_id: vendorData?.vendor_id || null,
         role,
-        email
+        email,
       });
 
       return res.status(201).json({
@@ -75,7 +74,6 @@ const authController = {
           token,
         },
       });
-
     } catch (err) {
       console.error("Registration Error:", err);
       return res.status(500).json({
@@ -92,15 +90,14 @@ const authController = {
     try {
       const { email, password } = req.body;
 
-      const [rows] = await db.execute(
-        "SELECT * FROM users WHERE email = ?",
-        [email.toLowerCase()]
-      );
+      const [rows] = await db.execute("SELECT * FROM users WHERE email = ?", [
+        email.toLowerCase(),
+      ]);
 
       if (rows.length === 0) {
         return res.status(401).json({
           success: false,
-          message: "Invalid email or password"
+          message: "Invalid email or password",
         });
       }
 
@@ -110,7 +107,7 @@ const authController = {
       if (!valid) {
         return res.status(401).json({
           success: false,
-          message: "Invalid email or password"
+          message: "Invalid email or password",
         });
       }
 
@@ -145,7 +142,7 @@ const authController = {
         user_id: user.user_id,
         vendor_id: vendorId,
         email: user.email,
-        role: user.role
+        role: user.role,
       });
 
       return res.json({
@@ -154,10 +151,9 @@ const authController = {
         data: {
           user,
           vendor: vendorData,
-          token
-        }
+          token,
+        },
       });
-
     } catch (err) {
       console.error("Login Error:", err);
       return res.status(500).json({
@@ -173,19 +169,20 @@ const authController = {
   getProfile: async (req, res) => {
     try {
       const [rows] = await db.execute(
-        "SELECT user_id, email, role, phone FROM users WHERE user_id = ?",
+        "SELECT user_id, name, email, role, phone FROM users WHERE user_id = ?",
         [req.user.user_id]
       );
 
       if (rows.length === 0) {
-        return res.status(404).json({ success: false, message: "User not found" });
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
       }
 
       return res.json({
         success: true,
         data: rows[0],
       });
-
     } catch (err) {
       console.error("Profile Error:", err);
       return res.status(500).json({

@@ -40,7 +40,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth', authRoutes);          // Auth system
 app.use('/api/vendor', vendorRoutes);      // Vendor onboarding + listing
 app.use('/api/products', productRoutes);   // Products
-app.use('/api/manager', managerRoutes);    // Manager stats + approval
+app.use('/api/manager', managerRoutes);
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({

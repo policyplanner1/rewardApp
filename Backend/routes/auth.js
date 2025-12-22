@@ -36,7 +36,7 @@ router.post('/manager/login', (req, res) =>
   authController.login(req, res, 'vendor_manager')
 );
 
-router.post('/warehouse-manager/login', (req, res) =>
+router.post('/warehouse_manager/login', (req, res) =>
   authController.login(req, res, 'warehouse_manager')
 );
 

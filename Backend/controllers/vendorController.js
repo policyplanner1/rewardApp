@@ -2,7 +2,33 @@ const VendorModel = require("../models/vendorModel");
 const categoryModel = require("../models/categoryModel");
 const subCategoryModel = require("../models/subCategoryModel");
 const subSubCategoryModel = require("../models/subSubCategoryModel");
+const productModel = require("../models/productModel");
 const db = require("../config/database");
+const fs = require("fs");
+const path = require("path");
+
+// helper function to upload the images and docs
+async function moveVendorFiles(vendorId, files) {
+  const targetDir = path.join(
+    __dirname,
+    "../uploads/vendors",
+    vendorId.toString(),
+    "documents"
+  );
+
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, { recursive: true });
+  }
+
+  for (const key of Object.keys(files)) {
+    const file = files[key][0];
+
+    const newPath = path.join(targetDir, file.filename);
+    fs.renameSync(file.path, newPath);
+
+    file.path = newPath;
+  }
+}
 
 class VendorController {
   /* ============================================================
@@ -14,21 +40,53 @@ class VendorController {
       connection = await db.getConnection();
       await connection.beginTransaction();
 
-      const userId = req.user.user_id;
+      const userId = req.user?.user_id;
+      const vndID = req.user?.vendor_id;
       const data = req.body;
       const files = req.files;
 
-      const vendorId = await VendorModel.createVendor(connection, data, userId);
+      // fetch vendor
+      const [rows] = await connection.query(
+        `SELECT status FROM vendors WHERE vendor_id = ? AND user_id = ?`,
+        [vndID, userId]
+      );
 
-      await VendorModel.insertAddress(connection, vendorId, "business", data);
-      await VendorModel.insertAddress(connection, vendorId, "billing", data);
-      await VendorModel.insertAddress(connection, vendorId, "shipping", data);
+      if (!rows.length) {
+        throw new Error("Vendor not found");
+      }
 
-      await VendorModel.insertBankDetails(connection, vendorId, data);
-      await VendorModel.insertContacts(connection, vendorId, data);
+      // block approved vendor
+      if (rows[0].status === "approved") {
+        return res.status(400).json({
+          success: false,
+          message: "Vendor already approved",
+        });
+      }
+
+      if (rows[0].status === "sent_for_approval") {
+        return res.status(400).json({
+          success: false,
+          message: "Onboarding already submitted",
+        });
+      }
+
+      const vendor = await VendorModel.createVendor(
+        connection,
+        data,
+        userId,
+        vndID
+      );
+
+      await VendorModel.insertAddress(connection, vndID, "business", data);
+      await VendorModel.insertAddress(connection, vndID, "billing", data);
+      await VendorModel.insertAddress(connection, vndID, "shipping", data);
+
+      await VendorModel.insertBankDetails(connection, vndID, data);
+      await VendorModel.insertContacts(connection, vndID, data);
 
       if (files) {
-        await VendorModel.insertCommonDocuments(connection, vendorId, files);
+        await moveVendorFiles(vndID, files);
+        await VendorModel.insertCommonDocuments(connection, vndID, files);
       }
 
       await connection.commit();
@@ -36,7 +94,7 @@ class VendorController {
       return res.status(201).json({
         success: true,
         message: "Vendor onboarded successfully",
-        vendorId,
+        vndID,
       });
     } catch (err) {
       if (connection) await connection.rollback();
@@ -58,6 +116,13 @@ class VendorController {
   async getVendor(req, res) {
     try {
       const vendorId = req.params.vendorId;
+
+      if (!vendorId) {
+        return res.status(404).json({
+          success: false,
+          message: "Vendor ID is required",
+        });
+      }
 
       const data = await VendorModel.getVendorById(vendorId);
 
@@ -491,6 +556,23 @@ class VendorController {
     }
   }
 
+  // Get approved Vendor Details
+  async approvedVendorList(req, res) {
+    try {
+      const vendors = await VendorModel.getApprovedVendorList();
+
+      return res.json({
+        success: true,
+        vendors,
+      });
+    } catch (err) {
+      return res.status(500).json({
+        success: false,
+        message: "Error fetching approved Vendor List",
+      });
+    }
+  }
+
   // DELETE subSubCategory
   async deleteSubSubCategory(req, res) {
     try {
@@ -515,6 +597,69 @@ class VendorController {
         success: false,
         message: "Error deleting Sub-Sub Category",
         error: error.message,
+      });
+    }
+  }
+
+  // get my details
+  async getMyDetails(req, res) {
+    try {
+      const vendorId = req.user.vendor_id;
+      const userId = req.user?.user_id;
+
+      if (!vendorId) {
+        return res.status(404).json({
+          success: false,
+          message: "Vendor ID is required",
+        });
+      }
+
+      const [vendorRows] = await db.query(
+        `SELECT * FROM vendors WHERE vendor_id = ? AND user_id = ?`,
+        [vendorId, userId]
+      );
+
+      if (!vendorRows.length) {
+        return res.status(404).json({
+          success: false,
+          message: "Vendor not found",
+        });
+      }
+
+      const vendor = vendorRows[0];
+
+      return res.json({ success: true, vendor });
+    } catch (error) {
+      console.error("Get my Details Error:", error);
+      return res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  }
+
+  async getStats(req, res) {
+    try {
+      const vendorId = req.user?.vendor_id;
+
+      if (!vendorId) {
+        return res.status(400).json({
+          success: false,
+          message: "Vendor ID is required",
+        });
+      }
+
+      const stats = await productModel.getProductStatsByVendor(vendorId);
+
+      return res.json({
+        success: true,
+        stats,
+      });
+    } catch (err) {
+      console.error("Error Fetching vendor Stats:", err);
+      return res.status(500).json({
+        success: false,
+        message: err.message,
       });
     }
   }

@@ -54,6 +54,7 @@ interface Variant {
   size: string;
   color: string;
   dimension: string;
+  weight: string;
   customAttributes: Record<string, any>;
   MRP: string | number;
   salesPrice: string | number;
@@ -69,14 +70,12 @@ interface ProductData {
   productName: string;
   brandName: string;
   manufacturer: string;
-  itemType: string;
   barCode: string;
   description: string;
   shortDescription: string;
   categoryId: number | null;
   subCategoryId: number | null;
   subSubCategoryId: number | null;
-  model?: string;
   gstIn?: string;
   variants: Variant[];
   productImages: File[];
@@ -85,7 +84,6 @@ interface ProductData {
 const initialProductData: ProductData = {
   brandName: "",
   manufacturer: "",
-  itemType: "",
   barCode: "",
   productName: "",
   description: "",
@@ -93,13 +91,13 @@ const initialProductData: ProductData = {
   categoryId: null,
   subCategoryId: null,
   subSubCategoryId: null,
-  model: "",
   gstIn: "",
   variants: [
     {
       size: "",
       color: "",
       dimension: "",
+      weight: "",
       customAttributes: {},
       MRP: "",
       salesPrice: "",
@@ -112,6 +110,16 @@ const initialProductData: ProductData = {
     },
   ],
   productImages: [],
+};
+
+// field validator
+const numberValidators = {
+  positiveNumber: (v: string) => /^\d+(\.\d+)?$/.test(v),
+  nonNegativeInt: (v: string) => /^\d+$/.test(v),
+  gst: (v: string) => {
+    const n = Number(v);
+    return !isNaN(n) && n >= 0 && n <= 100;
+  },
 };
 
 // --- UI Components ---
@@ -163,6 +171,31 @@ const SectionHeader = ({ icon: Icon, title, description }: any) => (
   </div>
 );
 
+const allowOnlyNumbers = (value: string, allowDecimal = false) => {
+  const regex = allowDecimal ? /^[0-9]*\.?[0-9]*$/ : /^[0-9]*$/;
+  return regex.test(value);
+};
+
+const allowOnlyDecimal = (value: string) => {
+  // allows: "", "1", "1.", "1.5"
+  // blocks: letters, symbols, multiple dots
+  return /^\d*\.?\d*$/.test(value);
+};
+
+const gstValidator = (value: string) => {
+  if (!/^\d*\.?\d*$/.test(value)) return false;
+  const num = Number(value);
+  return !isNaN(num) && num >= 0 && num <= 100;
+};
+
+const allowOnlyAlphabets = (value: string) => {
+  return /^[A-Za-z ]*$/.test(value);
+};
+
+const allowOnlyDimensionFormat = (value: string) => {
+  return /^[0-9.*]*$/.test(value);
+};
+
 export default function ProductListingDynamic() {
   const [product, setProduct] = useState<ProductData>(initialProductData);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -171,6 +204,9 @@ export default function ProductListingDynamic() {
   const [subSubCategories, setSubSubCategories] = useState<SubSubCategory[]>(
     []
   );
+  const [variantErrors, setVariantErrors] = useState<
+    Record<number, Record<string, string>>
+  >({});
   const [requiredDocs, setRequiredDocs] = useState<RequiredDocument[]>([]);
   const [docFiles, setDocFiles] = useState<Record<number, File | null>>({}); // key by document_id
   const [loading, setLoading] = useState(false);
@@ -326,7 +362,32 @@ export default function ProductListingDynamic() {
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+    /* ================= GST % ================= */
 
+    /* ================= PRODUCT TEXT FIELDS ================= */
+
+    const productAlphabetFields = ["productName", "brandName", "manufacturer"];
+
+    if (productAlphabetFields.includes(name)) {
+      if (!allowOnlyAlphabets(value)) return;
+    }
+
+    if (name === "gstIn") {
+      // Allow only digits and one decimal
+      if (!/^\d*\.?\d*$/.test(value)) return;
+
+      // Restrict range 0–100
+      const num = Number(value);
+      if (value && !isNaN(num) && num > 100) return;
+
+      setProduct((prev) => ({
+        ...prev,
+        gstIn: value,
+      }));
+      return;
+    }
+
+    /* ================= CATEGORY HANDLING ================= */
     if (name === "category_id") {
       setProduct((prev) => ({
         ...prev,
@@ -334,34 +395,119 @@ export default function ProductListingDynamic() {
         subCategoryId: null,
         subSubCategoryId: null,
       }));
-    } else if (name === "subcategory_id") {
+      return;
+    }
+
+    if (name === "subcategory_id") {
       setProduct((prev) => ({
         ...prev,
         subCategoryId: value ? Number(value) : null,
         subSubCategoryId: null,
       }));
-    } else if (name === "sub_subcategory_id") {
+      return;
+    }
+
+    if (name === "sub_subcategory_id") {
       setProduct((prev) => ({
         ...prev,
         subSubCategoryId: value ? Number(value) : null,
       }));
-    } else {
-      setProduct((prev) => ({ ...prev, [name]: value }));
+      return;
     }
+
+    /* ================= DEFAULT ================= */
+    setProduct((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  // const handleMainImages = (e: ChangeEvent<HTMLInputElement>) => {
-  //   if (e.target.files) {
-  //     setProduct((prev) => ({
-  //       ...prev,
-  //       productImages: Array.from(e.target.files || []),
-  //     }));
-  //   }
-  // };
+  const handleVariantChange = (index: number, field: string, value: string) => {
+    // manufacturing Year
+    if (field === "manufacturingYear") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-  const handleVariantChange = (index: number, field: string, value: any) => {
+      const mfgDate = new Date(value);
+      mfgDate.setHours(0, 0, 0, 0);
+
+      // must be before today
+      if (mfgDate >= today) return;
+
+      // must be before expiry date (if exists)
+      const expiry = product.variants[index].expiryDate;
+      if (expiry) {
+        const expiryDate = new Date(expiry);
+        expiryDate.setHours(0, 0, 0, 0);
+        if (mfgDate >= expiryDate) return;
+      }
+    }
+
+    // expiry Date
+    if (field === "expiryDate") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const expiryDate = new Date(value);
+      expiryDate.setHours(0, 0, 0, 0);
+
+      // must be after today
+      if (expiryDate <= today) return;
+
+      // must be after manufacturing date (if exists)
+      const mfg = product.variants[index].manufacturingYear;
+      if (mfg) {
+        const mfgDate = new Date(mfg);
+        mfgDate.setHours(0, 0, 0, 0);
+        if (expiryDate <= mfgDate) return;
+      }
+    }
+
+    // ================= DIMENSION =================
+    if (field === "dimension") {
+      if (!/^[0-9.*]*$/.test(value)) return;
+    }
+
+    // ================= ALPHABET ONLY =================
+    if (field === "color" || field === "materialType") {
+      if (!/^[A-Za-z ]*$/.test(value)) return;
+    }
+
+    // ================= DECIMAL NUMBERS =================
+    if (["MRP", "salesPrice", "weight"].includes(field)) {
+      if (!/^\d*\.?\d*$/.test(value)) return;
+    }
+
+    // ================= INTEGER ONLY =================
+    if (field === "stock") {
+      if (!/^\d*$/.test(value)) return;
+    }
+
+    // ---------- Soft validation (error messages) ----------
+    let error = "";
+
+    if (field === "gst") {
+      const gst = Number(value);
+      if (value && (isNaN(gst) || gst < 0 || gst > 100)) {
+        error = "GST must be between 0 and 100";
+      }
+    }
+
+    setVariantErrors((prev) => ({
+      ...prev,
+      [index]: {
+        ...(prev[index] || {}),
+        [field]: error,
+      },
+    }));
+
+    // ---------- STATE UPDATE ----------
     const updatedVariants = [...product.variants];
-    updatedVariants[index] = { ...updatedVariants[index], [field]: value };
+    updatedVariants[index] = {
+      ...updatedVariants[index],
+      [field]: value,
+    };
+
     setProduct((prev) => ({ ...prev, variants: updatedVariants }));
   };
 
@@ -423,6 +569,7 @@ export default function ProductListingDynamic() {
           size: "",
           color: "",
           dimension: "",
+          weight: "",
           customAttributes: {},
           MRP: "",
           salesPrice: "",
@@ -478,6 +625,17 @@ export default function ProductListingDynamic() {
   // --- Form Submission ---
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+
+    const hasVariantErrors = Object.values(variantErrors).some((variant) =>
+      Object.values(variant).some(Boolean)
+    );
+
+    if (hasVariantErrors) {
+      setError("Please fix variant pricing/stock errors before submitting.");
+      setIsSubmitting(false);
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
     setSuccess(null);
@@ -489,7 +647,7 @@ export default function ProductListingDynamic() {
       }
 
       // Validate required fields
-      if (!product.categoryId) {
+      if (!product.categoryId && !custom_category) {
         throw new Error("Please select a category");
       }
 
@@ -531,20 +689,9 @@ export default function ProductListingDynamic() {
 
       const formData = new FormData();
 
-      formData.append("category_id", product.categoryId.toString());
-      formData.append("brandName", product.brandName);
-      formData.append("manufacturer", product.manufacturer);
-      formData.append("itemType", product.itemType || "");
-      formData.append("barCode", product.barCode || "");
-      formData.append("productName", product.productName);
-      formData.append("description", product.description);
-      formData.append("shortDescription", product.shortDescription);
-      if (isCustomCategory) formData.append("custom_category", custom_category);
-      if (isCustomSubcategory)
-        formData.append("custom_subcategory", custom_subcategory);
-      if (isCustomSubSubcategory)
-        formData.append("custom_sub_subcategory", custom_subsubcategory);
-
+      if (product.categoryId) {
+        formData.append("category_id", product.categoryId.toString());
+      }
       if (product.subCategoryId) {
         formData.append("subcategory_id", product.subCategoryId.toString());
       }
@@ -556,7 +703,21 @@ export default function ProductListingDynamic() {
         );
       }
 
-      if (product.model) formData.append("model", product.model);
+      if (isCustomCategory && custom_category.trim()) {
+        formData.append("custom_category", custom_category.trim());
+      }
+      if (isCustomSubcategory)
+        formData.append("custom_subcategory", custom_subcategory);
+      if (isCustomSubSubcategory)
+        formData.append("custom_sub_subcategory", custom_subsubcategory);
+
+      formData.append("brandName", product.brandName);
+      formData.append("manufacturer", product.manufacturer);
+      formData.append("barCode", product.barCode || "");
+      formData.append("productName", product.productName);
+      formData.append("description", product.description);
+      formData.append("shortDescription", product.shortDescription);
+
       if (product.gstIn) formData.append("gstIn", product.gstIn);
 
       // Add first variant data as main product data (for backward compatibility)
@@ -565,6 +726,7 @@ export default function ProductListingDynamic() {
         formData.append("size", firstVariant.size || "");
         formData.append("color", firstVariant.color || "");
         formData.append("dimension", firstVariant.dimension || "");
+        formData.append("weight", firstVariant.weight || "");
         formData.append("stock", firstVariant.stock?.toString() || "0");
         formData.append(
           "salesPrice",
@@ -606,6 +768,7 @@ export default function ProductListingDynamic() {
         size: variant.size,
         color: variant.color,
         dimension: variant.dimension,
+        weight: variant.weight,
         mrp: variant.MRP,
         salesPrice: variant.salesPrice,
         stock: variant.stock,
@@ -631,7 +794,6 @@ export default function ProductListingDynamic() {
       });
 
       const data = await response.json();
-      console.log("Create product response:", data);
 
       if (!data.success) {
         throw new Error(data.message || "Failed to create product");
@@ -650,15 +812,6 @@ export default function ProductListingDynamic() {
       setIsSubmitting(false);
     }
   };
-
-  // const generateSKU = (index: number) => {
-  //   const brand = product.brandName.substring(0, 3).toUpperCase() || "PRD";
-  //   const size =
-  //     product.variants[index].size?.substring(0, 2).toUpperCase() || "NA";
-  //   const color =
-  //     product.variants[index].color?.substring(0, 3).toUpperCase() || "DEF";
-  //   return `${brand}-${size}-${color}-${index + 1}`;
-  // };
 
   // --- Render Components ---
   const renderDocUploads = () => {
@@ -802,20 +955,46 @@ export default function ProductListingDynamic() {
                 />
               </div>
 
+              {/* Weight */}
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Weight (In Grams)
+                </label>
+                <input
+                  type="text"
+                  value={variant.weight}
+                  placeholder="1000g"
+                  className="w-full p-2 border rounded-lg"
+                  onChange={(e) =>
+                    handleVariantChange(index, "weight", e.target.value)
+                  }
+                />
+                {variantErrors[index]?.weight && (
+                  <p className="text-xs text-red-500">
+                    {variantErrors[index].weight}
+                  </p>
+                )}
+              </div>
+
               {/* MRP */}
               <div>
                 <label className="block mb-1 text-sm font-medium text-gray-700">
                   MRP
                 </label>
                 <input
-                  type="number"
+                  type="text"
+                  placeholder="Enter MRP"
+                  className="w-full p-2 border rounded-lg"
                   value={variant.MRP}
                   onChange={(e) =>
                     handleVariantChange(index, "MRP", e.target.value)
                   }
-                  placeholder="Enter MRP"
-                  className="w-full p-2 border rounded-lg"
                 />
+                {variantErrors[index]?.MRP && (
+                  <p className="text-xs text-red-500">
+                    {variantErrors[index].MRP}
+                  </p>
+                )}
               </div>
 
               {/* Sales Price */}
@@ -824,15 +1003,20 @@ export default function ProductListingDynamic() {
                   Sales Price
                 </label>
                 <input
-                  type="number"
+                  type="text"
+                  placeholder="Enter Sales Price"
+                  className="w-full p-2 border rounded-lg"
+                  required
                   value={variant.salesPrice}
                   onChange={(e) =>
                     handleVariantChange(index, "salesPrice", e.target.value)
                   }
-                  placeholder="Enter Sales Price"
-                  className="w-full p-2 border rounded-lg"
-                  required
                 />
+                {variantErrors[index]?.salesPrice && (
+                  <p className="text-xs text-red-500">
+                    {variantErrors[index].salesPrice}
+                  </p>
+                )}
               </div>
 
               {/* Stock */}
@@ -841,55 +1025,30 @@ export default function ProductListingDynamic() {
                   Stock
                 </label>
                 <input
-                  type="number"
+                  type="text"
+                  placeholder="Enter Stock / Unit"
+                  className="w-full p-2 border rounded-lg"
+                  required
                   value={variant.stock}
                   onChange={(e) =>
                     handleVariantChange(index, "stock", e.target.value)
                   }
-                  placeholder="Enter Stock / Unit"
-                  className="w-full p-2 border rounded-lg"
-                  required
                 />
+                {variantErrors[index]?.stock && (
+                  <p className="text-xs text-red-500">
+                    {variantErrors[index].stock}
+                  </p>
+                )}
               </div>
 
-              {/* SKU */}
-              {/* <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700">
-                  SKU
-                </label>
-                <input
-                  type="text"
-                  value={variant.sku}
-                  onChange={(e) =>
-                    handleVariantChange(index, "sku", e.target.value)
-                  }
-                  placeholder="Enter SKU"
-                  className="w-full p-2 border rounded-lg"
-                />
-              </div> */}
-
-              {/* expiryDate */}
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700">
-                  Expiry Date
-                </label>
-                <input
-                  type="text"
-                  value={variant.expiryDate}
-                  onChange={(e) =>
-                    handleVariantChange(index, "expiryDate", e.target.value)
-                  }
-                  placeholder="Enter Expiry Date"
-                  className="w-full p-2 border rounded-lg"
-                />
-              </div>
-
+              {/* Manufacturing */}
               <div>
                 <label className="block mb-1 text-sm font-medium text-gray-700">
                   Manufacturing Year
                 </label>
                 <input
-                  type="text"
+                  type="date"
+                  max={new Date().toISOString().split("T")[0]}
                   value={variant.manufacturingYear}
                   onChange={(e) =>
                     handleVariantChange(
@@ -899,6 +1058,25 @@ export default function ProductListingDynamic() {
                     )
                   }
                   placeholder="Enter Manufacturing Year"
+                  className="w-full p-2 border rounded-lg"
+                />
+              </div>
+
+              {/* expiryDate */}
+              <div>
+                <label className="block mb-1 text-sm font-medium text-gray-700">
+                  Expiry Date
+                </label>
+                <input
+                  type="date"
+                  min={
+                    new Date(Date.now() + 86400000).toISOString().split("T")[0]
+                  }
+                  value={variant.expiryDate}
+                  onChange={(e) =>
+                    handleVariantChange(index, "expiryDate", e.target.value)
+                  }
+                  placeholder="Enter Expiry Date"
                   className="w-full p-2 border rounded-lg"
                 />
               </div>
@@ -1071,10 +1249,24 @@ export default function ProductListingDynamic() {
                   onChange={(e) => {
                     if (e.target.value === "other") {
                       setIsCustomCategory(true);
-                      setProduct((prev) => ({ ...prev, categoryId: null }));
+                      setIsCustomSubcategory(true);
+                      setIsCustomSubSubcategory(true);
+
+                      setProduct((prev) => ({
+                        ...prev,
+                        categoryId: null,
+                        subCategoryId: null,
+                        subSubCategoryId: null,
+                      }));
                     } else {
                       setIsCustomCategory(false);
+                      setIsCustomSubcategory(false);
+                      setIsCustomSubSubcategory(false);
+
                       setCustomCategory("");
+                      setCustomSubCategory("");
+                      setCustomSubSubCategory("");
+
                       handleFieldChange(e);
                     }
                   }}
@@ -1103,7 +1295,6 @@ export default function ProductListingDynamic() {
               </div>
 
               {/* Sub Category */}
-              {/* Sub Category */}
               <div>
                 <label className="block mb-2 text-sm font-medium text-gray-700">
                   Sub Category
@@ -1117,14 +1308,21 @@ export default function ProductListingDynamic() {
                   onChange={(e) => {
                     if (e.target.value === "other") {
                       setIsCustomSubcategory(true);
-                      setProduct((prev) => ({ ...prev, subCategoryId: null }));
+                      setIsCustomSubSubcategory(true);
+
+                      setProduct((prev) => ({
+                        ...prev,
+                        subCategoryId: null,
+                        subSubCategoryId: null,
+                      }));
                     } else {
                       setIsCustomSubcategory(false);
+                      setIsCustomSubSubcategory(false);
                       setCustomSubCategory("");
                       handleFieldChange(e);
                     }
                   }}
-                  disabled={!product.categoryId}
+                  disabled={!product.categoryId && !isCustomCategory}
                   className="w-full p-3 border rounded-lg"
                 >
                   <option value="">Select Sub Category</option>
@@ -1143,13 +1341,12 @@ export default function ProductListingDynamic() {
                     type="text"
                     value={custom_subcategory}
                     onChange={(e) => setCustomSubCategory(e.target.value)}
-                    placeholder="Enter new sub-category"
+                    placeholder="Enter custom sub-category"
                     className="w-full p-3 mt-3 border rounded-lg"
                   />
                 )}
               </div>
 
-              {/* Sub Sub Category */}
               {/* Sub Sub Category */}
               <div>
                 <label className="block mb-2 text-sm font-medium text-gray-700">
@@ -1176,7 +1373,7 @@ export default function ProductListingDynamic() {
                       handleFieldChange(e);
                     }
                   }}
-                  disabled={!product.subCategoryId}
+                  disabled={!product.subCategoryId && !isCustomSubcategory}
                   className="w-full p-3 border rounded-lg"
                 >
                   <option value="">Select Type</option>
@@ -1198,7 +1395,7 @@ export default function ProductListingDynamic() {
                     type="text"
                     value={custom_subsubcategory}
                     onChange={(e) => setCustomSubSubCategory(e.target.value)}
-                    placeholder="Enter new type"
+                    placeholder="Enter custom type / sub-type"
                     className="w-full p-3 mt-3 border rounded-lg"
                   />
                 )}
@@ -1260,7 +1457,7 @@ export default function ProductListingDynamic() {
               <FormInput
                 id="brandName"
                 name="brandName"
-                label="Brand Name"
+                label="Brand"
                 required
                 value={product.brandName}
                 onChange={handleFieldChange}
@@ -1284,16 +1481,6 @@ export default function ProductListingDynamic() {
                 value={product.barCode}
                 onChange={handleFieldChange}
                 placeholder="EAN/Code"
-              />
-
-              <FormInput
-                id="model"
-                name="model"
-                label="Model / SKU"
-                required
-                value={product.model}
-                onChange={handleFieldChange}
-                placeholder="Enter Model or SKU"
               />
 
               <FormInput
@@ -1334,27 +1521,6 @@ export default function ProductListingDynamic() {
               />
             </div>
           </section>
-
-          {/* Additional Fields */}
-          {/* <section>
-            <SectionHeader
-              icon={FaDollarSign}
-              title="Additional Information"
-              description="Tax, expiry, and other details"
-            />
-
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-              <FormInput
-                id="expiryDate"
-                name="expiryDate"
-                label="Expiry Date"
-                type="date"
-                value={product.expiryDate}
-                onChange={handleFieldChange}
-              />
-              <div></div> 
-            </div>
-          </section> */}
 
           {/* Main Product Images */}
           <section>

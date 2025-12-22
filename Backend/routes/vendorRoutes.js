@@ -3,6 +3,7 @@ const VendorController = require("../controllers/vendorController");
 const DocumentController = require("../controllers/documentController");
 const upload = require("../middleware/uploadVendor");
 const { authenticateToken, authorizeRoles } = require("../middleware/auth");
+const vendorController = require("../controllers/vendorController");
 
 const router = express.Router();
 
@@ -27,20 +28,15 @@ router.post(
   VendorController.onboardVendor
 );
 
-// Get vendor by ID
-router.get(
-  "/:vendorId",
-  authenticateToken,
-  authorizeRoles("admin", "vendor", "vendor_manager"),
-  VendorController.getVendor
-);
+// vendor stats
+router.get('/stats',authenticateToken,authorizeRoles('vendor'),vendorController.getStats)
 
-// Get all vendors
+// get approved vendor List
 router.get(
-  "/",
+  "/approved-list",
   authenticateToken,
-  authorizeRoles("admin", "vendor_manager"),
-  VendorController.getAllVendors
+  authorizeRoles("vendor_manager","admin","warehouse_manager"),
+  VendorController.approvedVendorList
 );
 
 // Update vendor status
@@ -176,5 +172,30 @@ router.delete(
   authorizeRoles("vendor_manager"),
   VendorController.deleteSubSubCategory
 );
+
+// Get all vendors
+router.get(
+  "/",
+  authenticateToken,
+  authorizeRoles("admin", "vendor_manager"),
+  VendorController.getAllVendors
+);
+
+router.get(
+  "/my-details",
+  authenticateToken,
+  authorizeRoles("vendor"),
+  VendorController.getMyDetails
+);
+
+// Get vendor by ID
+router.get(
+  "/:vendorId",
+  authenticateToken,
+  authorizeRoles("admin", "vendor_manager"),
+  VendorController.getVendor
+);
+
+
 
 module.exports = router;

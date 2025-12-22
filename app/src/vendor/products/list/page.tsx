@@ -30,11 +30,15 @@ import { FiPackage } from "react-icons/fi";
 
 const API_BASE = "http://localhost:5000";
 
-
 /* ================================
        TYPES
 ================================ */
-type ProductStatus = "pending" | "approved" | "rejected" | "resubmission";
+type ProductStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "resubmission"
+  | "sent_for_approval";
 
 interface ProductDocument {
   document_id: number;
@@ -62,6 +66,9 @@ interface ProductItem {
   category_name: string;
   subcategory_name: string;
   sub_subcategory_name: string | null;
+  custom_category: string;
+  custom_subcategory: string;
+  custom_sub_subcategory: string | null;
   sku: string;
   barcode: string;
   documents?: ProductDocument[];
@@ -72,6 +79,7 @@ interface Stats {
   approved: number;
   rejected: number;
   resubmission: number;
+  sent_for_approval: number;
   total: number;
 }
 
@@ -117,6 +125,11 @@ const StatusChip = ({ status }: { status: ProductStatus }) => {
       color: "bg-yellow-100 text-yellow-800 border-yellow-200",
       icon: FaClock,
       text: "Pending",
+    },
+    sent_for_approval: {
+      color: "bg-blue-100 text-blue-800 border-blue-200",
+      icon: FaPaperPlane,
+      text: "Sent for Approval",
     },
   };
 
@@ -189,15 +202,15 @@ const ActionModal = ({
       placeholder: "Provide rejection reason...",
     },
     request_resubmission: {
-      title: "Request Resubmission",
-      description: `Request changes for "${product.product_name}"?`,
-      buttonText: "Request Changes",
+      title: "Send for Approval",
+      description: `Are you sure you want to send "${product.product_name}" for approval?`,
+      buttonText: "Send",
       buttonColor: "bg-blue-600 hover:bg-blue-700",
       iconBg: "bg-blue-100",
       iconColor: "text-blue-600",
-      Icon: FaRedo,
-      showReason: true,
-      placeholder: "Specify required changes...",
+      Icon: FaCheck,
+      showReason: false,
+      placeholder: "",
     },
     delete: {
       title: "Delete Product",
@@ -314,6 +327,7 @@ export default function ProductManagerList() {
     approved: 0,
     rejected: 0,
     resubmission: 0,
+    sent_for_approval: 0,
   });
 
   // Modal state
@@ -496,17 +510,52 @@ export default function ProductManagerList() {
         setStats((prev) => ({
           ...prev,
           total: Math.max(0, prev.total - 1),
-          pending: Math.max(0, prev.pending - 1), 
+          pending: Math.max(0, prev.pending - 1),
         }));
 
         alert(data.message || "Product deleted successfully");
         return;
       }
 
+      // --- REQUEST RESUBMISSION ---
+      if (action === "request_resubmission") {
+        const res = await fetch(
+          `${API_BASE}/api/product/submission/${productId}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              reason: reason || null, 
+            }),
+          }
+        );
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || "Failed to send for approval");
+        }
+
+        const data = await res.json();
+
+        setProducts((prev) =>
+          prev.map((p) =>
+            p.product_id === productId
+              ? { ...p, status: "sent_for_approval" }
+              : p
+          )
+        );
+
+        alert(data.message || "Product sent for approval successfully");
+        return;
+      }
     } catch (error: any) {
       console.error("Error performing action:", error);
       alert(error.message || "Error performing action");
-      throw error; 
+      throw error;
     } finally {
       setActionLoading(null);
     }
@@ -606,6 +655,12 @@ export default function ProductManagerList() {
             </div>
             <div className="text-xs text-yellow-600">Pending</div>
           </div>
+          <div className="p-3 border border-indigo-100 rounded-lg bg-indigo-50">
+            <div className="text-xl font-bold text-indigo-700">
+              {stats.sent_for_approval ? stats.sent_for_approval : 0}
+            </div>
+            <div className="text-xs text-indigo-600">Sent for Approval</div>
+          </div>
           <div className="p-3 border border-green-100 rounded-lg bg-green-50">
             <div className="text-xl font-bold text-green-700">
               {stats.approved}
@@ -659,6 +714,7 @@ export default function ProductManagerList() {
               >
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>
+                <option value="sent_for_approval">Sent for Approval</option>
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
                 <option value="resubmission">Resubmission</option>
@@ -760,21 +816,27 @@ export default function ProductManagerList() {
                   {/* CATEGORY */}
                   <td className="px-4 py-4">
                     <div className="text-sm text-gray-900">
-                      {product?.category_name || "N/A"}
+                      {product?.category_name ||
+                        product?.custom_category ||
+                        "N/A"}
                     </div>
                   </td>
 
                   {/* Subcategory Name */}
                   <td className="px-4 py-4">
                     <div className="text-sm text-gray-900">
-                      {product?.subcategory_name || "N/A"}
+                      {product?.subcategory_name ||
+                        product?.custom_subcategory ||
+                        "N/A"}
                     </div>
                   </td>
 
                   {/* Sub sub category */}
                   <td className="px-4 py-4">
                     <div className="text-sm text-gray-900">
-                      {product?.sub_subcategory_name || "N/A"}
+                      {product?.sub_subcategory_name ||
+                        product?.custom_sub_subcategory ||
+                        "N/A"}
                     </div>
                   </td>
 
@@ -802,8 +864,8 @@ export default function ProductManagerList() {
                         </button>
                       </Link>
 
-                      {/* Edit */}
-                      {!["approved", "rejected", "resubmission"].includes(
+                      {/* Edit Button */}
+                      {!["approved", "rejected", "sent_for_approval"].includes(
                         product.status
                       ) && (
                         <Link
@@ -817,9 +879,12 @@ export default function ProductManagerList() {
                       )}
 
                       {/* Delete */}
-                      {!["approved", "rejected", "resubmission"].includes(
-                        product.status
-                      ) && (
+                      {![
+                        "approved",
+                        "rejected",
+                        "resubmission",
+                        "sent_for_approval",
+                      ].includes(product.status) && (
                         <button
                           onClick={() => openActionModal(product, "delete")}
                           className="p-2 text-red-700 bg-red-100 rounded hover:bg-red-200"
@@ -829,7 +894,7 @@ export default function ProductManagerList() {
                       )}
 
                       {/* Request Resubmission*/}
-                      {product.status === "pending" && (
+                      {["pending", "resubmission"].includes(product.status) && (
                         <button
                           onClick={() =>
                             openActionModal(product, "request_resubmission")

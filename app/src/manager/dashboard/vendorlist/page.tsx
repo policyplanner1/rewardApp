@@ -15,12 +15,14 @@ interface VendorItem {
   vendor_id: number;
   company_name: string;
   full_name: string;
-  status: "pending" | "approved" | "rejected";
+  status: "sent_for_approval" | "approved" | "rejected";
   rejection_reason?: string;
   email: string;
   phone?: string;
   submitted_at: string;
 }
+
+const API_BASE = "http://localhost:5000";
 
 const StatusChip = ({ status }: { status: VendorItem["status"] }) => {
   switch (status) {
@@ -41,7 +43,8 @@ const StatusChip = ({ status }: { status: VendorItem["status"] }) => {
     default:
       return (
         <span className="inline-flex items-center text-yellow-700 bg-yellow-100 border border-yellow-300 px-3 py-1 text-xs rounded-full">
-          <FaClock className="mr-1" /> Pending
+          <FaClock className="mr-1" />
+          Pending
         </span>
       );
   }
@@ -50,7 +53,7 @@ const StatusChip = ({ status }: { status: VendorItem["status"] }) => {
 export default function VendorApprovalList() {
   const [vendors, setVendors] = useState<VendorItem[]>([]);
   const [filter, setFilter] = useState<
-    "All" | "pending" | "approved" | "rejected"
+    "All" | "sent_for_approval" | "approved" | "rejected"
   >("All");
   const [loading, setLoading] = useState(true);
 
@@ -65,12 +68,11 @@ export default function VendorApprovalList() {
       try {
         const token = localStorage.getItem("token");
 
-        const res = await fetch("http://localhost:5000/api/vendor", {
+        const res = await fetch(`${API_BASE}/api/manager/all-vendors`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         const data = await res.json();
-
         if (data.success) {
           setVendors(data.data);
         }
@@ -105,21 +107,24 @@ export default function VendorApprovalList() {
         </div>
 
         {/* FILTER */}
-        <div className="flex space-x-2 mb-6 p-1 bg-gray-100 rounded-lg w-fit">
-          {["All", "pending", "approved", "rejected"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setFilter(tab as any)}
-              className={`px-4 py-2 text-sm font-medium rounded-md ${
-                filter === tab
-                  ? "bg-white text-[#852BAF] shadow"
-                  : "text-gray-600 hover:text-gray-900"
-              }`}
-            >
-              {tab.toString().toUpperCase()}
-            </button>
-          ))}
-        </div>
+        {[
+          { label: "All", value: "All" },
+          { label: "Pending", value: "sent_for_approval" },
+          { label: "Approved", value: "approved" },
+          { label: "Rejected", value: "rejected" },
+        ].map(({ label, value }) => (
+          <button
+            key={value}
+            onClick={() => setFilter(value as any)}
+            className={`px-4 py-2 text-sm font-medium rounded-md ${
+              filter === value
+                ? "bg-white text-[#852BAF] shadow"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
 
         {/* TABLE */}
         <div className="overflow-x-auto">

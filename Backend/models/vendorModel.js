@@ -1,31 +1,57 @@
 const db = require("../config/database");
+const path = require("path");
 
 class VendorModel {
   /* ============================================================
       CREATE VENDOR
   ============================================================ */
-  async createVendor(connection,data, userId) {
+  async createVendor(connection, data, userId, vendorId) {
     const [result] = await connection.execute(
-      `INSERT INTO vendors 
-        (user_id, company_name, full_name, vendor_type, gstin, ipaddress, pan_number, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?,'pending', NOW())`,
+      `UPDATE vendors
+     SET
+       company_name = ?,
+       full_name = ?,
+       vendor_type = ?,
+       gstin = ?,
+       ipaddress = ?,
+       pan_number = ?,
+       status = 'sent_for_approval',
+       rejection_reason = NULL,
+       onboarding_flag = 0
+     WHERE vendor_id = ? AND user_id = ?`,
       [
+        data.companyName || null,
+        data.fullName || null,
+        data.vendorType || null,
+        data.gstin || null,
+        data.ip_address || null,
+        data.panNumber || null,
+        vendorId,
         userId,
-        data.companyName || "",
-        data.fullName || "",
-        data.vendorType || "",
-        data.gstin || "",
-        data.ip_address || "",
-        data.panNumber || "",
       ]
     );
-    return result.insertId;
+
+    if (result.affectedRows === 0) {
+      throw new Error("Vendor update failed");
+    }
+
+    const [rows] = await connection.execute(
+      `SELECT * FROM vendors WHERE vendor_id = ?`,
+      [vendorId]
+    );
+
+    return rows[0];
   }
 
   /* ============================================================
       INSERT ADDRESS (business/billing/shipping)
   ============================================================ */
-  async insertAddress(connection,vendorId, type, d) {
+  async insertAddress(connection, vendorId, type, d) {
+    await connection.execute(
+      `DELETE FROM vendor_addresses WHERE vendor_id = ? AND type = ?`,
+      [vendorId, type]
+    );
+
     const address = {
       line1: d[`${type}AddressLine1`] || d.addressLine1 || "",
       line2: d[`${type}AddressLine2`] || d.addressLine2 || "",
@@ -55,7 +81,11 @@ class VendorModel {
   /* ============================================================
       INSERT BANK DETAILS
   ============================================================ */
-  async insertBankDetails(connection,vendorId, d) {
+  async insertBankDetails(connection, vendorId, d) {
+    await connection.execute(
+      `DELETE FROM vendor_bank_details WHERE vendor_id = ?`,
+      [vendorId]
+    );
     await connection.execute(
       `INSERT INTO vendor_bank_details 
         (vendor_id, bank_name, account_number, branch, ifsc_code)
@@ -73,7 +103,12 @@ class VendorModel {
   /* ============================================================
       INSERT CONTACT DETAILS
   ============================================================ */
-  async insertContacts(connection,vendorId, d) {
+  async insertContacts(connection, vendorId, d) {
+    await connection.execute(
+      `DELETE FROM vendor_contacts WHERE vendor_id = ?`,
+      [vendorId]
+    );
+
     await connection.execute(
       `INSERT INTO vendor_contacts
         (vendor_id, primary_contact, alternate_contact, email, payment_terms, comments)
@@ -89,19 +124,47 @@ class VendorModel {
     );
   }
 
+  // get list name
+  async getApprovedVendorList() {
+    try {
+      const [vendorRows] = await db.execute(
+        `SELECT vendor_id, full_name FROM vendors WHERE status = 'approved';`
+      );
+
+      return vendorRows;
+    } catch (error) {
+      console.error("Error fetching vendor List:", error);
+      throw error;
+    }
+  }
+
   /* ============================================================
       INSERT DOCUMENTS (DYNAMIC)
       Works with ANY file key from frontend
   ============================================================ */
-  async insertCommonDocuments(connection,vendorId, files) {
+  async insertCommonDocuments(connection, vendorId, files) {
+    await connection.execute(
+      `UPDATE vendor_documents
+          SET is_active = 0
+          WHERE vendor_id = ?`,
+      [vendorId]
+    );
+
     for (const key of Object.keys(files)) {
       const file = files[key][0];
 
+      const relativePath = path.join(
+        "vendors",
+        vendorId.toString(),
+        "documents",
+        file.filename
+      );
+
       await connection.execute(
         `INSERT INTO vendor_documents 
-           (vendor_id, document_key, file_path, mime_type, uploaded_at)
-         VALUES (?, ?, ?, ?, NOW())`,
-        [vendorId, key, file.path, file.mimetype]
+           (vendor_id, document_key, file_path, mime_type, uploaded_at, is_active)
+         VALUES (?, ?, ?, ?, NOW(),1)`,
+        [vendorId, key, relativePath, file.mimetype]
       );
     }
   }
@@ -114,7 +177,7 @@ class VendorModel {
       `SELECT v.*, u.email, u.phone
        FROM vendors v 
        JOIN users u ON v.user_id = u.user_id
-       WHERE vendor_id = ?`,
+       WHERE v.vendor_id = ?`,
       [vendorId]
     );
 
@@ -136,7 +199,7 @@ class VendorModel {
     );
 
     const [documents] = await db.execute(
-      "SELECT * FROM vendor_documents WHERE vendor_id = ?",
+      "SELECT * FROM vendor_documents WHERE vendor_id = ? AND is_active=1",
       [vendorId]
     );
 
@@ -167,12 +230,18 @@ class VendorModel {
       UPDATE VENDOR STATUS
   ============================================================ */
   async updateVendorStatus(vendorId, status, reason = null) {
+    const onboarding_flag = status === "approved" ? 1 : 0;
+
     const [result] = await db.execute(
-      `UPDATE vendors 
-         SET status=?, rejection_reason=?, created_at=NOW()
-       WHERE vendor_id=?`,
-      [status, reason, vendorId]
+      `UPDATE vendors
+     SET status = ?,
+         onboarding_flag = ?,
+         rejection_reason = ?,
+         created_at = NOW()
+     WHERE vendor_id = ?`,
+      [status, onboarding_flag, reason, vendorId]
     );
+
     return result.affectedRows > 0;
   }
 }
