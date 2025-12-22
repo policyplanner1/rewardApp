@@ -17,20 +17,20 @@ import {
 import { FiClock } from "react-icons/fi";
 
 interface VendorStats {
-  totalProducts: number;
-  approvedProducts: number;
-  pendingProducts: number;
-  rejectedProducts: number;
+  total: number;
+  approved: number;
+  pending: number;
+  rejected: number;
 }
 
 export default function VendorDashboard() {
   const { user } = useAuth();
 
   const [stats, setStats] = useState<VendorStats>({
-    totalProducts: 0,
-    approvedProducts: 0,
-    pendingProducts: 0,
-    rejectedProducts: 0,
+    total: 0,
+    approved: 0,
+    pending: 0,
+    rejected: 0,
   });
 
   const [loading, setLoading] = useState(true);
@@ -50,7 +50,7 @@ export default function VendorDashboard() {
       const json = await res.json();
 
       if (json.success) {
-        setStats(json.data);
+        setStats(json.stats);
       }
     } catch (error) {
       console.error("Error fetching stats:", error);
@@ -101,9 +101,7 @@ export default function VendorDashboard() {
             </div>
             <div className="ml-4">
               <p className="text-sm text-gray-600">Total Products</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {stats.totalProducts}
-              </p>
+              <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
             </div>
           </div>
         </div>
@@ -120,7 +118,7 @@ export default function VendorDashboard() {
             <div className="ml-4">
               <p className="text-sm text-gray-600">Pending</p>
               <p className="text-2xl font-bold text-gray-900">
-                {stats.pendingProducts}
+                {stats.pending}
               </p>
             </div>
           </div>
@@ -138,7 +136,7 @@ export default function VendorDashboard() {
             <div className="ml-4">
               <p className="text-sm text-gray-600">Approved</p>
               <p className="text-2xl font-bold text-gray-900">
-                {stats.approvedProducts}
+                {stats.approved}
               </p>
             </div>
           </div>
@@ -159,7 +157,7 @@ export default function VendorDashboard() {
             <div className="ml-4">
               <p className="text-sm text-gray-600">Rejected</p>
               <p className="text-2xl font-bold text-gray-900">
-                {stats.rejectedProducts}
+                {stats.rejected}
               </p>
             </div>
           </div>
