@@ -756,13 +756,19 @@ export default function Onboarding() {
                 </>
               )}
             </p>
-            <p className="mt-2">
-              Please fix the issue and resubmit the form.
-            </p>
+            <p className="mt-2">Please fix the issue and resubmit the form.</p>
           </div>
         )}
 
-        {vendorStatus !== "sent_for_approval" &&
+        {!loadingStatus && vendorStatus === null && (
+          <div className="p-4 mb-6 text-red-800 bg-red-100 border border-red-300 rounded-lg">
+            Unable to fetch onboarding status. Please refresh or contact
+            support.
+          </div>
+        )}
+
+        {!loadingStatus &&
+          vendorStatus !== "sent_for_approval" &&
           vendorStatus !== "approved" && (
             <form onSubmit={handleSubmit} className="space-y-8">
               {/* A. Business Information */}
