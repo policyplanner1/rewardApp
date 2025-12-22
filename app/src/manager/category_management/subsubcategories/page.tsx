@@ -72,7 +72,7 @@ export default function SubSubCategoryManagement() {
   const [isEditing, setIsEditing] = useState(false);
 
   /* --------------------------------------------------------
-     🔥 1️⃣ FETCH ALL CATEGORIES
+      1 FETCH ALL CATEGORIES
   -------------------------------------------------------- */
   const loadCategories = async () => {
     try {
@@ -89,7 +89,7 @@ export default function SubSubCategoryManagement() {
   };
 
   /* --------------------------------------------------------
-     🔥 2️⃣ FETCH ALL SUB-CATEGORIES
+      2 FETCH ALL SUB-CATEGORIES
   -------------------------------------------------------- */
   const loadSubcategories = async () => {
     try {
@@ -101,7 +101,7 @@ export default function SubSubCategoryManagement() {
   };
 
   /* --------------------------------------------------------
-     🔥 3️⃣ FETCH ALL SUB-SUBCATEGORIES
+      3 FETCH ALL SUB-SUBCATEGORIES
   -------------------------------------------------------- */
   const loadSubSubCategories = async () => {
     try {
@@ -111,8 +111,8 @@ export default function SubSubCategoryManagement() {
           sub_subcategory_id: s.sub_subcategory_id,
           subcategory_id: s.subcategory_id,
           name: s.name,
-          status: s.status === 1 ? "active" : "inactive",
-          created_at: s.created_at,
+          status: s.sub_sub_status == 1 ? "active" : "inactive",
+          created_at: s.sub_sub_created,
           subcategory_name: s.subcategory_name,
         }))
       );
@@ -122,7 +122,7 @@ export default function SubSubCategoryManagement() {
   };
 
   /* --------------------------------------------------------
-     🔥 Run all fetch on load
+      Run all fetch on load
   -------------------------------------------------------- */
   useEffect(() => {
     loadCategories();
@@ -149,7 +149,7 @@ export default function SubSubCategoryManagement() {
   }, [selectedSubcategoryId, subsub]);
 
   /* --------------------------------------------------------
-     🔥 ADD SUB-SUBCATEGORY
+      ADD SUB-SUBCATEGORY
   -------------------------------------------------------- */
   const handleAdd = async (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -169,7 +169,7 @@ export default function SubSubCategoryManagement() {
   };
 
   /* --------------------------------------------------------
-     🔥 VIEW SINGLE SUB-SUBCATEGORY
+      VIEW SINGLE SUB-SUBCATEGORY
   -------------------------------------------------------- */
   const handleView = async (id: number) => {
     try {
@@ -196,7 +196,7 @@ export default function SubSubCategoryManagement() {
   };
 
   /* --------------------------------------------------------
-     🔥 UPDATE SUB-SUBCATEGORY
+      UPDATE SUB-SUBCATEGORY
   -------------------------------------------------------- */
   const handleSaveEdit = async () => {
     if (!selected) return;
@@ -219,7 +219,7 @@ export default function SubSubCategoryManagement() {
   };
 
   /* --------------------------------------------------------
-     🔥 DELETE
+      DELETE
   -------------------------------------------------------- */
   const handleDelete = async (id: number) => {
     if (!confirm("Delete this Type / Sub-Type?")) return;

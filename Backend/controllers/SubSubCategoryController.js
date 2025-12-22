@@ -1,18 +1,28 @@
-
 const db = require("../config/database");
 
 class SubSubCategoryController {
-
   // Get all categories
   async getAllSubSubCategories(req, res) {
     try {
-      const [rows] = await db.execute(`SELECT * FROM sub_sub_categories LEFT JOIN sub_categories on sub_sub_categories.subcategory_id=sub_categories.subcategory_id`);
+      const [rows] = await db.execute(`
+      SELECT 
+        sub_sub_categories.sub_subcategory_id,
+        sub_sub_categories.name,
+        sub_sub_categories.status AS sub_sub_status,
+        sub_sub_categories.subcategory_id,
+        sub_sub_categories.created_at AS sub_sub_created,
+
+        sub_categories.subcategory_name AS subcategory_name,
+        sub_categories.status AS subcategory_status
+      FROM sub_sub_categories
+      LEFT JOIN sub_categories 
+        ON sub_sub_categories.subcategory_id = sub_categories.subcategory_id
+    `);
 
       res.json({
         success: true,
-        data: rows
+        data: rows,
       });
-
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
     }
@@ -29,9 +39,8 @@ class SubSubCategoryController {
 
       res.json({
         success: true,
-        data: data
+        data: data,
       });
-
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
     }
