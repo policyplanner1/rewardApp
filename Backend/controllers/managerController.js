@@ -30,7 +30,6 @@ class ManagerController {
   async vendorList(req, res) {
     const role = req.user?.role;
 
-    console.log(role, "role");
     try {
       if (role != "vendor_manager" && role != "admin") {
         return res
@@ -59,7 +58,7 @@ class ManagerController {
       return res.json({
         data: vendorRows,
         success: true,
-        message: "Product approved successfully",
+        message: "vendor fetched successfully",
       });
     } catch (error) {
       console.error("Error fetching vendor List:", error);
