@@ -25,29 +25,31 @@ interface VendorItem {
 const API_BASE = "http://localhost:5000";
 
 const StatusChip = ({ status }: { status: VendorItem["status"] }) => {
-  switch (status) {
-    case "approved":
-      return (
-        <span className="inline-flex items-center text-green-700 bg-green-100 border border-green-300 px-3 py-1 text-xs rounded-full">
-          <FaCheckCircle className="mr-1" /> Approved
-        </span>
-      );
-
-    case "rejected":
-      return (
-        <span className="inline-flex items-center text-red-700 bg-red-100 border border-red-300 px-3 py-1 text-xs rounded-full">
-          <FaTimesCircle className="mr-1" /> Rejected
-        </span>
-      );
-
-    default:
-      return (
-        <span className="inline-flex items-center text-yellow-700 bg-yellow-100 border border-yellow-300 px-3 py-1 text-xs rounded-full">
-          <FaClock className="mr-1" />
-          Pending
-        </span>
-      );
+  if (status === "approved") {
+    return (
+      <span className="inline-flex items-center text-green-700 bg-green-100 border border-green-300 px-3 py-1 text-xs rounded-full">
+        <FaCheckCircle className="mr-1" /> Approved
+      </span>
+    );
   }
+
+  if (status === "rejected") {
+    return (
+      <span className="inline-flex items-center text-red-700 bg-red-100 border border-red-300 px-3 py-1 text-xs rounded-full">
+        <FaTimesCircle className="mr-1" /> Rejected
+      </span>
+    );
+  }
+
+  if (status === "sent_for_approval") {
+    return (
+      <span className="inline-flex items-center text-yellow-700 bg-yellow-100 border border-yellow-300 px-3 py-1 text-xs rounded-full">
+        <FaClock className="mr-1" /> Pending
+      </span>
+    );
+  }
+
+  return null; 
 };
 
 export default function VendorApprovalList() {

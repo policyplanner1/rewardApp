@@ -40,21 +40,17 @@ class ManagerController {
       const [vendorRows] = await db.query(
         `
         SELECT 
-            v.*,
-            u.email,
-            u.phone,
-            u.name,
-            u.role,
-            CASE
-              WHEN ? = 'vendor_manager' AND v.status = 'pending'
-                THEN 'sent_for_approval'
-              ELSE v.status
-            END AS status
-            FROM vendors v
-            JOIN users u ON v.user_id = u.user_id
+          v.*,
+          u.email,
+          u.phone,
+          u.name,
+          u.role
+        FROM vendors v
+        JOIN users u ON v.user_id = u.user_id
+        WHERE v.status != 'pending'
           `,
-              [role]
-            );
+        [role]
+      );
 
       if (vendorRows.length === 0) {
         return res.status(404).json({
