@@ -1368,14 +1368,7 @@ export default function Onboarding() {
                 <button
                   type="submit"
                   disabled={Object.values(errors).some(Boolean)}
-                  className="
-                    w-full px-6 py-3 text-lg font-semibold text-white transition duration-300
-                    rounded-full md:w-auto
-                    hover:shadow-lg
-                    disabled:opacity-50
-                    disabled:cursor-not-allowed
-                    disabled:hover:shadow-none
-                  "
+                  className="w-full px-6 py-3 text-lg font-semibold text-white transition duration-300 rounded-full  md:w-auto hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
                   style={{
                     background: "linear-gradient(to right, #852BAF, #FC3F78)",
                   }}
