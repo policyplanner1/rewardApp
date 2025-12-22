@@ -808,6 +808,37 @@ class ProductModel {
       return res.status(500).json({ success: false, message: err.message });
     }
   }
+
+  // stats
+  async getProductStatsByVendor(vendorId) {
+    try {
+      const query = `
+      SELECT
+        COUNT(*) AS total,
+        SUM(status = 'pending') AS pending,
+        SUM(status = 'sent_for_approval') AS sent_for_approval,
+        SUM(status = 'approved') AS approved,
+        SUM(status = 'rejected') AS rejected,
+        SUM(status = 'resubmission') AS resubmission
+      FROM products
+      WHERE vendor_id = ?
+    `;
+
+      const [[stats]] = await db.execute(query, [vendorId]);
+
+      return {
+        total: Number(stats.total) || 0,
+        pending: Number(stats.pending) || 0,
+        sent_for_approval: Number(stats.sent_for_approval) || 0,
+        approved: Number(stats.approved) || 0,
+        rejected: Number(stats.rejected) || 0,
+        resubmission: Number(stats.resubmission) || 0,
+      };
+    } catch (error) {
+      console.error("Error fetching product stats:", error);
+      throw error;
+    }
+  }
 }
 
 module.exports = new ProductModel();

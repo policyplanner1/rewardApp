@@ -2,6 +2,7 @@ const VendorModel = require("../models/vendorModel");
 const categoryModel = require("../models/categoryModel");
 const subCategoryModel = require("../models/subCategoryModel");
 const subSubCategoryModel = require("../models/subSubCategoryModel");
+const productModel = require("../models/productModel");
 const db = require("../config/database");
 const fs = require("fs");
 const path = require("path");
@@ -633,6 +634,32 @@ class VendorController {
       return res.status(500).json({
         success: false,
         message: error.message,
+      });
+    }
+  }
+
+  async getStats(req, res) {
+    try {
+      const vendorId = req.user?.vendor_id;
+
+      if (!vendorId) {
+        return res.status(400).json({
+          success: false,
+          message: "Vendor ID is required",
+        });
+      }
+
+      const stats = await productModel.getProductStatsByVendor(vendorId);
+
+      return res.json({
+        success: true,
+        stats,
+      });
+    } catch (err) {
+      console.error("Error Fetching vendor Stats:", err);
+      return res.status(500).json({
+        success: false,
+        message: err.message,
       });
     }
   }

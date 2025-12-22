@@ -3,6 +3,7 @@ const VendorController = require("../controllers/vendorController");
 const DocumentController = require("../controllers/documentController");
 const upload = require("../middleware/uploadVendor");
 const { authenticateToken, authorizeRoles } = require("../middleware/auth");
+const vendorController = require("../controllers/vendorController");
 
 const router = express.Router();
 
@@ -26,6 +27,9 @@ router.post(
   ]),
   VendorController.onboardVendor
 );
+
+// vendor stats
+router.get('/stats',authenticateToken,authorizeRoles('vendor'),vendorController.getStats)
 
 // get approved vendor List
 router.get(
