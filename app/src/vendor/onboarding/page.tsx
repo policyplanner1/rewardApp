@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, ChangeEvent, FormEvent } from "react";
+import { useParams, useRouter } from "next/navigation";
 import {
   FaBuilding,
   FaAddressBook,
@@ -302,6 +303,7 @@ export default function Onboarding() {
   const [isSameAsAddress, setIsSameAsAddress] = useState(true);
   const [isSameAsBilling, setIsSameAsBilling] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const router = useRouter();
 
   // Generic change handler (handles text/select/file/checkbox)
   const handleChange = (
@@ -663,6 +665,7 @@ export default function Onboarding() {
       }
 
       alert("Vendor Onboarding Submitted Successfully!");
+      router.push("/src/vendor/dashboard");
       // optionally reset or navigate
     } catch (err) {
       console.error("Submit Error:", err);
