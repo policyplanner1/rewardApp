@@ -15,6 +15,34 @@ class ProductController {
       const vendorId = req.user.vendor_id;
       const body = req.body;
 
+      if (!vendorId) {
+        return res.status(404).json({
+          success: false,
+          message: "Vendor ID is required",
+        });
+      }
+
+      const [vendorRows] = await db.query(
+        `SELECT * FROM vendors WHERE vendor_id = ?`,
+        [vendorId]
+      );
+
+      if (!vendorRows.length) {
+        return res.status(404).json({
+          success: false,
+          message: "Vendor not found",
+        });
+      }
+
+      const vendor = vendorRows[0];
+
+      if (vendor.status !== "approved") {
+        return res.status(403).json({
+          success: false,
+          message: "Vendor not approved",
+        });
+      }
+
       if (!body.category_id && !body.custom_category) {
         return res.status(400).json({
           success: false,
