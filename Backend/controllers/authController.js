@@ -53,8 +53,6 @@ const authController = {
         [insertUser.insertId, otpHash, expiresAt]
       );
 
-      console.log(email,"email")
-      console.log(otp,"otp")
       await sendOtpEmail(email, otp);
 
       let vendorData = null;
