@@ -320,7 +320,7 @@ class ManagerController {
         });
       }
 
-      const { name, status } = req.body;
+      const { name } = req.body;
 
       if (!name || name.trim() === "") {
         return res.status(400).json({

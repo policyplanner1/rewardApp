@@ -65,10 +65,13 @@ export default function DocumentManagement() {
     try {
       setLoading(true);
 
-      const res = await fetch("/api/documents", {
+      const res = await fetch(`${API_BASE}/api/manager/create-document`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ document_name }),
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name:document_name }),
       });
 
       if (!res.ok) throw new Error("Failed to add document");
@@ -119,7 +122,7 @@ export default function DocumentManagement() {
         {
           method: "PUT",
           headers: {
-            "Authorization": `Bearer ${localStorage.getItem("token") || ""}`,
+            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ name: editName }),
@@ -143,9 +146,16 @@ export default function DocumentManagement() {
     if (!confirm("Delete this document?")) return;
 
     try {
-      const res = await fetch(`/api/documents/${document_id}`, {
-        method: "DELETE",
-      });
+      const res = await fetch(
+        `${API_BASE}/api/manager/delete-document/${document_id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            "Content-Type": "application/json",
+          },
+          method: "DELETE",
+        }
+      );
 
       if (!res.ok) throw new Error("Failed to delete document");
 
