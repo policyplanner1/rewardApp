@@ -60,7 +60,12 @@ router.get(
 );
 
 // All Vendor list
-router.get('/all-vendors',authenticateToken,authorizeRoles('vendor_manager','admin'),managerController.vendorList);
+router.get(
+  "/all-vendors",
+  authenticateToken,
+  authorizeRoles("vendor_manager", "admin"),
+  managerController.vendorList
+);
 
 // approve product
 router.put(
@@ -92,6 +97,14 @@ router.get(
   authenticateToken,
   authorizeRoles("vendor_manager"),
   managerController.getAllDocuments
+);
+
+// create a document
+router.post(
+  "/create-document",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  managerController.createDocument
 );
 
 module.exports = router;

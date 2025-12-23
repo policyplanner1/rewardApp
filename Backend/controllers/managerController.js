@@ -213,6 +213,7 @@ class ManagerController {
     }
   }
 
+  // get all documents
   async getAllDocuments(req, res) {
     try {
       const [rows] = await db.query(`SELECT * from documents`);
@@ -233,6 +234,38 @@ class ManagerController {
       res.status(500).json({
         success: false,
         message: "Error fetching Documents",
+        error: error.message,
+      });
+    }
+  }
+
+  // create a Document
+  async createDocument(req, res) {
+    try {
+      const { name } = req.body;
+
+      if (!name || name.trim() === "") {
+        return res.status(400).json({
+          success: false,
+          message: "Document name is required",
+        });
+      }
+
+      const [result] = await db.query(
+        `INSERT INTO documents (document_name, status, created_at)
+         VALUES (?, 1, NOW())`,
+        [name]
+      );
+
+      res.status(201).json({
+        success: true,
+        message: "Document created successfully",
+      });
+    } catch (error) {
+      console.error("Document creation error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error creating Document",
         error: error.message,
       });
     }
