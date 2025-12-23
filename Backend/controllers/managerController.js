@@ -452,7 +452,7 @@ class ManagerController {
   // get all category document
   async getAllCategoryDocs(req, res) {
     try {
-      const [rows] = await db.execute(
+      const [rows] = await db.query(
         `SELECT cd.*, c.category_name ,d.document_name
          FROM category_document cd
          LEFT JOIN categories c ON cd.category_id = c.category_id
@@ -473,6 +473,41 @@ class ManagerController {
     }
   }
 
+  // get category doc by Id
+  async getCategoryDocById(req, res) {
+    try {
+      const id = req.params.id;
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid category-document ID",
+        });
+      }
+
+      const [row] = await db.query(
+        `SELECT cd.*, c.category_name ,d.document_name
+         FROM category_document cd
+         LEFT JOIN categories c ON cd.category_id = c.category_id
+         LEFT JOIN documents d on cd.document_id = d.document_id
+         WHERE cd.id = ?`,
+        [id]
+      );
+
+      res.status(200).json({
+        success: true,
+        data: row[0],
+      });
+    } catch (error) {
+      console.error("Get category doc error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error fetching category document",
+        error: error.message,
+      });
+    }
+  }
+
   // Delete category Document
   async deleteCategoryDocument(req, res) {
     try {
@@ -485,7 +520,7 @@ class ManagerController {
         });
       }
 
-      const [result] = await db.execute(
+      const [result] = await db.query(
         `DELETE FROM category_document WHERE id = ?`,
         [id]
       );
