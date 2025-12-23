@@ -115,4 +115,12 @@ router.get(
   managerController.getDocumentById
 );
 
+// document update
+router.put(
+  "/update-document/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  managerController.updateDocument
+);
+
 module.exports = router;

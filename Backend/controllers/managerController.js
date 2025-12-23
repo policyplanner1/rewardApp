@@ -274,7 +274,7 @@ class ManagerController {
   // document By Id
   async getDocumentById(req, res) {
     try {
-      const id = req.params.id;
+      const id = Number(req.params.id);
 
       if (!id) {
         return res.status(400).json({
@@ -304,6 +304,66 @@ class ManagerController {
       res.status(500).json({
         success: false,
         message: "Error fetching document",
+      });
+    }
+  }
+
+  // update Doc
+  async updateDocument(req, res) {
+    try {
+      const id = Number(req.params.id);
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid document ID",
+        });
+      }
+
+      const { name, status } = req.body;
+
+      if (!name || name.trim() === "") {
+        return res.status(400).json({
+          success: false,
+          message: "Document name is required",
+        });
+      }
+
+      if (status === undefined) {
+        return res.status(400).json({
+          success: false,
+          message: "Status is required",
+        });
+      }
+      const [result] = await db.query(
+        `UPDATE documents 
+         SET document_name = ?, status = ?
+         WHERE document_id = ?`,
+        [name, status, id]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Document not found",
+        });
+      }
+
+      const [rows] = await db.execute(
+        `SELECT * FROM documents WHERE document_id = ?`,
+        [id]
+      );
+
+      res.status(200).json({
+        success: true,
+        message: "Document updated successfully",
+        data: rows[0],
+      });
+    } catch (error) {
+      console.error("Update Document error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error updating Document",
       });
     }
   }
