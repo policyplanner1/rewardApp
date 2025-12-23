@@ -353,6 +353,9 @@ export default function VendorApprovalForm() {
   const API_BASE_URL = "http://localhost:5000";
   const router = useRouter();
 
+  const [vendorStatus, setVendorStatus] = useState<
+    "pending" | "sent_for_approval" | "approved" | "rejected" | null
+  >(null);
   const [documentMap, setDocumentMap] = useState<Record<string, any>>({});
   const [formData, setFormData] = useState<VendorOnboardingData | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -398,6 +401,7 @@ export default function VendorApprovalForm() {
         const documentMap = mapDocumentsByKey(json.data.documents);
         setFormData(structuredData);
         setDocumentMap(documentMap);
+        setVendorStatus(json.data.vendor.status);
         setError(null);
       } catch (err) {
         console.error("Fetch Error:", err);
@@ -717,29 +721,32 @@ export default function VendorApprovalForm() {
           </section>
 
           {/* FINAL SUBMISSION BUTTONS */}
-          <div className="pt-6 border-t border-gray-200 flex flex-col md:flex-row justify-end space-y-4 md:space-y-0 md:space-x-4">
-            <button
-              type="button"
-              onClick={() => handleFinalDecision("rejected")}
-              disabled={isSubmitting}
-              className="px-8 py-3 text-lg font-semibold rounded-full transition duration-300 border border-red-500 text-red-600 bg-white hover:bg-red-50 shadow-md disabled:opacity-50"
-            >
-              <FaTimesCircle className="inline mr-2" />{" "}
-              {isSubmitting ? "Rejecting..." : "Final Reject"}
-            </button>
-            <button
-              type="button"
-              onClick={() => handleFinalDecision("approved")}
-              disabled={isSubmitting}
-              className="px-8 py-3 text-lg font-semibold text-white rounded-full transition duration-300 hover:shadow-xl disabled:opacity-50"
-              style={{
-                background: "linear-gradient(to right, #2ECC71, #27AE60)",
-              }}
-            >
-              <FaCheckCircle className="inline mr-2" />{" "}
-              {isSubmitting ? "Approving..." : "Final Approve"}
-            </button>
-          </div>
+          {vendorStatus !== "approved" && vendorStatus !== "rejected" && (
+            <div className="pt-6 border-t border-gray-200 flex flex-col md:flex-row justify-end space-y-4 md:space-y-0 md:space-x-4">
+              <button
+                type="button"
+                onClick={() => handleFinalDecision("rejected")}
+                disabled={isSubmitting}
+                className="px-8 py-3 text-lg font-semibold rounded-full transition duration-300 border border-red-500 text-red-600 bg-white hover:bg-red-50 shadow-md disabled:opacity-50"
+              >
+                <FaTimesCircle className="inline mr-2" />
+                {isSubmitting ? "Rejecting..." : "Final Reject"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleFinalDecision("approved")}
+                disabled={isSubmitting}
+                className="px-8 py-3 text-lg font-semibold text-white rounded-full transition duration-300 hover:shadow-xl disabled:opacity-50"
+                style={{
+                  background: "linear-gradient(to right, #2ECC71, #27AE60)",
+                }}
+              >
+                <FaCheckCircle className="inline mr-2" />
+                {isSubmitting ? "Approving..." : "Final Approve"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

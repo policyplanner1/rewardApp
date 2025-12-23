@@ -100,12 +100,27 @@ export default function StockAdjustmentPage() {
     }
   };
 
+  // validation
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const isAdjustmentDateValid = (dateStr: string) => {
+    const d = new Date(dateStr);
+    d.setHours(0, 0, 0, 0);
+    return d <= today;
+  };
+
   // ============================
   // Add Adjustment
   // ============================
   const addAdjustment = async () => {
     if (!date || !selectedInventory || !quantity || !adjustType || !reason) {
       alert("Please fill all fields");
+      return;
+    }
+
+    if (!isAdjustmentDateValid(date)) {
+      alert("Date cannot be in the future");
       return;
     }
 
@@ -279,6 +294,7 @@ export default function StockAdjustmentPage() {
             type="date"
             className="w-full p-3 border rounded-lg"
             value={date}
+            max={new Date().toISOString().split("T")[0]}
             onChange={(e) => setDate(e.target.value)}
           />
         </div>

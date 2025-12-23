@@ -60,7 +60,12 @@ router.get(
 );
 
 // All Vendor list
-router.get('/all-vendors',authenticateToken,authorizeRoles('vendor_manager','admin'),managerController.vendorList);
+router.get(
+  "/all-vendors",
+  authenticateToken,
+  authorizeRoles("vendor_manager", "admin"),
+  managerController.vendorList
+);
 
 // approve product
 router.put(
@@ -84,6 +89,78 @@ router.put(
   authenticateToken,
   authorizeRoles("vendor_manager", "admin"),
   managerController.resubmissionRequest
+);
+
+// Get all Documents
+router.get(
+  "/documents",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  managerController.getAllDocuments
+);
+
+// create a document
+router.post(
+  "/create-document",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  managerController.createDocument
+);
+
+// get document details by Id
+router.get(
+  "/document/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  managerController.getDocumentById
+);
+
+// document update
+router.put(
+  "/update-document/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  managerController.updateDocument
+);
+
+// delete document
+router.delete(
+  "/delete-document/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  managerController.deleteDocument
+);
+
+// create pair of category and documents
+router.post(
+  "/create-category-documents",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  managerController.createCategoryDocument
+);
+
+// fetch category linked Documents
+router.get(
+  "/category-documents",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  managerController.getAllCategoryDocs
+);
+
+// get category document By Id
+router.get(
+  "/category-documents/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  managerController.getCategoryDocById
+);
+
+// delete category Document
+router.delete(
+  "/category-documents/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  managerController.deleteCategoryDocument
 );
 
 module.exports = router;

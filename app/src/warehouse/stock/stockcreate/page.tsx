@@ -106,6 +106,24 @@ export default function StockInCreatePage() {
     );
   };
 
+  // validation
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const isStockInDateValid = (dateStr: string) => {
+    if (!dateStr) return true; // handled separately
+    const d = new Date(dateStr);
+    d.setHours(0, 0, 0, 0);
+    return d <= today;
+  };
+
+  const isExpiryDateValid = (dateStr: string) => {
+    if (!dateStr) return true; // optional field
+    const d = new Date(dateStr);
+    d.setHours(0, 0, 0, 0);
+    return d > today;
+  };
+
   /* ================= FETCH PRODUCT DETAILS + VARIANTS ================= */
 
   const handleProductSelect = async (productId: number) => {
@@ -147,6 +165,16 @@ export default function StockInCreatePage() {
   /* ================= SUBMIT ================= */
 
   const submitStockIn = async () => {
+    if (stockInDate && !isStockInDateValid(stockInDate)) {
+      alert("Stock-In Date cannot be in the future");
+      return;
+    }
+
+    if (expiryDate && !isExpiryDateValid(expiryDate)) {
+      alert("Expiry Date must be a future date");
+      return;
+    }
+
     if (!selectedVendor || !selectedProduct || !selectedVariant) {
       alert("Please select vendor, product and variant");
       return;
@@ -286,6 +314,7 @@ export default function StockInCreatePage() {
             <input
               type="date"
               value={stockInDate}
+              max={new Date().toISOString().split("T")[0]}
               onChange={(e) => setStockInDate(e.target.value)}
               className="w-full p-3 border rounded-lg mt-1"
             />
@@ -296,6 +325,7 @@ export default function StockInCreatePage() {
             <input
               type="date"
               value={expiryDate}
+              min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
               onChange={(e) => setExpiryDate(e.target.value)}
               className="w-full p-3 border rounded-lg mt-1"
             />
