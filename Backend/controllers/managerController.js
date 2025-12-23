@@ -367,6 +367,42 @@ class ManagerController {
       });
     }
   }
+
+  // delete Document
+  async deleteDocument(req, res) {
+    try {
+      const id = Number(req.params.id);
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid document ID",
+        });
+      }
+
+      const [result] = await db.execute(
+        `DELETE FROM documents WHERE document_id = ?`,
+        [id]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Document not found",
+        });
+      }
+      res.status(200).json({
+        success: true,
+        message: "Document deleted successfully",
+      });
+    } catch (error) {
+      console.error("Delete Document error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error deleting Document",
+      });
+    }
+  }
 }
 
 module.exports = new ManagerController();

@@ -123,4 +123,12 @@ router.put(
   managerController.updateDocument
 );
 
+// delete document
+router.delete(
+  "/delete-document/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  managerController.deleteDocument
+);
+
 module.exports = router;
