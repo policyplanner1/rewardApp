@@ -270,6 +270,43 @@ class ManagerController {
       });
     }
   }
+
+  // document By Id
+  async getDocumentById(req, res) {
+    try {
+      const id = req.params.id;
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid document ID",
+        });
+      }
+
+      const [rows] = await db.query(
+        `SELECT * FROM documents WHERE document_id = ?`,
+        [id]
+      );
+
+      if (!rows.length) {
+        return res.status(404).json({
+          success: false,
+          message: "Document not found",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: rows[0],
+      });
+    } catch (error) {
+      console.error("Get Document error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error fetching document",
+      });
+    }
+  }
 }
 
 module.exports = new ManagerController();

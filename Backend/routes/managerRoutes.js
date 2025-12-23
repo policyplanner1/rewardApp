@@ -107,4 +107,12 @@ router.post(
   managerController.createDocument
 );
 
+// get document details by Id
+router.get(
+  "/document/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  managerController.getDocumentById
+);
+
 module.exports = router;
