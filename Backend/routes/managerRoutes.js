@@ -131,4 +131,12 @@ router.delete(
   managerController.deleteDocument
 );
 
+// create pair of category and documents
+router.post(
+  "/create-category-documents",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  managerController.createCategoryDocument
+);
+
 module.exports = router;

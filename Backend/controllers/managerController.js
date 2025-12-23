@@ -403,6 +403,51 @@ class ManagerController {
       });
     }
   }
+
+  // create category Document
+  async createCategoryDocument(req, res) {
+    try {
+      const { category_id, document_id } = req.body;
+
+      if (!category_id || !document_id) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid category ID or Document ID",
+        });
+      }
+
+      if (isNaN(category_id) || isNaN(document_id)) {
+        return res.status(400).json({
+          success: false,
+          message: "Category ID and Document ID must be numbers",
+        });
+      }
+
+      const [result] = await db.query(
+        `INSERT INTO category_document (category_id, document_id, created_at)
+       VALUES (?, ?, NOW())`,
+        [category_id, document_id]
+      );
+
+      if (result.affectedRows > 0) {
+        return res.status(201).json({
+          success: true,
+          message: "Document linked successfully",
+        });
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: "Failed to link document",
+        });
+      }
+    } catch (error) {
+      console.error("Document link error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Document link error",
+      });
+    }
+  }
 }
 
 module.exports = new ManagerController();
