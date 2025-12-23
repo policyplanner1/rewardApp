@@ -1,6 +1,10 @@
 const bcrypt = require("bcryptjs");
 const db = require("../config/database");
 const { generateToken } = require("../utils/jwt");
+const { generateOTP, hashOTP } = require("../utils/optGenerate");
+const { sendOtpEmail } = require("../config/mail");
+
+//
 
 const authController = {
   /* ============================================================
@@ -38,6 +42,21 @@ const authController = {
         [name, email.toLowerCase(), hashedPassword, role, phone || null]
       );
 
+      // send Otp
+      const otp = generateOTP();
+      const otpHash = hashOTP(otp);
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+      await db.execute(
+        `INSERT INTO user_otps (user_id, otp_hash, expires_at)
+   VALUES (?, ?, ?)`,
+        [insertUser.insertId, otpHash, expiresAt]
+      );
+
+      console.log(email,"email")
+      console.log(otp,"otp")
+      await sendOtpEmail(email, otp);
+
       let vendorData = null;
 
       if (role === "vendor") {
@@ -62,18 +81,27 @@ const authController = {
 
       return res.status(201).json({
         success: true,
-        message: `${role} registered successfully`,
+        message: "OTP sent to your email",
         data: {
-          user: {
-            user_id: insertUser.insertId,
-            email,
-            role,
-            phone,
-          },
-          vendor: vendorData,
-          token,
+          user_id: insertUser.insertId,
+          email,
         },
       });
+
+      // return res.status(201).json({
+      //   success: true,
+      //   message: `${role} registered successfully`,
+      //   data: {
+      //     user: {
+      //       user_id: insertUser.insertId,
+      //       email,
+      //       role,
+      //       phone,
+      //     },
+      //     vendor: vendorData,
+      //     token,
+      //   },
+      // });
     } catch (err) {
       console.error("Registration Error:", err);
       return res.status(500).json({
