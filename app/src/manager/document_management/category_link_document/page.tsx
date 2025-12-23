@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { FiPlus, FiTrash2, FiEye } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiEye, FiX, FiFileText } from "react-icons/fi";
 
 const API_BASE = "http://localhost:5000";
 
@@ -34,6 +34,10 @@ export default function DocumentManagement() {
 
   const [categoryId, setCategoryId] = useState<number | "">("");
   const [documentId, setDocumentId] = useState<number | "">("");
+
+  /* Drawer state */
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selected, setSelected] = useState<Mapping | null>(null);
 
   /* =========================
         FETCH DATA
@@ -95,7 +99,7 @@ export default function DocumentManagement() {
   };
 
   /* =========================
-        VIEW
+        VIEW (DRAWER)
   ========================= */
   const handleView = async (id: number) => {
     const res = await fetch(
@@ -106,9 +110,8 @@ export default function DocumentManagement() {
     );
 
     const json = await res.json();
-    alert(
-      `Category: ${json.data.category_name}\nDocument: ${json.data.document_name}`
-    );
+    setSelected(json.data);
+    setDrawerOpen(true);
   };
 
   /* =========================
@@ -130,8 +133,8 @@ export default function DocumentManagement() {
   ========================= */
   return (
     <div className="min-h-screen p-6 bg-gray-50">
-      <h1 className="mb-6 text-3xl font-bold text-purple-700">
-        Document Management
+      <h1 className="flex items-center gap-2 mb-6 text-3xl font-bold text-purple-700">
+        <FiFileText /> Document Management
       </h1>
 
       {/* ADD SECTION */}
@@ -210,6 +213,42 @@ export default function DocumentManagement() {
           </tbody>
         </table>
       </div>
+
+      {/* =========================
+            DRAWER VIEW
+      ========================= */}
+      {drawerOpen && selected && (
+        <div className="fixed inset-0 z-50">
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setDrawerOpen(false)}
+          />
+
+          <div className="absolute right-0 top-0 h-full w-[400px] bg-white shadow-xl rounded-l-2xl">
+            <div className="flex items-center justify-between p-6 bg-purple-600">
+              <h2 className="text-xl font-bold text-white">View Details</h2>
+              <button
+                onClick={() => setDrawerOpen(false)}
+                className="text-white"
+              >
+                <FiX size={22} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <p className="text-sm text-gray-500">Category</p>
+                <p className="font-semibold">{selected.category_name}</p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">Document</p>
+                <p className="font-semibold">{selected.document_name}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
