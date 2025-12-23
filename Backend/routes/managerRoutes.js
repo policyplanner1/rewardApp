@@ -86,4 +86,12 @@ router.put(
   managerController.resubmissionRequest
 );
 
+// Get all Documents
+router.get(
+  "/documents",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  managerController.getAllDocuments
+);
+
 module.exports = router;

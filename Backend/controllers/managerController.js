@@ -212,6 +212,31 @@ class ManagerController {
       });
     }
   }
+
+  async getAllDocuments(req, res) {
+    try {
+      const [rows] = await db.query(`SELECT * from documents`);
+
+      if (!rows.length) {
+        return res.status(404).json({
+          success: false,
+          message: "Document not found",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        data: rows,
+      });
+    } catch (error) {
+      console.error("Get all Document error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error fetching Documents",
+        error: error.message,
+      });
+    }
+  }
 }
 
 module.exports = new ManagerController();
