@@ -87,11 +87,19 @@ export default function DocumentManagement() {
   ============================== */
   const handleView = async (document_id: number) => {
     try {
-      const res = await fetch(`/api/documents/${document_id}`);
+      const res = await fetch(
+        `${API_BASE}/api/manager/document/${document_id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
       const data = await res.json();
 
-      setSelected(data);
-      setEditName(data.document_name);
+      setSelected(data.data);
+      setEditName(data.data.document_name);
       setEditMode(false);
       setDrawerOpen(true);
     } catch (err) {
@@ -106,11 +114,17 @@ export default function DocumentManagement() {
     if (!selected || !editName.trim()) return;
 
     try {
-      const res = await fetch(`/api/documents/${selected.document_id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ document_name: editName }),
-      });
+      const res = await fetch(
+        `${API_BASE}/api/manager/update-document/${selected.document_id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Authorization": `Bearer ${localStorage.getItem("token") || ""}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ name: editName }),
+        }
+      );
 
       if (!res.ok) throw new Error("Failed to update document");
 

@@ -329,17 +329,17 @@ class ManagerController {
         });
       }
 
-      if (status === undefined) {
-        return res.status(400).json({
-          success: false,
-          message: "Status is required",
-        });
-      }
+      // if (status === undefined) {
+      //   return res.status(400).json({
+      //     success: false,
+      //     message: "Status is required",
+      //   });
+      // }
       const [result] = await db.query(
         `UPDATE documents 
-         SET document_name = ?, status = ?
+         SET document_name = ?
          WHERE document_id = ?`,
-        [name, status, id]
+        [name, id]
       );
 
       if (result.affectedRows === 0) {
