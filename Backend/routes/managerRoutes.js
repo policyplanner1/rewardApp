@@ -139,4 +139,12 @@ router.post(
   managerController.createCategoryDocument
 );
 
+// fetch category linked Documents
+router.get(
+  "/category-documents",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  managerController.getAllCategoryDocs
+);
+
 module.exports = router;

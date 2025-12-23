@@ -448,6 +448,29 @@ class ManagerController {
       });
     }
   }
+
+  async getAllCategoryDocs(req, res) {
+    try {
+      const [rows] = await db.execute(
+        `SELECT cd.*, c.category_name ,d.document_name
+         FROM category_document cd
+         LEFT JOIN categories c ON cd.category_id = c.category_id
+         LEFT JOIN documents d on cd.document_id = d.document_id`
+      );
+
+      res.status(200).json({
+        success: true,
+        data: rows,
+      });
+    } catch (error) {
+      console.error("Get all Category Documents error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error fetching Category Documents",
+        error: error.message,
+      });
+    }
+  }
 }
 
 module.exports = new ManagerController();
