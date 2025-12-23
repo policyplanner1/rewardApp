@@ -449,6 +449,7 @@ class ManagerController {
     }
   }
 
+  // get all category document
   async getAllCategoryDocs(req, res) {
     try {
       const [rows] = await db.execute(
@@ -467,6 +468,44 @@ class ManagerController {
       res.status(500).json({
         success: false,
         message: "Error fetching Category Documents",
+        error: error.message,
+      });
+    }
+  }
+
+  // Delete category Document
+  async deleteCategoryDocument(req, res) {
+    try {
+      const id = req.params.id;
+
+      if (!id) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid category-document ID",
+        });
+      }
+
+      const [result] = await db.execute(
+        `DELETE FROM category_document WHERE id = ?`,
+        [id]
+      );
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Document not found",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Document deleted successfully",
+      });
+    } catch (error) {
+      console.error("Delete Document error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Error deleting Document",
         error: error.message,
       });
     }

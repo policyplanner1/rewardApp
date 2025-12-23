@@ -147,4 +147,12 @@ router.get(
   managerController.getAllCategoryDocs
 );
 
+// delete category Document
+router.delete(
+  "/category-documents/:id",
+  authenticateToken,
+  authorizeRoles("vendor_manager"),
+  managerController.deleteCategoryDocument
+);
+
 module.exports = router;
