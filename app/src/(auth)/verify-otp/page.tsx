@@ -6,11 +6,19 @@ import { useAuth } from "../context/AuthContext";
 
 export default function VerifyOtpPage() {
   const router = useRouter();
-  const { verifyOtp, loading, error } = useAuth();
+  const { verifyOtp, loading, error, resendOtp } = useAuth();
+  const [cooldown, setCooldown] = useState(0);
 
   const [otp, setOtp] = useState("");
   const [email, setEmail] = useState<string | null>(null);
   const [localError, setLocalError] = useState("");
+
+  const handleResend = async () => {
+    if (cooldown > 0) return;
+
+    await resendOtp(email!);
+    setCooldown(30);
+  };
 
   // Load email from sessionStorage
   useEffect(() => {
@@ -21,6 +29,16 @@ export default function VerifyOtpPage() {
     }
     setEmail(storedEmail);
   }, [router]);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+
+    const timer = setInterval(() => {
+      setCooldown((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,17 +98,18 @@ export default function VerifyOtpPage() {
             {loading ? "Verifying..." : "Verify OTP"}
           </button>
         </form>
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-600">Didn’t receive OTP?</p>
 
-        {/* <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">Didn't receive OTP?</p>
           <button
             type="button"
-            className="text-sm font-medium text-purple-600 hover:underline"
-            onClick={() => alert("Resend OTP not implemented yet")}
+            disabled={cooldown > 0 || loading}
+            onClick={handleResend}
+            className="text-sm font-medium text-purple-600 hover:underline disabled:text-gray-400"
           >
-            Resend OTP
+            {cooldown > 0 ? `Resend OTP in ${cooldown}s` : "Resend OTP"}
           </button>
-        </div> */}
+        </div>
       </div>
     </div>
   );

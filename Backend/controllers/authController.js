@@ -168,6 +168,51 @@ const authController = {
     });
   },
 
+  // resend OTP
+  resendOtp: async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    const [users] = await db.execute(
+      "SELECT user_id FROM users WHERE email = ?",
+      [email.toLowerCase()]
+    );
+
+    if (!users.length) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const userId = users[0].user_id;
+
+    await db.execute("DELETE FROM user_otps WHERE user_id = ?", [userId]);
+
+    const otp = generateOTP();
+    const otpHash = hashOTP(otp);
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await db.execute(
+      `INSERT INTO user_otps (user_id, otp_hash, expires_at)
+     VALUES (?, ?, ?)`,
+      [userId, otpHash, expiresAt]
+    );
+
+    await sendOtpEmail(email, otp);
+
+    return res.json({
+      success: true,
+      message: "OTP resent successfully",
+    });
+  },
+
   /* ============================================================
        LOGIN USER (Loads correct vendor_id)
      ============================================================ */

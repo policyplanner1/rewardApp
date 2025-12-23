@@ -25,10 +25,12 @@ router.post("/warehouse_manager/register", (req, res) =>
 );
 
 /* ============================================================
-   VERIFY OTP
+    OTP
    ============================================================ */
 
 router.post("/verify-otp", authController.verifyOtp);
+
+router.post("/resend-otp", authController.resendOtp);
 
 /* ============================================================
    LOGIN (SEPARATE FOR EACH ROLE)

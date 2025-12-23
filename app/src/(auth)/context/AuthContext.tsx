@@ -24,6 +24,7 @@ interface AuthContextType {
     phone?: string
   ) => Promise<void>;
   verifyOtp: (email: string, otp: string) => Promise<void>;
+  resendOtp: (email: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -168,6 +169,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Resend Otp
+  const resendOtp = async (email: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(`${API_URL}/resend-otp`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+      if (!data.success) throw new Error(data.message);
+    } catch (err: any) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   /* ---------------- LOGOUT ---------------- */
   const logout = () => {
     localStorage.clear();
@@ -184,6 +207,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         register,
         verifyOtp,
+        resendOtp,
         logout,
       }}
     >
