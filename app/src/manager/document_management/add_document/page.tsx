@@ -11,9 +11,11 @@ import {
   FiFileText,
 } from "react-icons/fi";
 
+const API_BASE = "http://localhost:5000";
+
 interface DocumentItem {
-  id: number;
-  documentName: string;
+  document_id: number;
+  document_name: string;
   created_at: string;
 }
 
@@ -22,7 +24,7 @@ export default function DocumentManagement() {
         STATE
   ============================== */
   const [documents, setDocuments] = useState<DocumentItem[]>([]);
-  const [documentName, setDocumentName] = useState("");
+  const [document_name, setDocumentName] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selected, setSelected] = useState<DocumentItem | null>(null);
   const [editMode, setEditMode] = useState(false);
@@ -34,11 +36,19 @@ export default function DocumentManagement() {
   ============================== */
   const fetchDocuments = async () => {
     try {
-      const res = await fetch("/api/documents");
-      const data = await res.json();
-      setDocuments(data);
+      const res = await fetch(`${API_BASE}/api/manager/documents`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const response = await res.json();
+
+      setDocuments(response.data || []);
     } catch (err) {
       console.error("Failed to fetch documents", err);
+      setDocuments([]);
     }
   };
 
@@ -50,7 +60,7 @@ export default function DocumentManagement() {
         ADD DOCUMENT (POST)
   ============================== */
   const handleAdd = async () => {
-    if (!documentName.trim()) return;
+    if (!document_name.trim()) return;
 
     try {
       setLoading(true);
@@ -58,7 +68,7 @@ export default function DocumentManagement() {
       const res = await fetch("/api/documents", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentName }),
+        body: JSON.stringify({ document_name }),
       });
 
       if (!res.ok) throw new Error("Failed to add document");
@@ -75,13 +85,13 @@ export default function DocumentManagement() {
   /* =============================
         VIEW DOCUMENT (GET BY ID)
   ============================== */
-  const handleView = async (id: number) => {
+  const handleView = async (document_id: number) => {
     try {
-      const res = await fetch(`/api/documents/${id}`);
+      const res = await fetch(`/api/documents/${document_id}`);
       const data = await res.json();
 
       setSelected(data);
-      setEditName(data.documentName);
+      setEditName(data.document_name);
       setEditMode(false);
       setDrawerOpen(true);
     } catch (err) {
@@ -96,16 +106,16 @@ export default function DocumentManagement() {
     if (!selected || !editName.trim()) return;
 
     try {
-      const res = await fetch(`/api/documents/${selected.id}`, {
+      const res = await fetch(`/api/documents/${selected.document_id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentName: editName }),
+        body: JSON.stringify({ document_name: editName }),
       });
 
       if (!res.ok) throw new Error("Failed to update document");
 
       fetchDocuments();
-      setSelected({ ...selected, documentName: editName });
+      setSelected({ ...selected, document_name: editName });
       setEditMode(false);
     } catch (err) {
       console.error(err);
@@ -115,11 +125,11 @@ export default function DocumentManagement() {
   /* =============================
         DELETE DOCUMENT
   ============================== */
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (document_id: number) => {
     if (!confirm("Delete this document?")) return;
 
     try {
-      const res = await fetch(`/api/documents/${id}`, {
+      const res = await fetch(`/api/documents/${document_id}`, {
         method: "DELETE",
       });
 
@@ -141,7 +151,7 @@ export default function DocumentManagement() {
       {/* ADD DOCUMENT */}
       <div className="flex flex-col gap-4 mb-6 md:flex-row">
         <input
-          value={documentName}
+          value={document_name}
           onChange={(e) => setDocumentName(e.target.value)}
           className="flex-1 px-4 py-3 border rounded-xl"
           placeholder="Enter document name"
@@ -175,21 +185,22 @@ export default function DocumentManagement() {
               </tr>
             ) : (
               documents.map((doc) => (
-                <tr key={doc.id} className="border-b hover:bg-purple-50">
-                  <td className="px-6 py-4 font-medium">
-                    {doc.documentName}
-                  </td>
+                <tr
+                  key={doc.document_id}
+                  className="border-b hover:bg-purple-50"
+                >
+                  <td className="px-6 py-4 font-medium">{doc.document_name}</td>
                   <td className="px-6 py-4">
                     {new Date(doc.created_at).toLocaleDateString()}
                   </td>
                   <td className="flex justify-end gap-3 px-6 py-4">
-                    <button onClick={() => handleView(doc.id)}>
+                    <button onClick={() => handleView(doc.document_id)}>
                       <FiEye />
                     </button>
                     <button
                       className="text-purple-600"
                       onClick={() => {
-                        handleView(doc.id);
+                        handleView(doc.document_id);
                         setEditMode(true);
                       }}
                     >
@@ -197,7 +208,7 @@ export default function DocumentManagement() {
                     </button>
                     <button
                       className="text-red-600"
-                      onClick={() => handleDelete(doc.id)}
+                      onClick={() => handleDelete(doc.document_id)}
                     >
                       <FiTrash2 />
                     </button>
@@ -220,7 +231,7 @@ export default function DocumentManagement() {
           <div className="absolute right-0 top-0 h-full w-[400px] bg-white shadow-xl rounded-l-2xl">
             <div className="flex justify-between p-6 bg-purple-600">
               <h2 className="text-xl font-bold text-white">
-                {selected.documentName}
+                {selected.document_name}
               </h2>
               <button
                 onClick={() => setDrawerOpen(false)}
@@ -241,9 +252,7 @@ export default function DocumentManagement() {
                 </button>
               ) : (
                 <>
-                  <label className="text-sm font-medium">
-                    Document Name
-                  </label>
+                  <label className="text-sm font-medium">Document Name</label>
                   <input
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
