@@ -1,17 +1,21 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import Link from 'next/link';
+import { useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    role: 'vendor' as 'vendor' | 'vendor_manager' | 'admin' | 'warehouse_manager'
+    email: "",
+    password: "",
+    role: "vendor" as
+      | "vendor"
+      | "vendor_manager"
+      | "admin"
+      | "warehouse_manager",
   });
 
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const { login, error: authError, loading } = useAuth();
 
   const handleChange = (
@@ -19,19 +23,19 @@ export default function LoginPage() {
   ) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     try {
       await login(formData.email, formData.password, formData.role);
       // Redirect handled in AuthContext
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : "Login failed");
     }
   };
 
@@ -43,7 +47,6 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-600 to-pink-600 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-xl">
-
         {/* Logo */}
         <div className="text-center">
           <div className="mx-auto h-16 w-16 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center mb-4">
@@ -63,7 +66,6 @@ export default function LoginPage() {
         {/* FORM */}
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
-
             {/* EMAIL */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -117,7 +119,6 @@ export default function LoginPage() {
                 placeholder="Enter your password"
               />
             </div>
-
           </div>
 
           {/* SUBMIT BUTTON */}
@@ -126,19 +127,33 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full flex justify-center py-3 px-4 text-sm font-medium rounded-lg text-white bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 transition duration-200"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? "Signing in..." : "Sign In"}
           </button>
 
-          {/* FOOTER */}
-          <div className="text-center">
+          {/* forgot Password */}
+          <div className="text-center mt-2">
             <p className="text-sm text-gray-600">
-              Don’t have an account?{' '}
-              <Link href="/src/register" className="font-medium text-purple-600 hover:text-purple-500">
-                Register
+              <Link
+                href="/src/forgot-password"
+                className="text-sm text-purple-600 hover:underline"
+              >
+                Forgot password?
               </Link>
             </p>
           </div>
 
+          {/* FOOTER */}
+          <div className="text-center">
+            <p className="text-sm text-gray-600">
+              Don't have an account?{" "}
+              <Link
+                href="/src/register"
+                className="font-medium text-purple-600 hover:text-purple-500"
+              >
+                Register
+              </Link>
+            </p>
+          </div>
         </form>
       </div>
     </div>
