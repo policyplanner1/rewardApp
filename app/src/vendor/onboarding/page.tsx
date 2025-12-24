@@ -14,6 +14,8 @@ import {
   FaEnvelope,
 } from "react-icons/fa";
 
+const API_BASE = "http://localhost:5000";
+
 // 1. Define the structure for the form data (cleaned to include only requested docs + conditional fields)
 interface VendorOnboardingData {
   // A. Business Information
@@ -512,7 +514,7 @@ export default function Onboarding() {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        const res = await fetch("http://localhost:5000/api/vendor/my-details", {
+        const res = await fetch(`${API_BASE}/api/vendor/my-details`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -685,7 +687,7 @@ export default function Onboarding() {
     });
 
     try {
-      const response = await fetch("http://localhost:5000/api/vendor/onboard", {
+      const response = await fetch(`${API_BASE}/api/vendor/onboard`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

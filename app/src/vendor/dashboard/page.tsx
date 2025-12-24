@@ -15,6 +15,8 @@ import {
 
 import { FiClock } from "react-icons/fi";
 
+const API_BASE = "http://localhost:5000";
+
 interface VendorStats {
   total: number;
   approved: number;
@@ -44,7 +46,7 @@ export default function VendorDashboard() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:5000/api/vendor/stats", {
+      const res = await fetch(`${API_BASE}/api/vendor/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -62,7 +64,7 @@ export default function VendorDashboard() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:5000/api/vendor/my-details", {
+      const res = await fetch(`${API_BASE}/api/vendor/my-details`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
