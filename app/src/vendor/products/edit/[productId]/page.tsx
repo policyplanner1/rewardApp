@@ -16,6 +16,7 @@ import {
 } from "react-icons/fa";
 
 const API_BASE_URL = "http://localhost:5000/api";
+const API_BASEIMAGE_URL = "http://localhost:5000";
 
 interface Category {
   category_id: number;
@@ -64,10 +65,7 @@ interface Variant {
   expiryDate: string;
   manufacturingYear: string;
   materialType: string;
-  images: {
-    file: File;
-    previewUrl: string;
-  }[];
+  images: File[];
   existingImages?: string[];
 }
 
@@ -83,10 +81,7 @@ interface ProductData {
   subSubCategoryId: number | null;
   gstIn?: string;
   variants: Variant[];
-  productImages: {
-    file: File;
-    previewUrl: string;
-  }[];
+  productImages: File[];
   existingImages?: string[];
 }
 
@@ -233,23 +228,16 @@ export default function EditProductPage() {
       return;
     }
 
-    const images = files.map((file) => ({
-      file,
-      previewUrl: URL.createObjectURL(file),
-    }));
-
     setImageError("");
     setProduct((prev) => ({
       ...prev,
-      productImages: images,
+      productImages: files,
     }));
   };
 
   useEffect(() => {
     return () => {
-      product.productImages.forEach((img) => {
-        URL.revokeObjectURL(img.previewUrl);
-      });
+      product.productImages.forEach((file) => URL.revokeObjectURL(file));
     };
   }, [product.productImages]);
 
@@ -291,7 +279,9 @@ export default function EditProductPage() {
 
   const fetchSubSubCategories = async (subcategoryId: number) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/subsubcategory/${subcategoryId}`);
+      const res = await fetch(
+        `${API_BASE_URL}/subsubcategory/${subcategoryId}`
+      );
       const json = await res.json();
       if (json.success) {
         setSubSubCategories(json.data);
@@ -591,26 +581,10 @@ export default function EditProductPage() {
 
     setProduct((prev) => {
       const updatedVariants = [...prev.variants];
-      const images = files.map((file) => ({
-        file,
-        previewUrl: URL.createObjectURL(file),
-      }));
-
-      updatedVariants[variantIndex].images = images;
-
+      updatedVariants[variantIndex].images = files;
       return { ...prev, variants: updatedVariants };
     });
   };
-
-  useEffect(() => {
-    return () => {
-      product.variants.forEach((variant) => {
-        variant.images.forEach((img) => {
-          URL.revokeObjectURL(img.previewUrl);
-        });
-      });
-    };
-  }, [product.variants]);
 
   const addVariant = () => {
     setProduct((prev) => ({
@@ -753,8 +727,8 @@ export default function EditProductPage() {
       if (product.gstIn) formData.append("gstIn", product.gstIn);
 
       // Add main product images
-      product.productImages.forEach((img) => {
-        formData.append("images", img.file);
+      product.productImages.forEach((file, index) => {
+        formData.append("images", file);
       });
 
       Object.entries(docFiles).forEach(([docId, file]) => {
@@ -782,8 +756,8 @@ export default function EditProductPage() {
 
       // Add variant images
       product.variants.forEach((variant, index) => {
-        variant.images.forEach((img, imgIndex) => {
-          formData.append(`variant_${index}_${imgIndex}`, img.file);
+        variant.images.forEach((file, imgIndex) => {
+          formData.append(`variant_${index}_${imgIndex}`, file);
         });
       });
 
@@ -1052,9 +1026,7 @@ export default function EditProductPage() {
                 <input
                   type="date"
                   value={variant.expiryDate || ""}
-                  min={
-                    new Date(Date.now() + 86400000).toISOString().split("T")[0]
-                  }
+                  min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
                   onChange={(e) =>
                     handleVariantChange(index, "expiryDate", e.target.value)
                   }
@@ -1071,7 +1043,7 @@ export default function EditProductPage() {
                   {variant.existingImages.map((img, imgIndex) => (
                     <img
                       key={imgIndex}
-                      src={`${API_BASE_URL}/uploads/${img}`}
+                      src={`${API_BASEIMAGE_URL}/uploads/${img}`}
                       alt={`Variant ${index + 1} image ${imgIndex + 1}`}
                       className="w-16 h-16 object-cover border rounded"
                     />
@@ -1107,18 +1079,21 @@ export default function EditProductPage() {
               {/* Image Previews */}
               {variant.images.length > 0 && (
                 <div className="mt-3 flex gap-2 flex-wrap">
-                  {variant.images.map((img, imgIndex) => (
-                    <div
-                      key={imgIndex}
-                      className="w-20 h-20 border rounded overflow-hidden"
-                    >
-                      <img
-                        src={img.previewUrl}
-                        alt={`Variant ${index + 1} - Image ${imgIndex + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ))}
+                  {variant.images.map((file, imgIndex) => {
+                    const url = URL.createObjectURL(file);
+                    return (
+                      <div
+                        key={imgIndex}
+                        className="w-20 h-20 border rounded overflow-hidden"
+                      >
+                        <img
+                          src={url}
+                          alt={`Variant ${index + 1} - Image ${imgIndex + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1476,7 +1451,7 @@ export default function EditProductPage() {
                 {product.existingImages.map((img, i) => (
                   <img
                     key={i}
-                    src={`${API_BASE_URL}/uploads/${img}`}
+                    src={`${API_BASEIMAGE_URL}/uploads/${img}`}
                     className="w-20 h-20 object-cover border rounded"
                   />
                 ))}
@@ -1512,18 +1487,21 @@ export default function EditProductPage() {
             {/* Image Previews */}
             {product.productImages.length > 0 && (
               <div className="mt-3 flex gap-2 flex-wrap">
-                {product.productImages.map((img, index) => (
-                  <div
-                    key={index}
-                    className="w-20 h-20 border rounded overflow-hidden"
-                  >
-                    <img
-                      src={img.previewUrl}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
+                {product.productImages.map((file, index) => {
+                  const url = URL.createObjectURL(file);
+                  return (
+                    <div
+                      key={index}
+                      className="w-20 h-20 border rounded overflow-hidden"
+                    >
+                      <img
+                        src={url}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  );
+                })}
               </div>
             )}
           </section>

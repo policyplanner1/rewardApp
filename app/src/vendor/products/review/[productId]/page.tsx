@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 const API_BASE_URL = "http://localhost:5000/api";
+const API_BASEIMAGE_URL = "http://localhost:5000";
 
 interface VariantView {
   size?: string;
@@ -131,7 +132,7 @@ export default function ReviewProductPage({
       return path;
     }
 
-    return `${API_BASE_URL}/uploads/${path.replace(/^\/+/, "")}`;
+    return `${API_BASEIMAGE_URL}/uploads/${path.replace(/^\/+/, "")}`;
   };
 
   const isValidDate = (date: any): boolean => {

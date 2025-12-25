@@ -78,10 +78,7 @@ interface ProductData {
   subSubCategoryId: number | null;
   gstIn?: string;
   variants: Variant[];
-  productImages: {
-    file: File;
-    previewUrl: string;
-  }[];
+  productImages: File[];
 }
 
 const initialProductData: ProductData = {
@@ -259,23 +256,16 @@ export default function ProductListingDynamic() {
       return;
     }
 
-    const images = files.map((file) => ({
-      file,
-      previewUrl: URL.createObjectURL(file),
-    }));
-
     setImageError("");
     setProduct((prev) => ({
       ...prev,
-      productImages: images,
+      productImages: files,
     }));
   };
 
   useEffect(() => {
     return () => {
-      product.productImages.forEach((img) => {
-        URL.revokeObjectURL(img.previewUrl);
-      });
+      product.productImages.forEach((file) => URL.revokeObjectURL(file));
     };
   }, [product.productImages]);
 
@@ -304,7 +294,6 @@ export default function ProductListingDynamic() {
 
   const fetchSubCategories = async (categoryId: number) => {
     try {
-      // console.log("Fetching subcategories for category ID:", categoryId);
       const res = await fetch(`${API_BASE_URL}/subcategory/${categoryId}`);
 
       const json = await res.json();
@@ -319,7 +308,9 @@ export default function ProductListingDynamic() {
 
   const fetchSubSubCategories = async (subcategoryId: number) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/subsubcategory/${subcategoryId}`);
+      const res = await fetch(
+        `${API_BASE_URL}/subsubcategory/${subcategoryId}`
+      );
       const json = await res.json();
       console.log("Sub-subcategories response:", json.data);
       if (json.success) {
@@ -755,8 +746,8 @@ export default function ProductListingDynamic() {
       }
 
       // Add main product images
-      product.productImages.forEach((img) => {
-        formData.append("images", img.file);
+      product.productImages.forEach((file, index) => {
+        formData.append("images", file);
       });
 
       // Add document files - map document_id to field names
@@ -1566,18 +1557,21 @@ export default function ProductListingDynamic() {
             {/* Image Previews */}
             {product.productImages.length > 0 && (
               <div className="mt-3 flex gap-2 flex-wrap">
-                {product.productImages.map((img, index) => (
-                  <div
-                    key={index}
-                    className="w-20 h-20 border rounded overflow-hidden"
-                  >
-                    <img
-                      src={img.previewUrl}
-                      alt={`Preview ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
+                {product.productImages.map((file, index) => {
+                  const url = URL.createObjectURL(file);
+                  return (
+                    <div
+                      key={index}
+                      className="w-20 h-20 border rounded overflow-hidden"
+                    >
+                      <img
+                        src={url}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  );
+                })}
               </div>
             )}
           </section>
