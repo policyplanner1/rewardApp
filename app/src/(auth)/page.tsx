@@ -1,11 +1,7 @@
-export default function AuthLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function Page() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#852BAF] to-[#FC3F78]">
-      {children}
+    <div>
+      Auth Page
     </div>
   );
 }

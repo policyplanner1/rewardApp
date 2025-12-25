@@ -29,7 +29,7 @@
 //     try {
 //       const token = localStorage.getItem("token");
 
-//       const res = await fetch("http://localhost:5000/api/manager/stats", {
+//       const res = await fetch("https://rewardplanners.com/api/crm/api/manager/stats", {
 //         headers: { Authorization: `Bearer ${token}` },
 //       });
 
@@ -131,6 +131,8 @@ import DashboardCharts from "../../components/Charts/DashboardCharts";
 import { FaUsers, FaMoneyBillWave } from "react-icons/fa";
 import { FiClock, FiPackage } from "react-icons/fi";
 
+const API_BASE_URL = "http://localhost:5000/api";
+
 interface ManagerStats {
   totalVendors: number;
   pendingApprovals: number;
@@ -164,7 +166,7 @@ export default function ManagerDashboard() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:5000/api/manager/stats", {
+      const res = await fetch(`${API_BASE_URL}/manager/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

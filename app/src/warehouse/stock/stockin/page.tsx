@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FaEye, FaEdit, FaPaperPlane } from "react-icons/fa";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE_URL = "http://localhost:5000/api";
 
 // Types
 interface StockEntry {
@@ -56,7 +56,7 @@ function SendToInventoryModal({ onClose, onSubmit }: Props) {
   useEffect(() => {
     const fetchWarehouses = async () => {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/api/warehouse/all-warehouses`, {
+      const res = await fetch(`${API_BASE_URL}/warehouse/all-warehouses`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -138,7 +138,7 @@ export default function StockInPage() {
       const token = localStorage.getItem("token");
 
       const res = await fetch(
-        `${API_BASE}/api/warehouse/stock-in?status=${activeTab}&search=${search}`,
+        `${API_BASE_URL}/warehouse/stock-in?status=${activeTab}&search=${search}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -204,7 +204,7 @@ export default function StockInPage() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch(`${API_BASE}/api/warehouse/send-to-inventory`, {
+      const res = await fetch(`${API_BASE_URL}/warehouse/send-to-inventory`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

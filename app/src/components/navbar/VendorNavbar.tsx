@@ -16,13 +16,23 @@ import {
   FiGrid,
 } from "react-icons/fi";
 
-import { HiOutlineUserCircle } from "react-icons/hi2";
+const API_BASE_URL = "http://localhost:5000/api";
 
+import { HiOutlineUserCircle } from "react-icons/hi2";
 
 /* ---------------- ICONS ---------------- */
 
 const LayoutDashboard = (props: any) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
     <rect x="3" y="3" width="7" height="9" />
     <rect x="14" y="3" width="7" height="5" />
     <rect x="14" y="12" width="7" height="9" />
@@ -31,7 +41,16 @@ const LayoutDashboard = (props: any) => (
 );
 
 const Package = (props: any) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
     <path d="m7.5 4.27 9 5.15" />
     <path d="m21 8.24-9-5.15-9 5.15" />
     <path d="M3.27 12.44 12 17.59l8.73-5.15" />
@@ -41,7 +60,16 @@ const Package = (props: any) => (
 );
 
 const PlusSquare = (props: any) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
     <rect x="3" y="3" width="18" height="18" rx="2" />
     <line x1="12" y1="8" x2="12" y2="16" />
     <line x1="8" y1="12" x2="16" y2="12" />
@@ -49,7 +77,16 @@ const PlusSquare = (props: any) => (
 );
 
 const Building2 = (props: any) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+  <svg
+    {...props}
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
     <path d="M18 22V7.5L12 2L6 7.5V22" />
     <path d="M4 22h16" />
   </svg>
@@ -74,12 +111,9 @@ export default function VendorNavbar() {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        const res = await fetch(
-          "http://localhost:5000/api/vendor/my-details",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        const res = await fetch(`${API_BASE_URL}/vendor/my-details`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         const data = await res.json();
         if (data.success) {
@@ -175,9 +209,7 @@ export default function VendorNavbar() {
             return (
               <div key={item.label}>
                 <button
-                  onClick={() =>
-                    setOpenDropdown(isOpen ? null : item.label)
-                  }
+                  onClick={() => setOpenDropdown(isOpen ? null : item.label)}
                   className="flex items-center w-full gap-3 px-4 py-3 font-semibold text-gray-700 rounded-xl hover:bg-gray-50"
                 >
                   <item.Icon />
@@ -229,49 +261,49 @@ export default function VendorNavbar() {
 
       {/* ---------------- PROFILE DROPDOWN ---------------- */}
       <div className="p-4 mt-auto border-t border-gray-100">
-  <div className="relative">
-    <button
-      onClick={() => setIsProfileOpen(!isProfileOpen)}
-      className="flex items-center w-full p-3 space-x-3 transition-colors duration-200 rounded-xl hover:bg-gray-100 group"
-    >
-      {/* Avatar */}
-      <div className="flex items-center justify-center w-10 h-10 bg-purple-100 rounded-full">
-        <span className="text-sm font-bold text-purple-700">
-          {user?.email?.charAt(0).toUpperCase() || "V"}
-        </span>
-      </div>
+        <div className="relative">
+          <button
+            onClick={() => setIsProfileOpen(!isProfileOpen)}
+            className="flex items-center w-full p-3 space-x-3 transition-colors duration-200 rounded-xl hover:bg-gray-100 group"
+          >
+            {/* Avatar */}
+            <div className="flex items-center justify-center w-10 h-10 bg-purple-100 rounded-full">
+              <span className="text-sm font-bold text-purple-700">
+                {user?.email?.charAt(0).toUpperCase() || "V"}
+              </span>
+            </div>
 
-      {/* User Info */}
-      <div className="flex-1 min-w-0 text-left">
-        <p className="text-sm font-bold text-gray-800 truncate">
-          {user?.email || "Vendor User"}
-        </p>
-        <p className="text-xs text-gray-500 capitalize">
-          {user?.role?.replace("_", " ") || "Vendor"}
-        </p>
-      </div>
+            {/* User Info */}
+            <div className="flex-1 min-w-0 text-left">
+              <p className="text-sm font-bold text-gray-800 truncate">
+                {user?.email || "Vendor User"}
+              </p>
+              <p className="text-xs text-gray-500 capitalize">
+                {user?.role?.replace("_", " ") || "Vendor"}
+              </p>
+            </div>
 
-      {/* Chevron */}
-      <FiChevronDown
-        size={18}
-        className={`text-gray-500 transition-transform duration-300 ${
-          isProfileOpen ? "rotate-180" : ""
-        }`}
-      />
-    </button>
+            {/* Chevron */}
+            <FiChevronDown
+              size={18}
+              className={`text-gray-500 transition-transform duration-300 ${
+                isProfileOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
 
-    {/* DROPDOWN */}
-    {isProfileOpen && (
-      <div className="absolute left-0 right-0 z-20 py-2 mb-2 origin-bottom bg-white border border-gray-100 shadow-2xl bottom-full rounded-xl">
-        <Link
-          href="/src/vendor/profile"
-          className="flex items-center px-4 py-2 space-x-3 text-sm text-gray-700 hover:bg-gray-50"
-        >
-          <HiOutlineUserCircle size={18} className="text-gray-500" />
-          <span>Profile Settings</span>
-        </Link>
+          {/* DROPDOWN */}
+          {isProfileOpen && (
+            <div className="absolute left-0 right-0 z-20 py-2 mb-2 origin-bottom bg-white border border-gray-100 shadow-2xl bottom-full rounded-xl">
+              <Link
+                href="/src/vendor/profile"
+                className="flex items-center px-4 py-2 space-x-3 text-sm text-gray-700 hover:bg-gray-50"
+              >
+                <HiOutlineUserCircle size={18} className="text-gray-500" />
+                <span>Profile Settings</span>
+              </Link>
 
-        {/* <Link
+              {/* <Link
           href="/src/vendor/settings"
           className="flex items-center px-4 py-2 space-x-3 text-sm text-gray-700 hover:bg-gray-50"
         >
@@ -279,20 +311,19 @@ export default function VendorNavbar() {
           <span>Settings</span>
         </Link> */}
 
-        <div className="my-1 border-t border-gray-100" />
+              <div className="my-1 border-t border-gray-100" />
 
-        <button
-          onClick={logout}
-          className="flex items-center w-full px-4 py-2 space-x-3 text-sm font-semibold text-red-600 hover:bg-red-50"
-        >
-          <FiLogOut size={18} />
-          <span>Logout</span>
-        </button>
+              <button
+                onClick={logout}
+                className="flex items-center w-full px-4 py-2 space-x-3 text-sm font-semibold text-red-600 hover:bg-red-50"
+              >
+                <FiLogOut size={18} />
+                <span>Logout</span>
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-    )}
-  </div>
-</div>
-
     </nav>
   );
 }

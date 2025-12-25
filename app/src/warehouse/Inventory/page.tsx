@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-const API_BASE = "http://localhost:5000/api";
+const API_BASE_URL = "http://localhost:5000/api";
 
 export default function InventoryMasterPage() {
   // FILTER STATES
@@ -29,7 +29,7 @@ export default function InventoryMasterPage() {
         });
 
         const res = await fetch(
-          `${API_BASE}/warehouse/inventory-record?${params.toString()}`,
+          `${API_BASE_URL}/warehouse/inventory-record?${params.toString()}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -180,7 +180,7 @@ export default function InventoryMasterPage() {
             <tbody>
               {inventoryData.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="p-4 text-center text-gray-500">
+                  <td colSpan={9}  className="p-4 text-center text-gray-500">
                     No matching results
                   </td>
                 </tr>

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE_URL = "http://localhost:5000/api";
 
 interface StockEntry {
   grn: string;
@@ -43,7 +43,7 @@ export default function StockInEditPage() {
       try {
         const token = localStorage.getItem("token");
 
-        const res = await fetch(`${API_BASE}/api/warehouse/stock-in/${grn}`, {
+        const res = await fetch(`${API_BASE_URL}/warehouse/stock-in/${grn}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -85,7 +85,7 @@ export default function StockInEditPage() {
     try {
       const token = localStorage.getItem("token");
 
-      const res = await fetch(`${API_BASE}/api/warehouse/stock-in/${stock.grn}`, {
+      const res = await fetch(`${API_BASE_URL}/warehouse/stock-in/${stock.grn}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

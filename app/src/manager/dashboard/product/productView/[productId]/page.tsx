@@ -14,7 +14,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE_URL = "http://localhost:5000/api";
 
 interface VariantView {
   size?: string;
@@ -132,7 +132,7 @@ export default function ReviewProductPage({
       return path;
     }
 
-    return `${API_BASE}/uploads/${path.replace(/^\/+/, "")}`;
+    return `${API_BASE_URL}/uploads/${path.replace(/^\/+/, "")}`;
   };
 
   const isValidDate = (date: any): boolean => {
@@ -145,7 +145,7 @@ export default function ReviewProductPage({
     setError(null);
     try {
       const res = await fetch(
-        `${API_BASE}/api/product/${encodeURIComponent(id)}`,
+        `${API_BASE_URL}/product/${encodeURIComponent(id)}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token") || ""}`,

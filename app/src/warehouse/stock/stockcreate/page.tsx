@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE_URL = "http://localhost:5000/api";
 
 /* ================= TYPES ================= */
 
@@ -63,7 +63,7 @@ export default function StockInCreatePage() {
   const fetchVendors = async () => {
     const token = localStorage.getItem("token");
 
-    const res = await fetch(`${API_BASE}/api/vendor/approved-list`, {
+    const res = await fetch(`${API_BASE_URL}/vendor/approved-list`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
@@ -88,7 +88,7 @@ export default function StockInCreatePage() {
     const token = localStorage.getItem("token");
 
     const res = await fetch(
-      `${API_BASE}/api/product/approved-list?vendorId=${vendorId}`,
+      `${API_BASE_URL}/product/approved-list?vendorId=${vendorId}`,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
@@ -130,7 +130,7 @@ export default function StockInCreatePage() {
     const token = localStorage.getItem("token");
 
     const res = await fetch(
-      `${API_BASE}/api/product/approved-products/${productId}`,
+      `${API_BASE_URL}/product/approved-products/${productId}`,
       {
         headers: { Authorization: `Bearer ${token}` },
       }
@@ -193,7 +193,7 @@ export default function StockInCreatePage() {
 
     const token = localStorage.getItem("token");
 
-    await fetch(`${API_BASE}/api/warehouse/stock-in`, {
+    await fetch(`${API_BASE_URL}/warehouse/stock-in`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,

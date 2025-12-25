@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import {
   FaCheckCircle,
@@ -28,7 +29,7 @@ import {
 } from "react-icons/fa";
 import { FiPackage } from "react-icons/fi";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE_URL = "http://localhost:5000/api";
 
 /* ================================
        TYPES
@@ -39,6 +40,13 @@ type ProductStatus =
   | "rejected"
   | "resubmission"
   | "sent_for_approval";
+
+
+type StatusConfig = {
+  text: string;
+  color: string;
+  Icon: LucideIcon;
+};
 
 interface ProductDocument {
   document_id: number;
@@ -90,6 +98,7 @@ interface ApiResponse {
   page: number;
   totalPages: number;
   stats: Stats;
+  // size?: number;
 }
 
 type ActionType = "approve" | "reject" | "request_resubmission";
@@ -145,7 +154,7 @@ const StatusChip = ({ status }: { status: ProductStatus }) => {
     <div
       className={`inline-flex items-center px-3 py-1.5 rounded-full border text-xs font-medium ${cfg.color}`}
     >
-      <Icon className="mr-1.5" size={12} />
+{/* <Icon className="mr-1.5" size={12} /> */}
       {cfg.text}
     </div>
   );
@@ -407,7 +416,7 @@ export default function ProductManagerList() {
       });
 
       const response = await fetch(
-        `${API_BASE}/api/product/all-products?${params.toString()}`,
+        `${API_BASE_URL}/product/all-products?${params.toString()}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -475,14 +484,14 @@ export default function ProductManagerList() {
 
       switch (action) {
         case "approve":
-          url = `${API_BASE}/api/manager/product/approve/${productId}`;
+          url = `${API_BASE_URL}/manager/product/approve/${productId}`;
           break;
         case "reject":
-          url = `${API_BASE}/api/manager/product/reject/${productId}`;
+          url = `${API_BASE_URL}/manager/product/reject/${productId}`;
           body = JSON.stringify({ reason });
           break;
         case "request_resubmission":
-          url = `${API_BASE}/api/manager/product/resubmission/${productId}`;
+          url = `${API_BASE_URL}/manager/product/resubmission/${productId}`;
           body = JSON.stringify({ reason });
           break;
         default:
@@ -756,7 +765,7 @@ export default function ProductManagerList() {
                           <img
                             src={
                               product?.main_image
-                                ? `http://localhost:5000/uploads/${product.main_image}`
+                                ? `${API_BASE_URL}/uploads/${product.main_image}`
                                 : undefined
                             }
                             alt={product?.product_name || "Product Image"}

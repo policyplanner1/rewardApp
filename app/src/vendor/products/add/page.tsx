@@ -14,7 +14,7 @@ import {
   FaSpinner,
 } from "react-icons/fa";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE_URL = "http://localhost:5000/api";
 
 // --- Interfaces matching your backend ---
 interface Category {
@@ -78,7 +78,10 @@ interface ProductData {
   subSubCategoryId: number | null;
   gstIn?: string;
   variants: Variant[];
-  productImages: File[];
+  productImages: {
+    file: File;
+    previewUrl: string;
+  }[];
 }
 
 const initialProductData: ProductData = {
@@ -228,7 +231,7 @@ export default function ProductListingDynamic() {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/api/category`);
+      const res = await fetch(`${API_BASE_URL}/category`);
       const json = await res.json();
       if (json.success) {
         setCategories(json.data);
@@ -256,16 +259,23 @@ export default function ProductListingDynamic() {
       return;
     }
 
+    const images = files.map((file) => ({
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+
     setImageError("");
     setProduct((prev) => ({
       ...prev,
-      productImages: files,
+      productImages: images,
     }));
   };
 
   useEffect(() => {
     return () => {
-      product.productImages.forEach((file) => URL.revokeObjectURL(file));
+      product.productImages.forEach((img) => {
+        URL.revokeObjectURL(img.previewUrl);
+      });
     };
   }, [product.productImages]);
 
@@ -295,7 +305,7 @@ export default function ProductListingDynamic() {
   const fetchSubCategories = async (categoryId: number) => {
     try {
       // console.log("Fetching subcategories for category ID:", categoryId);
-      const res = await fetch(`${API_BASE}/api/subcategory/${categoryId}`);
+      const res = await fetch(`${API_BASE_URL}/subcategory/${categoryId}`);
 
       const json = await res.json();
       console.log("Subcategories response:", json);
@@ -309,9 +319,7 @@ export default function ProductListingDynamic() {
 
   const fetchSubSubCategories = async (subcategoryId: number) => {
     try {
-      const res = await fetch(
-        `${API_BASE}/api/subsubcategory/${subcategoryId}`
-      );
+      const res = await fetch(`${API_BASE_URL}/subsubcategory/${subcategoryId}`);
       const json = await res.json();
       console.log("Sub-subcategories response:", json.data);
       if (json.success) {
@@ -326,9 +334,8 @@ export default function ProductListingDynamic() {
   const fetchRequiredDocuments = async (categoryId: number) => {
     try {
       const res = await fetch(
-        `${API_BASE}/api/product/category/required_docs/${categoryId}`,
+        `${API_BASE_URL}/product/category/required_docs/${categoryId}`,
         {
-          // http://localhost:5000/api/product/category/required_docs/2
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
             "Content-Type": "application/json",
@@ -748,8 +755,8 @@ export default function ProductListingDynamic() {
       }
 
       // Add main product images
-      product.productImages.forEach((file, index) => {
-        formData.append("images", file);
+      product.productImages.forEach((img) => {
+        formData.append("images", img.file);
       });
 
       // Add document files - map document_id to field names
@@ -785,7 +792,7 @@ export default function ProductListingDynamic() {
       });
 
       // Submit to backend
-      const response = await fetch(`${API_BASE}/api/product/create-product`, {
+      const response = await fetch(`${API_BASE_URL}/product/create-product`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -1559,21 +1566,18 @@ export default function ProductListingDynamic() {
             {/* Image Previews */}
             {product.productImages.length > 0 && (
               <div className="mt-3 flex gap-2 flex-wrap">
-                {product.productImages.map((file, index) => {
-                  const url = URL.createObjectURL(file);
-                  return (
-                    <div
-                      key={index}
-                      className="w-20 h-20 border rounded overflow-hidden"
-                    >
-                      <img
-                        src={url}
-                        alt={`Preview ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  );
-                })}
+                {product.productImages.map((img, index) => (
+                  <div
+                    key={index}
+                    className="w-20 h-20 border rounded overflow-hidden"
+                  >
+                    <img
+                      src={img.previewUrl}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
               </div>
             )}
           </section>

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE_URL = "http://localhost:5000/api";
 
 interface StockEntry {
   grn: string;
@@ -37,7 +37,7 @@ export default function StockInViewPage() {
       try {
         const token = localStorage.getItem("token");
 
-        const res = await fetch(`${API_BASE}/api/warehouse/stock-in/${grn}`, {
+        const res = await fetch(`${API_BASE_URL}/warehouse/stock-in/${grn}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

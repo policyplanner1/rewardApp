@@ -15,7 +15,7 @@ import {
   FaSpinner,
 } from "react-icons/fa";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE_URL = "http://localhost:5000/api";
 
 interface Category {
   category_id: number;
@@ -64,7 +64,10 @@ interface Variant {
   expiryDate: string;
   manufacturingYear: string;
   materialType: string;
-  images: File[];
+  images: {
+    file: File;
+    previewUrl: string;
+  }[];
   existingImages?: string[];
 }
 
@@ -80,7 +83,10 @@ interface ProductData {
   subSubCategoryId: number | null;
   gstIn?: string;
   variants: Variant[];
-  productImages: File[];
+  productImages: {
+    file: File;
+    previewUrl: string;
+  }[];
   existingImages?: string[];
 }
 
@@ -204,7 +210,7 @@ export default function EditProductPage() {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE}/api/category`);
+      const res = await fetch(`${API_BASE_URL}/category`);
       const json = await res.json();
       if (json.success) {
         setCategories(json.data);
@@ -227,16 +233,23 @@ export default function EditProductPage() {
       return;
     }
 
+    const images = files.map((file) => ({
+      file,
+      previewUrl: URL.createObjectURL(file),
+    }));
+
     setImageError("");
     setProduct((prev) => ({
       ...prev,
-      productImages: files,
+      productImages: images,
     }));
   };
 
   useEffect(() => {
     return () => {
-      product.productImages.forEach((file) => URL.revokeObjectURL(file));
+      product.productImages.forEach((img) => {
+        URL.revokeObjectURL(img.previewUrl);
+      });
     };
   }, [product.productImages]);
 
@@ -265,7 +278,7 @@ export default function EditProductPage() {
 
   const fetchSubCategories = async (categoryId: number) => {
     try {
-      const res = await fetch(`${API_BASE}/api/subcategory/${categoryId}`);
+      const res = await fetch(`${API_BASE_URL}/subcategory/${categoryId}`);
 
       const json = await res.json();
       if (json.success) {
@@ -278,9 +291,7 @@ export default function EditProductPage() {
 
   const fetchSubSubCategories = async (subcategoryId: number) => {
     try {
-      const res = await fetch(
-        `${API_BASE}/api/subsubcategory/${subcategoryId}`
-      );
+      const res = await fetch(`${API_BASE_URL}/subsubcategory/${subcategoryId}`);
       const json = await res.json();
       if (json.success) {
         setSubSubCategories(json.data);
@@ -294,7 +305,7 @@ export default function EditProductPage() {
   const fetchRequiredDocuments = async (categoryId: number) => {
     try {
       const res = await fetch(
-        `${API_BASE}/api/product/category/required_docs/${categoryId}`,
+        `${API_BASE_URL}/product/category/required_docs/${categoryId}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token") || ""}`,
@@ -389,7 +400,7 @@ export default function EditProductPage() {
       setLoading(true);
       const token = localStorage.getItem("token");
 
-      const res = await fetch(`${API_BASE}/api/product/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/product/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -580,10 +591,26 @@ export default function EditProductPage() {
 
     setProduct((prev) => {
       const updatedVariants = [...prev.variants];
-      updatedVariants[variantIndex].images = files;
+      const images = files.map((file) => ({
+        file,
+        previewUrl: URL.createObjectURL(file),
+      }));
+
+      updatedVariants[variantIndex].images = images;
+
       return { ...prev, variants: updatedVariants };
     });
   };
+
+  useEffect(() => {
+    return () => {
+      product.variants.forEach((variant) => {
+        variant.images.forEach((img) => {
+          URL.revokeObjectURL(img.previewUrl);
+        });
+      });
+    };
+  }, [product.variants]);
 
   const addVariant = () => {
     setProduct((prev) => ({
@@ -726,8 +753,8 @@ export default function EditProductPage() {
       if (product.gstIn) formData.append("gstIn", product.gstIn);
 
       // Add main product images
-      product.productImages.forEach((file, index) => {
-        formData.append("images", file);
+      product.productImages.forEach((img) => {
+        formData.append("images", img.file);
       });
 
       Object.entries(docFiles).forEach(([docId, file]) => {
@@ -755,14 +782,14 @@ export default function EditProductPage() {
 
       // Add variant images
       product.variants.forEach((variant, index) => {
-        variant.images.forEach((file, imgIndex) => {
-          formData.append(`variant_${index}_${imgIndex}`, file);
+        variant.images.forEach((img, imgIndex) => {
+          formData.append(`variant_${index}_${imgIndex}`, img.file);
         });
       });
 
       // Submit to backend
       const response = await fetch(
-        `${API_BASE}/api/product/update-product/${productId}`,
+        `${API_BASE_URL}/product/update-product/${productId}`,
         {
           method: "PUT",
           headers: {
@@ -1025,7 +1052,9 @@ export default function EditProductPage() {
                 <input
                   type="date"
                   value={variant.expiryDate || ""}
-                  min={new Date(Date.now() + 86400000).toISOString().split("T")[0]}
+                  min={
+                    new Date(Date.now() + 86400000).toISOString().split("T")[0]
+                  }
                   onChange={(e) =>
                     handleVariantChange(index, "expiryDate", e.target.value)
                   }
@@ -1042,7 +1071,7 @@ export default function EditProductPage() {
                   {variant.existingImages.map((img, imgIndex) => (
                     <img
                       key={imgIndex}
-                      src={`${API_BASE}/uploads/${img}`}
+                      src={`${API_BASE_URL}/uploads/${img}`}
                       alt={`Variant ${index + 1} image ${imgIndex + 1}`}
                       className="w-16 h-16 object-cover border rounded"
                     />
@@ -1078,21 +1107,18 @@ export default function EditProductPage() {
               {/* Image Previews */}
               {variant.images.length > 0 && (
                 <div className="mt-3 flex gap-2 flex-wrap">
-                  {variant.images.map((file, imgIndex) => {
-                    const url = URL.createObjectURL(file);
-                    return (
-                      <div
-                        key={imgIndex}
-                        className="w-20 h-20 border rounded overflow-hidden"
-                      >
-                        <img
-                          src={url}
-                          alt={`Variant ${index + 1} - Image ${imgIndex + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    );
-                  })}
+                  {variant.images.map((img, imgIndex) => (
+                    <div
+                      key={imgIndex}
+                      className="w-20 h-20 border rounded overflow-hidden"
+                    >
+                      <img
+                        src={img.previewUrl}
+                        alt={`Variant ${index + 1} - Image ${imgIndex + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -1450,7 +1476,7 @@ export default function EditProductPage() {
                 {product.existingImages.map((img, i) => (
                   <img
                     key={i}
-                    src={`${API_BASE}/uploads/${img}`}
+                    src={`${API_BASE_URL}/uploads/${img}`}
                     className="w-20 h-20 object-cover border rounded"
                   />
                 ))}
@@ -1486,21 +1512,18 @@ export default function EditProductPage() {
             {/* Image Previews */}
             {product.productImages.length > 0 && (
               <div className="mt-3 flex gap-2 flex-wrap">
-                {product.productImages.map((file, index) => {
-                  const url = URL.createObjectURL(file);
-                  return (
-                    <div
-                      key={index}
-                      className="w-20 h-20 border rounded overflow-hidden"
-                    >
-                      <img
-                        src={url}
-                        alt={`Preview ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  );
-                })}
+                {product.productImages.map((img, index) => (
+                  <div
+                    key={index}
+                    className="w-20 h-20 border rounded overflow-hidden"
+                  >
+                    <img
+                      src={img.previewUrl}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
               </div>
             )}
           </section>

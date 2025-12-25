@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-const API_BASE = "http://localhost:5000";
+const API_BASE_URL = "http://localhost:5000/api";
 
 // ============================
 // Type Definitions
@@ -57,7 +57,7 @@ export default function StockAdjustmentPage() {
 
     try {
       const res = await fetch(
-        `${API_BASE}/api/warehouse/search?query=${search}`,
+        `${API_BASE_URL}/warehouse/search?query=${search}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -79,12 +79,10 @@ export default function StockAdjustmentPage() {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(`${API_BASE}/api/warehouse/stock-adjustments`, {
+      const res = await fetch(`${API_BASE_URL}/warehouse/stock-adjustments`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-
-      console.log(data, "Data");
 
       if (data.success) {
         setTableData(
@@ -141,7 +139,7 @@ export default function StockAdjustmentPage() {
     const token = localStorage.getItem("token");
 
     try {
-      const res = await fetch(`${API_BASE}/api/warehouse/stock-adjustments`, {
+      const res = await fetch(`${API_BASE_URL}/warehouse/stock-adjustments`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

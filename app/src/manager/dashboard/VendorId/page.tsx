@@ -19,8 +19,10 @@ import {
   FaFilePdf,
 } from "react-icons/fa";
 
+const API_BASE_URL = "http://localhost:5000/api";
+
 const resolveImageUrl = (path: string) =>
-  path?.startsWith("http") ? path : `http://localhost:5000/uploads/${path}`;
+  path?.startsWith("http") ? path : `${API_BASE_URL}/uploads/${path}`;
 
 const downloadFile = (url: string, filename?: string) => {
   const link = document.createElement("a");
@@ -350,7 +352,6 @@ const mapDocumentsByKey = (documents: any[]) => {
 export default function VendorApprovalForm() {
   const searchParams = useSearchParams();
   const vendorId = searchParams.get("vendor_id");
-  const API_BASE_URL = "http://localhost:5000";
   const router = useRouter();
 
   const [vendorStatus, setVendorStatus] = useState<
@@ -380,7 +381,7 @@ export default function VendorApprovalForm() {
       }
 
       try {
-        const res = await fetch(`${API_BASE_URL}/api/vendor/${vendorId}`, {
+        const res = await fetch(`${API_BASE_URL}/vendor/${vendorId}`, {
           method: "GET",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -438,7 +439,7 @@ export default function VendorApprovalForm() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/vendor/status/${vendorId}`, {
+      const res = await fetch(`${API_BASE_URL}/vendor/status/${vendorId}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,

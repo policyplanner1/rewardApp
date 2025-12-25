@@ -28,7 +28,7 @@ import {
 } from "react-icons/fa";
 import { FiPackage } from "react-icons/fi";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE_URL = "http://localhost:5000/api";
 
 /* ================================
        TYPES
@@ -145,7 +145,7 @@ const StatusChip = ({ status }: { status: ProductStatus }) => {
     <div
       className={`inline-flex items-center px-3 py-1.5 rounded-full border text-xs font-medium ${cfg.color}`}
     >
-      <Icon className="mr-1.5" size={12} />
+      {/* <Icon className="mr-1.5" size={12} /> */}
       {cfg.text}
     </div>
   );
@@ -407,7 +407,7 @@ export default function ProductManagerList() {
       });
 
       const response = await fetch(
-        `${API_BASE}/api/product/my-listed-products?${params.toString()}`,
+        `${API_BASE_URL}/product/my-listed-products?${params.toString()}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -472,7 +472,7 @@ export default function ProductManagerList() {
       // --- DELETE branch (implemented) ---
       if (action === "delete") {
         const res = await fetch(
-          `http://localhost:5000/api/product/delete-product/${productId}`,
+          `${API_BASE_URL}/product/delete-product/${productId}`,
           {
             method: "DELETE",
             headers: {
@@ -520,7 +520,7 @@ export default function ProductManagerList() {
       // --- REQUEST RESUBMISSION ---
       if (action === "request_resubmission") {
         const res = await fetch(
-          `${API_BASE}/api/product/submission/${productId}`,
+          `${API_BASE_URL}/product/submission/${productId}`,
           {
             method: "POST",
             headers: {
@@ -784,7 +784,7 @@ export default function ProductManagerList() {
                           <img
                             src={
                               product?.main_image
-                                ? `http://localhost:5000/uploads/${product.main_image}`
+                                ? `${API_BASE_URL}/uploads/${product.main_image}`
                                 : undefined
                             }
                             alt={product?.product_name || "Product Image"}
