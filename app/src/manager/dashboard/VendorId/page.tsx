@@ -20,9 +20,10 @@ import {
 } from "react-icons/fa";
 
 const API_BASE_URL = "http://localhost:5000/api";
+const API_BASEIMAGE_URL = "http://localhost:5000";
 
 const resolveImageUrl = (path: string) =>
-  path?.startsWith("http") ? path : `${API_BASE_URL}/uploads/${path}`;
+  path?.startsWith("http") ? path : `${API_BASEIMAGE_URL}/uploads/${path}`;
 
 const downloadFile = (url: string, filename?: string) => {
   const link = document.createElement("a");

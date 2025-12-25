@@ -30,6 +30,7 @@ import {
 import { FiPackage } from "react-icons/fi";
 
 const API_BASE_URL = "http://localhost:5000/api";
+const API_BASEIMAGE_URL = "http://localhost:5000";
 
 /* ================================
        TYPES
@@ -765,7 +766,7 @@ export default function ProductManagerList() {
                           <img
                             src={
                               product?.main_image
-                                ? `${API_BASE_URL}/uploads/${product.main_image}`
+                                ? `${API_BASEIMAGE_URL}/uploads/${product.main_image}`
                                 : undefined
                             }
                             alt={product?.product_name || "Product Image"}
