@@ -120,13 +120,13 @@ interface BackendVendorData {
 const DOCUMENT_CONFIG = {
   gstinFile: { label: "GST Document" },
   panFile: { label: "PAN Card" },
-  bankProofFile: { label: "Bank Cancelled Cheque" },
+  nocFile: { label: "NOC" },
+  rightsAdvisoryFile: { label: "Trademark" },
   signatoryIdFile: { label: "Authorized Signatory ID Proof" },
   businessProfileFile: { label: "Business Profile" },
   brandLogoFile: { label: "Brand Logo" },
-  nocFile: { label: "NOC" },
+  bankProofFile: { label: "Bank Cancelled Cheque" },
   electricityBillFile: { label: "Electricity Bill" },
-  rightsAdvisoryFile: { label: "Advisory / Disclaimer" },
   signedAgreementFile: { label: "Signed Agreement (Optional)" },
 };
 

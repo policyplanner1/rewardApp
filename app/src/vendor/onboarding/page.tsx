@@ -880,16 +880,6 @@ export default function Onboarding() {
                     description="Trademark."
                   />
 
-                  {/* Bank proof - cancelled cheque or passbook image */}
-                  <FileUploadInput
-                    id="bankProofFile"
-                    label="Bank Cancelled Cheque"
-                    file={formData.bankProofFile}
-                    onChange={handleChange}
-                    accept=".jpg, .jpeg, .png, .pdf"
-                    description="Upload a Cancelled Cheque with company name and account details."
-                  />
-
                   {/* Signatory ID */}
                   <FileUploadInput
                     id="signatoryIdFile"
@@ -919,6 +909,17 @@ export default function Onboarding() {
                     accept=".jpg, .jpeg, .png, .svg"
                     description="Upload brand logo (PNG/JPG/SVG)."
                   />
+
+                  {/* Bank proof - cancelled cheque or passbook image */}
+                  <FileUploadInput
+                    id="bankProofFile"
+                    label="Bank Cancelled Cheque"
+                    file={formData.bankProofFile}
+                    onChange={handleChange}
+                    accept=".jpg, .jpeg, .png, .pdf"
+                    description="Upload a Cancelled Cheque with company name and account details."
+                  />
+
                   {/* Electricity */}
                   <FileUploadInput
                     id="electricityBillFile"
