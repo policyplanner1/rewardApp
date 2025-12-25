@@ -562,15 +562,11 @@ export default function Onboarding() {
     const requiredFilesMissing =
       !formData.gstinFile ||
       !formData.panFile ||
-      !formData.bankProofFile ||
-      !formData.signatoryIdFile ||
-      !formData.businessProfileFile ||
       !formData.nocFile ||
-      !formData.electricityBillFile ||
       !formData.rightsAdvisoryFile;
     if (requiredFilesMissing) {
       alert(
-        "Please upload all mandatory documents: GST Certificate, PAN Card, Bank Proof, Signatory ID Proof, and Business Profile."
+        "Please upload all mandatory documents: GST Certificate, PAN Card, NOC and Trademark."
       );
       return;
     }
@@ -862,52 +858,6 @@ export default function Onboarding() {
                     description="Upload company PAN (PDF/JPG/PNG)."
                   />
 
-                  {/* Bank proof - cancelled cheque or passbook image */}
-                  <FileUploadInput
-                    id="bankProofFile"
-                    label="Bank Cancelled Cheque"
-                    file={formData.bankProofFile}
-                    onChange={handleChange}
-                    required
-                    accept=".jpg, .jpeg, .png, .pdf"
-                    description="Upload a Cancelled Cheque with company name and account details."
-                  />
-
-                  {/* Signatory ID */}
-                  <FileUploadInput
-                    id="signatoryIdFile"
-                    label="Authorized Signatory ID Proof"
-                    file={formData.signatoryIdFile}
-                    onChange={handleChange}
-                    required
-                    accept=".jpg, .jpeg, .png, .pdf"
-                    description="Upload Aadhaar or PAN of authorized signatory."
-                  />
-
-                  {/* Business profile */}
-                  <FileUploadInput
-                    id="businessProfileFile"
-                    label="Business Profile"
-                    file={formData.businessProfileFile}
-                    onChange={handleChange}
-                    required
-                    accept=".pdf, .doc, .docx"
-                    description="Upload your Business Profile (PDF or DOC)."
-                  />
-
-                  {/* Brand logo - required for Manufacturer and Trader */}
-                  <FileUploadInput
-                    id="brandLogoFile"
-                    label="Brand Logo"
-                    file={formData.brandLogoFile}
-                    onChange={handleChange}
-                    required={
-                      formData.vendorType === "Manufacturer" ||
-                      formData.vendorType === "Trader"
-                    }
-                    accept=".jpg, .jpeg, .png, .svg"
-                    description="Upload brand logo (PNG/JPG/SVG)."
-                  />
                   {/* Noc */}
                   <FileUploadInput
                     id="nocFile"
@@ -918,26 +868,65 @@ export default function Onboarding() {
                     accept=".jpg, .jpeg, .png, .pdf"
                     description="Upload a No objection certificate."
                   />
+
+                  {/* Trademark File */}
+                  <FileUploadInput
+                    id="rightsAdvisoryFile"
+                    label="Trademark Certificate"
+                    file={formData.rightsAdvisoryFile}
+                    onChange={handleChange}
+                    required
+                    accept=".jpg, .jpeg, .png, .pdf"
+                    description="Trademark."
+                  />
+
+                  {/* Bank proof - cancelled cheque or passbook image */}
+                  <FileUploadInput
+                    id="bankProofFile"
+                    label="Bank Cancelled Cheque"
+                    file={formData.bankProofFile}
+                    onChange={handleChange}
+                    accept=".jpg, .jpeg, .png, .pdf"
+                    description="Upload a Cancelled Cheque with company name and account details."
+                  />
+
+                  {/* Signatory ID */}
+                  <FileUploadInput
+                    id="signatoryIdFile"
+                    label="Authorized Signatory ID Proof"
+                    file={formData.signatoryIdFile}
+                    onChange={handleChange}
+                    accept=".jpg, .jpeg, .png, .pdf"
+                    description="Upload Aadhaar or PAN of authorized signatory."
+                  />
+
+                  {/* Business profile */}
+                  <FileUploadInput
+                    id="businessProfileFile"
+                    label="Business Profile"
+                    file={formData.businessProfileFile}
+                    onChange={handleChange}
+                    accept=".pdf, .doc, .docx"
+                    description="Upload your Business Profile (PDF or DOC)."
+                  />
+
+                  {/* Brand logo - required for Manufacturer and Trader */}
+                  <FileUploadInput
+                    id="brandLogoFile"
+                    label="Brand Logo"
+                    file={formData.brandLogoFile}
+                    onChange={handleChange}
+                    accept=".jpg, .jpeg, .png, .svg"
+                    description="Upload brand logo (PNG/JPG/SVG)."
+                  />
                   {/* Electricity */}
                   <FileUploadInput
                     id="electricityBillFile"
                     label="Electricity bill"
                     file={formData.electricityBillFile}
                     onChange={handleChange}
-                    required
                     accept=".jpg, .jpeg, .png, .pdf"
                     description="Upload Electricity bill."
-                  />
-
-                  {/* Advisory File */}
-                  <FileUploadInput
-                    id="rightsAdvisoryFile"
-                    label="Advisory/ Disclaimer"
-                    file={formData.rightsAdvisoryFile}
-                    onChange={handleChange}
-                    required
-                    accept=".jpg, .jpeg, .png, .pdf"
-                    description="Rights Granted by the Advisory Certificate."
                   />
 
                   {/* Vendor agreement - checkbox + optional upload */}
