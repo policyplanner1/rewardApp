@@ -572,14 +572,14 @@ export default function Onboarding() {
     }
 
     // Brand logo is required for Manufacturer and Trader, optional for Service Provider
-    if (
-      (formData.vendorType === "Manufacturer" ||
-        formData.vendorType === "Trader") &&
-      !formData.brandLogoFile
-    ) {
-      alert("Manufacturers and Traders must upload a Brand Logo.");
-      return;
-    }
+    // if (
+    //   (formData.vendorType === "Manufacturer" ||
+    //     formData.vendorType === "Trader") &&
+    //   !formData.brandLogoFile
+    // ) {
+    //   alert("Manufacturers and Traders must upload a Brand Logo.");
+    //   return;
+    // }
 
     // Vendor agreement - show warning if not accepted and no file uploaded
     if (!formData.agreementAccepted && !formData.vendorAgreementFile) {
